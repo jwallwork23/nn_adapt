@@ -70,3 +70,55 @@ def split_into_scalars(f):
         return {0: [f.sub(i)] for i in range(V.shape[0])}
     else:
         return {0: [f]}
+
+
+def split_into_components(f):
+    """
+    Extend the :attr:`split` method to apply
+    to non-mixed :class:`Function`\s.
+    """
+    return [f] if f.function_space().value_size == 1 else f.split()
+
+
+def indicate_errors(mesh, config, enrichment_method='h'):
+    """
+    Indicate errors according to the ``dwr_indicator``
+    given in the configuration file.
+
+    :arg mesh: input mesh
+    :arg config: configuration file, which
+        specifies the PDE and QoI
+    :kwarg enrichment_method: how to enrich the
+        finite element space?
+    :return: dual-weighted residual error indicator,
+        forward solution and adjoint solution
+    """
+    fwd_sol, adj_sol, mesh_seq = get_solutions(mesh, config)
+
+    # Solve PDE in enriched space
+    adj_kwargs = {"options_predix": "adjoint_enriched"}
+    enriched_solutions = mesh_seq.global_enrichment(
+        enrichment_method=enrichment_method,
+        adj_solver_kwargs=adj_kwargs
+    )
+    field = config.fields[0]
+    adj_sol_plus = enriched_spolutions[field].adjoint[0][0]
+
+    # Prolong
+    V_plus = adj_sol_plus.function_space()
+    fwd_sol_plg = Function(V_plus)
+    prolong(fwd_sol, fwd_sol_plg)
+    adj_sol_plg = Function(V_plus)
+    prolong(adj_sol, adj_sol_plg)
+
+    # Subtract prolonged adjoint solution from enriched version
+    adj_error = Function(V_plus)
+    adj_sols = split_into_components(adj_sol)
+    adj_sols_plg = split_into_components(adj_sol_plg)
+    for i, err in enumerate(split_into_components(adj_error)):
+        err += adj_sols[i] - adj_sols_plg[i]
+
+    # Evaluate errors
+    dwr = config.dwr_indicator(mesh_seq, fwd_sol_plg, adj_error)
+
+    return dwr, fwd_sol, adj_sol
