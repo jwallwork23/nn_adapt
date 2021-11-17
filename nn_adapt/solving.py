@@ -1,7 +1,7 @@
 from pyroteus_adjoint import *
 
 
-def get_solutions(mesh, config):
+def get_solutions(mesh, config, adjoint=True):
     """
     Solve forward and adjoint equations on a
     given mesh.
@@ -11,6 +11,8 @@ def get_solutions(mesh, config):
     :arg mesh: input mesh
     :arg config: configuration file, which
         specifies the PDE and QoI
+    :kwarg adjoint: solve the adjoint problem,
+        as well as the forward problem?
     :return: forward solution, adjoint solution
         and :class:`GoalOrientedMeshSeq`
     """
@@ -34,11 +36,16 @@ def get_solutions(mesh, config):
     )
 
     # Solve forward and adjoint problems
-    adj_kwargs = {"options_prefix": "adjoint"}
-    sols = mesh_seq.solve_adjoint(adj_solver_kwargs=adj_kwargs)
-    fwd_sols = sols[field].forward[0][0]
-    adj_sols = sols[field].adjoint[0][0]
-    return fwd_sols, adj_sols, mesh_seq
+    if adjoint:
+        adj_kwargs = {"options_prefix": "adjoint"}
+        sols = mesh_seq.solve_adjoint(adj_solver_kwargs=adj_kwargs)
+        fwd_sols = sols[field].forward[0][0]
+        adj_sols = sols[field].adjoint[0][0]
+        return fwd_sols, adj_sols, mesh_seq
+    else:
+        sols = mesh_seq.get_checkpoints(run_final_subinterval=True)
+        fwd_sols = sols[0][field]
+        return fwd_sols, mesh_seq
 
 
 def split_into_scalars(f):
