@@ -1,3 +1,4 @@
+from firedrake import *
 from pyroteus_adjoint import *
 
 
@@ -36,8 +37,9 @@ def get_solver(mesh_seq):
 
         # Boundary conditions
         inflow = DirichletBC(W.sub(0), u_inflow, 1)
-        noslip = DirichletBC(W.sub(0), (0, 0, 0), (3, 4, 5))
-        bcs = [inflow, noslip]
+        noslip = DirichletBC(W.sub(0), (0, 0), (3, 5))
+        hole = DirichletBC(W.sub(0), 0, 4)
+        bcs = [inflow, noslip, hole]
 
         # Forward solution
         up = Function(W, name='up_old')

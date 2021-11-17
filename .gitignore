@@ -1,1 +1,5 @@
+outputs/
+__pycache__/
 nn_adapt.egg-info/
+
+*.msh
