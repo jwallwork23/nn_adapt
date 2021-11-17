@@ -11,7 +11,8 @@ def get_solutions(mesh, config):
     :arg mesh: input mesh
     :arg config: configuration file, which
         specifies the PDE and QoI
-    :return: forward and adjoint solutions
+    :return: forward solution, adjoint solution
+        and :class:`GoalOrientedMeshSeq`
     """
     fields = config.fields
     assert len(fields) == 1, "Multiple fields not supported"
@@ -37,7 +38,7 @@ def get_solutions(mesh, config):
     sols = mesh_seq.solve_adjoint(adj_solver_kwargs=adj_kwargs)
     fwd_sols = sols[field].forward[0][0]
     adj_sols = sols[field].adjoint[0][0]
-    return fwd_sols, adj_sols
+    return fwd_sols, adj_sols, mesh_seq
 
 
 def split_into_scalars(f):
