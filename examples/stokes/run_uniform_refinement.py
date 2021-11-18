@@ -2,7 +2,6 @@ from nn_adapt import *
 import argparse
 import importlib
 import numpy as np
-import os
 
 
 # Parse for test case and number of refinements

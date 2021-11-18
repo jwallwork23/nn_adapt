@@ -1,8 +1,6 @@
 from nn_adapt import *
 import argparse
 import importlib
-import numpy as np
-import os
 
 
 set_log_level(ERROR)

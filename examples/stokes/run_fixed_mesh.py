@@ -1,7 +1,6 @@
 from nn_adapt import *
 import argparse
 import importlib
-import os
 
 
 # Parse for test case
