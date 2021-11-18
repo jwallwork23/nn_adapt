@@ -33,8 +33,10 @@ assert target_complexity > 0.0
 
 # Setup
 config = importlib.import_module(f'config{test_case}')
-mesh = config.mesh
 field = config.fields[0]
+plex = PETSc.DMPlex().create()
+plex.createFromFile(os.path.join(os.path.abspath(os.path.dirname(__file__)), f'meshes/{test_case}.h5'))
+mesh = Mesh(plex)
 
 # Run adaptation loop
 kwargs = {

@@ -17,5 +17,4 @@ def u_inflow(mesh):
 
 parameters.viscosity = Constant(1.0)
 parameters.u_inflow = u_inflow
-mesh = Mesh(os.path.join(os.path.abspath(os.path.dirname(__file__)), "meshes/1.msh"))
 qoi_name = "Pressure on the circle"

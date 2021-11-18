@@ -34,7 +34,6 @@ assert estimator_rtol > 0.0
 
 # Setup
 config = importlib.import_module(f'config{test_case}')
-mesh = config.mesh
 field = config.fields[0]
 
 # Run adaptation loop
@@ -42,6 +41,7 @@ qois = []
 dofs = []
 elements = []
 estimators = []
+print(f'Test case {test_case}')
 for i in range(num_refinements+1):
     target_complexity = 1000.0*4**i
     kwargs = {
@@ -50,12 +50,15 @@ for i in range(num_refinements+1):
         'average': True,
         'retall': True,
     }
+    plex = PETSc.DMPlex().create()
+    plex.createFromFile(os.path.join(os.path.abspath(os.path.dirname(__file__)), f'meshes/{test_case}.h5'))
+    mesh = Mesh(plex)
     qoi_old = None
     elements_old = mesh.num_cells()
     estimator_old = None
     converged_reason = None
-    print(f'Target {target_complexity}\n  Mesh 0')
-    print(f'    Element count        = {elements_old}')
+    print(f'  Target {target_complexity}\n    Mesh 0')
+    print(f'      Element count        = {elements_old}')
     for fp_iteration in range(maxiter+1):
 
         # Compute goal-oriented metric
@@ -63,7 +66,7 @@ for i in range(num_refinements+1):
 
         # Check for QoI convergence
         qoi = mesh_seq.J
-        print(f'    Quantity of Interest = {qoi}')
+        print(f'      Quantity of Interest = {qoi}')
         if qoi_old is not None and fp_iteration >= miniter:
             if abs(qoi - qoi_old) < qoi_rtol*abs(qoi_old):
                 converged_reason = 'QoI convergence'
@@ -72,7 +75,7 @@ for i in range(num_refinements+1):
 
         # Check for error estimator convergence
         estimator = dwr.vector().gather().sum()
-        print(f'    Error estimator      = {estimator}')
+        print(f'      Error estimator      = {estimator}')
         if estimator_old is not None and fp_iteration >= miniter:
             if abs(estimator - estimator_old) < estimator_rtol*abs(estimator_old):
                 converged_reason = 'error estimator convergence'
@@ -87,18 +90,18 @@ for i in range(num_refinements+1):
 
         # Adapt the mesh and check for element count convergence
         mesh = adapt(mesh, p1metric)
-        print(f'  Mesh {fp_iteration+1}')
-        print(f'    Element count        = {elements}')
+        print(f'    Mesh {fp_iteration+1}')
         if fp_iteration >= miniter:
             if abs(mesh.num_cells() - elements_old) < element_rtol*abs(elements_old):
                 converged_reason = 'element count convergence'
                 break
         elements_old = mesh.num_cells()
+        print(f'      Element count        = {elements_old}')
 
         # Check for reaching maximum number of iterations
         if fp_iteration == maxiter:
             converged_reason = 'reaching maximum iteration count'
-    print(f'  Terminated after {fp_iteration+1} iterations due to {converged_reason}')
+    print(f'    Terminated after {fp_iteration+1} iterations due to {converged_reason}')
     qois.append(qoi)
     dofs.append(sum(fwd_sol.function_space().dof_count))
     elements.append(elements_old)

@@ -19,5 +19,4 @@ def u_inflow(mesh):
 
 parameters.viscosity = Constant(0.25)
 parameters.u_inflow = u_inflow
-mesh = Mesh(os.path.join(os.path.abspath(os.path.dirname(__file__)), "meshes/3.msh"))
 qoi_name = "Cubed speed below the circle"

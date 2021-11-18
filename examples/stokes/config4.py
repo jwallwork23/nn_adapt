@@ -19,5 +19,4 @@ def u_inflow(mesh):
 
 parameters.viscosity = Constant(2.0)
 parameters.u_inflow = u_inflow
-mesh = Mesh(os.path.join(os.path.abspath(os.path.dirname(__file__)), "meshes/4.msh"))
 qoi_name = "Pressure on the lower semicircle"

@@ -11,7 +11,8 @@ assert test_case in [0, 1, 2, 3, 4]
 
 # Run fixed mesh setup
 setup = importlib.import_module(f'config{test_case}')
-fwd_sol, adj_sol, mesh_seq = get_solutions(setup.mesh, setup)
+mesh = Mesh(os.path.join(os.path.abspath(os.path.dirname(__file__)), f'meshes/{test_case}.0.msh'))
+fwd_sol, adj_sol, mesh_seq = get_solutions(mesh, setup)
 print(f'QoI for test case {test_case} = {mesh_seq.J}')
 File(f'outputs/fixed/forward{test_case}.pvd').write(*fwd_sol.split())
 File(f'outputs/fixed/adjoint{test_case}.pvd').write(*adj_sol.split())

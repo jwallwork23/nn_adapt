@@ -11,19 +11,19 @@ parser.add_argument('-num_refinements', help='Number of mesh refinements')
 parsed_args = parser.parse_args()
 test_case = int(parsed_args.test_case)
 assert test_case in [0, 1, 2, 3, 4]
-num_refinements = int(parsed_args.num_refinements or 6)
+num_refinements = int(parsed_args.num_refinements or 5)
 assert num_refinements >= 0
 
-# Setup mesh hierarchy
+# Setup
 setup = importlib.import_module(f'config{test_case}')
 field = setup.fields[0]
-mh = MeshHierarchy(setup.mesh, num_refinements)
 
 # Run uniform refinement
 qois = []
 dofs = []
 elements = []
-for mesh in mh:
+for i in range(num_refinements+1):
+    mesh = Mesh(os.path.join(os.path.abspath(os.path.dirname(__file__)), f'meshes/{test_case}.{i}.msh'))
     fwd_sol, mesh_seq = get_solutions(mesh, setup, adjoint=False)
     fs = mesh_seq.function_spaces[field][0]
     qois.append(mesh_seq.J)

@@ -4,5 +4,11 @@ plots/
 __pycache__/
 nn_adapt.egg-info/
 
+*.h5
+*.jpeg
+*.jpg
 *.msh
 *.pdf
+*.png
+*.pvd
+*.vtu
