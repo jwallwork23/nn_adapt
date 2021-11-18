@@ -16,4 +16,4 @@ def u_inflow(mesh):
 
 parameters.viscosity = Constant(0.1)
 parameters.u_inflow = u_inflow
-qoi_name = "Speed over the domain"
+qoi_name = "Squared speed over the domain"

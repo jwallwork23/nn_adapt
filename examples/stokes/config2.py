@@ -4,9 +4,9 @@ from setup import *
 def get_qoi(mesh_seq, i):
     def qoi(sol):
         x, y = SpatialCoordinate(mesh_seq[i])
-        k = conditional(And(And(x > 14, x < 16), y > 6), 1, 0)
+        k = conditional(x < 15, 1, 0)
         u, p = sol['up'].split()
-        return k*dot(u, u)*dx
+        return k*p**2*dx
 
     return qoi
 
@@ -18,4 +18,4 @@ def u_inflow(mesh):
 
 parameters.viscosity = Constant(0.5)
 parameters.u_inflow = u_inflow
-qoi_name = "Speed above the circle"
+qoi_name = "Upstream squared pressure"
