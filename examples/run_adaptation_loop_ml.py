@@ -17,8 +17,8 @@ parser.add_argument('-miniter', help='Minimum number of iterations (default 3)')
 parser.add_argument('-maxiter', help='Maximum number of iterations (default 35)')
 parser.add_argument('-qoi_rtol', help='Relative tolerance for QoI (default 0.005)')
 parser.add_argument('-element_rtol', help='Relative tolerance for element count (default 0.005)')
-parser.add_argument('-preproc', help='Function for preprocessing data (default "arctan")')
 parser.add_argument('-norm_order', help='Metric normalisation order (default 1.0)')
+parser.add_argument('-preproc', help='Function for preprocessing data (default "arctan")')
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 assert model in ['stokes']
@@ -82,7 +82,7 @@ for i in range(num_refinements+1):
     cpu_timestamp = perf_counter()
     for fp_iteration in range(maxiter+1):
 
-        # Compute goal-oriented metric
+        # Solve forward and adjoint and compute Hessians
         fwd_sol, adj_sol, mesh_seq = get_solutions(mesh, config)
         hessians = [*get_hessians(fwd_sol), *get_hessians(adj_sol)]
 
