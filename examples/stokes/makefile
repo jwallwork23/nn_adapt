@@ -8,7 +8,7 @@ dir:
 mesh:
 	cd meshes && make mesh
 
-train:
+features:
 	for i in 0 1 2 3 4; do python3 run_adapt.py $$i; done
 
 uniform:
