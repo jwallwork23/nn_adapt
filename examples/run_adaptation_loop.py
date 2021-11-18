@@ -9,6 +9,7 @@ set_log_level(ERROR)
 
 # Parse for test case and number of refinements
 parser = argparse.ArgumentParser()
+parser.add_argument('model', help='The model')
 parser.add_argument('test_case', help='The configuration file number')
 parser.add_argument('-num_refinements', help='Number of refinements to consider (default 3)')
 parser.add_argument('-miniter', help='Minimum number of iterations (default 3)')
@@ -17,6 +18,8 @@ parser.add_argument('-qoi_rtol', help='Relative tolerance for QoI (default 0.005
 parser.add_argument('-element_rtol', help='Relative tolerance for element count (default 0.005)')
 parser.add_argument('-estimator_rtol', help='Relative tolerance for error estimator (default 0.005)')
 parsed_args, unknown_args = parser.parse_known_args()
+model = parsed_args.model
+assert model in ['stokes']
 test_case = int(parsed_args.test_case)
 assert test_case in [0, 1, 2, 3, 4]
 num_refinements = int(parsed_args.num_refinements or 3)
@@ -34,7 +37,7 @@ assert estimator_rtol > 0.0
 # p = 1
 
 # Setup
-config = importlib.import_module(f'config{test_case}')
+config = importlib.import_module(f'{model}.config{test_case}')
 field = config.fields[0]
 
 # Run adaptation loop
@@ -53,7 +56,7 @@ for i in range(num_refinements+1):
         'retall': True,
     }
     plex = PETSc.DMPlex().create()
-    plex.createFromFile(os.path.join(os.path.abspath(os.path.dirname(__file__)), f'meshes/{test_case}.h5'))
+    plex.createFromFile(f'{os.path.abspath(os.path.dirname(__file__)}/{model}/meshes/{test_case}.h5'))
     mesh = Mesh(plex)
     qoi_old = None
     elements_old = mesh.num_cells()
@@ -110,7 +113,7 @@ for i in range(num_refinements+1):
     dofs.append(sum(fwd_sol.function_space().dof_count))
     elements.append(elements_old)
     estimators.append(estimator)
-    np.save(f'data/qois_go{test_case}', qois)
-    np.save(f'data/dofs_go{test_case}', dofs)
-    np.save(f'data/elements_go{test_case}', elements)
-    np.save(f'data/estimators_go{test_case}', estimators)
+    np.save(f'{model}/data/qois_go{test_case}', qois)
+    np.save(f'{model}/data/dofs_go{test_case}', dofs)
+    np.save(f'{model}/data/elements_go{test_case}', elements)
+    np.save(f'{model}/data/estimators_go{test_case}', estimators)
