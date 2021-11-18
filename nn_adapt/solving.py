@@ -1,3 +1,4 @@
+from firedrake import *
 from pyroteus_adjoint import *
 
 
@@ -70,11 +71,17 @@ def split_into_scalars(f):
                 ret[i] = [fi]
             else:
                 assert len(Vi.shape) == 1, "Tensor spaces not supported"
-                ret[i] = [fi.sub(j) for j in range(Vi.shape[0])]
+                el = Vi.ufl_element()
+                fs = FunctionSpace(V.mesh(), el.family(), el.degree())
+                # ret[i] = [Function(fs).assign(fi.sub(j)) for j in range(Vi.shape[0])]
+                ret[i] = [interpolate(fi[j], fs) for j in range(Vi.shape[0])]
         return ret
     elif len(V.shape) > 0:
         assert len(V.shape) == 1, "Tensor spaces not supported"
-        return {0: [f.sub(i)] for i in range(V.shape[0])}
+        el = V.ufl_element()
+        fs = FunctionSpace(V.mesh(), el.family(), el.degree())
+        # return {0: [Function(fs).assign(f.sub(i)) for i in range(V.shape[0])]}
+        return {0: [interpolate(f[i], fs) for i in range(V.shape[0])]}
     else:
         return {0: [f]}
 
@@ -87,7 +94,7 @@ def split_into_components(f):
     return [f] if f.function_space().value_size == 1 else f.split()
 
 
-def indicate_errors(mesh, config, enrichment_method='h'):
+def indicate_errors(mesh, config, enrichment_method='h', retall=False):
     """
     Indicate errors according to the ``dwr_indicator``
     given in the configuration file.
@@ -97,19 +104,23 @@ def indicate_errors(mesh, config, enrichment_method='h'):
         specifies the PDE and QoI
     :kwarg enrichment_method: how to enrich the
         finite element space?
-    :return: dual-weighted residual error indicator,
-        forward solution and adjoint solution
+    :kwarg retall: if ``True``, return the forward
+        solution, adjoint solution, dual-weighted
+        residual in enriched space, enriched
+        adjoint solution and :class:`GoalOrientedMeshSeq`,
+        in addition to the dual-weighted residual
+        error indicator
     """
     fwd_sol, adj_sol, mesh_seq = get_solutions(mesh, config)
 
     # Solve PDE in enriched space
-    adj_kwargs = {"options_predix": "adjoint_enriched"}
+    adj_kwargs = {"options_prefix": "adjoint_enriched"}
     enriched_solutions = mesh_seq.global_enrichment(
         enrichment_method=enrichment_method,
         adj_solver_kwargs=adj_kwargs
     )
     field = config.fields[0]
-    adj_sol_plus = enriched_spolutions[field].adjoint[0][0]
+    adj_sol_plus = enriched_solutions[field].adjoint[0][0]
 
     # Prolong
     V_plus = adj_sol_plus.function_space()
@@ -120,12 +131,14 @@ def indicate_errors(mesh, config, enrichment_method='h'):
 
     # Subtract prolonged adjoint solution from enriched version
     adj_error = Function(V_plus)
-    adj_sols = split_into_components(adj_sol)
+    adj_sols_plus = split_into_components(adj_sol_plus)
     adj_sols_plg = split_into_components(adj_sol_plg)
     for i, err in enumerate(split_into_components(adj_error)):
-        err += adj_sols[i] - adj_sols_plg[i]
+        err += adj_sols_plus[i] - adj_sols_plg[i]
 
     # Evaluate errors
-    dwr = config.dwr_indicator(mesh_seq, fwd_sol_plg, adj_error)
-
-    return dwr, fwd_sol, adj_sol
+    dwr, dwr_plus = config.dwr_indicator(mesh_seq, fwd_sol_plg, adj_error)
+    if retall:
+        return dwr, fwd_sol, adj_sol, dwr_plus, adj_error, mesh_seq
+    else:
+        return dwr
