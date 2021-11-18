@@ -87,7 +87,7 @@ def split_into_scalars(f):
 
 
 def split_into_components(f):
-    """
+    r"""
     Extend the :attr:`split` method to apply
     to non-mixed :class:`Function`\s.
     """
