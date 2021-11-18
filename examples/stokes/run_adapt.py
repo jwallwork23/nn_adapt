@@ -57,8 +57,9 @@ adj_file = File(f'outputs/go/adjoint{test_case}.pvd')
 adj_plus_file = File(f'outputs/go/enriched_adjoint{test_case}.pvd')
 ee_file = File(f'outputs/go/estimator{test_case}.pvd')
 ee_plus_file = File(f'outputs/go/enriched_estimator{test_case}.pvd')
-print('Mesh 0')
-print(f'  Element count        = {elements_old}')
+print(f'Test case {test_case}')
+print('  Mesh 0')
+print(f'    Element count        = {elements_old}')
 for fp_iteration in range(maxiter+1):
     features = np.array([]).reshape(0, num_inputs)
 
@@ -90,7 +91,7 @@ for fp_iteration in range(maxiter+1):
 
     # Check for QoI convergence
     qoi = mesh_seq.J
-    print(f'  Quantity of Interest = {qoi}')
+    print(f'    Quantity of Interest = {qoi}')
     if qoi_old is not None and fp_iteration >= miniter:
         if abs(qoi - qoi_old) < qoi_rtol*abs(qoi_old):
             converged_reason = 'QoI convergence'
@@ -99,7 +100,7 @@ for fp_iteration in range(maxiter+1):
 
     # Check for error estimator convergence
     estimator = dwr.vector().gather().sum()
-    print(f'  Error estimator      = {estimator}')
+    print(f'    Error estimator      = {estimator}')
     if estimator_old is not None and fp_iteration >= miniter:
         if abs(estimator - estimator_old) < estimator_rtol*abs(estimator_old):
             converged_reason = 'error estimator convergence'
@@ -115,8 +116,8 @@ for fp_iteration in range(maxiter+1):
     # Adapt the mesh and check for element count convergence
     mesh = adapt(mesh, p1metric)
     elements = mesh.num_cells()
-    print(f'Mesh {fp_iteration+1}')
-    print(f'  Element count        = {elements}')
+    print(f'  Mesh {fp_iteration+1}')
+    print(f'    Element count        = {elements}')
     if fp_iteration >= miniter:
         if abs(elements - elements_old) < element_rtol*abs(elements_old):
             converged_reason = 'element count convergence'
@@ -126,4 +127,4 @@ for fp_iteration in range(maxiter+1):
     # Check for reaching maximum number of iterations
     if fp_iteration == maxiter:
         converged_reason = 'reaching maximum iteration count'
-print(f'Terminated after {fp_iteration+1} iterations due to {converged_reason}')
+print(f'  Terminated after {fp_iteration+1} iterations due to {converged_reason}')
