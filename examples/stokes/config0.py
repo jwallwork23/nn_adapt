@@ -1,5 +1,4 @@
 from setup import *
-import os
 
 
 def get_qoi(mesh_seq, i):
