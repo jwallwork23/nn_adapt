@@ -7,6 +7,7 @@ set_log_level(ERROR)
 
 # Parse for test case and number of refinements
 parser = argparse.ArgumentParser()
+parser.add_argument('model', help='The model')
 parser.add_argument('test_case', help='The configuration file number')
 parser.add_argument('-miniter', help='Minimum number of iterations (default 3)')
 parser.add_argument('-maxiter', help='Maximum number of iterations (default 35)')
@@ -14,7 +15,10 @@ parser.add_argument('-qoi_rtol', help='Relative tolerance for QoI (default 0.005
 parser.add_argument('-element_rtol', help='Relative tolerance for element count (default 0.005)')
 parser.add_argument('-estimator_rtol', help='Relative tolerance for error estimator (default 0.005)')
 parser.add_argument('-target_complexity', help='Target metric complexity (default 4000.0)')
+parser.add_argument('-norm_order', help='Metric normalisation order (default 1.0)')
 parsed_args, unknown_args = parser.parse_known_args()
+model = parsed_args.model
+assert model in ['stokes']
 test_case = int(parsed_args.test_case)
 assert test_case in [0, 1, 2, 3, 4]
 miniter = int(parsed_args.miniter or 3)
@@ -29,13 +33,14 @@ estimator_rtol = float(parsed_args.estimator_rtol or 0.005)
 assert estimator_rtol > 0.0
 target_complexity = float(parsed_args.target_complexity or 4000.0)
 assert target_complexity > 0.0
-# p = 1
+p = float(parsed_args.norm_order or 1.0)
+assert p >= 1.0
 
 # Setup
-config = importlib.import_module(f'config{test_case}')
+config = importlib.import_module(f'{model}.config{test_case}')
 field = config.fields[0]
 plex = PETSc.DMPlex().create()
-plex.createFromFile(os.path.join(os.path.abspath(os.path.dirname(__file__)), f'meshes/{test_case}.h5'))
+plex.createFromFile(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.h5'))
 mesh = Mesh(plex)
 dim = 2
 Nd = dim**2
@@ -52,11 +57,11 @@ qoi_old = None
 elements_old = mesh.num_cells()
 estimator_old = None
 converged_reason = None
-fwd_file = File(f'outputs/go/forward{test_case}.pvd')
-adj_file = File(f'outputs/go/adjoint{test_case}.pvd')
-adj_plus_file = File(f'outputs/go/enriched_adjoint{test_case}.pvd')
-ee_file = File(f'outputs/go/estimator{test_case}.pvd')
-ee_plus_file = File(f'outputs/go/enriched_estimator{test_case}.pvd')
+fwd_file = File(f'{model}/outputs/go/forward{test_case}.pvd')
+adj_file = File(f'{model}/outputs/go/adjoint{test_case}.pvd')
+adj_plus_file = File(f'{model}/outputs/go/enriched_adjoint{test_case}.pvd')
+ee_file = File(f'{model}/outputs/go/estimator{test_case}.pvd')
+ee_plus_file = File(f'{model}/outputs/go/enriched_estimator{test_case}.pvd')
 print(f'Test case {test_case}')
 print('  Mesh 0')
 print(f'    Element count        = {elements_old}')
@@ -85,9 +90,9 @@ for fp_iteration in range(maxiter+1):
         features = np.concatenate((features, feature.reshape(1, num_inputs)))
     outputs = np.reshape(mesh_seq.get_values_at_elements(p0metric), (elements_old, Nd))[:, indices]
     indicator = np.array(mesh_seq.get_values_at_elements(dwr)).flatten()
-    np.save(f'data/features{test_case}_GO{fp_iteration}', features)
-    np.save(f'data/indicator{test_case}_GO{fp_iteration}', indicator)
-    np.save(f'data/targets{test_case}_GO{fp_iteration}', outputs)
+    np.save(f'{model}/data/features{test_case}_GO{fp_iteration}', features)
+    np.save(f'{model}/data/indicator{test_case}_GO{fp_iteration}', indicator)
+    np.save(f'{model}/data/targets{test_case}_GO{fp_iteration}', outputs)
 
     # Check for QoI convergence
     qoi = mesh_seq.J
@@ -110,7 +115,7 @@ for fp_iteration in range(maxiter+1):
     # Process metric
     P1_ten = TensorFunctionSpace(mesh, 'CG', 1)
     p1metric = hessian_metric(clement_interpolant(p0metric))
-    # space_normalise(p1metric, target_complexity, p)
+    space_normalise(p1metric, target_complexity, p)
     enforce_element_constraints(p1metric, 1.0e-05, 10.0, 1.0e+05)
 
     # Adapt the mesh and check for element count convergence
