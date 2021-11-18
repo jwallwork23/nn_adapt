@@ -37,6 +37,9 @@ field = config.fields[0]
 plex = PETSc.DMPlex().create()
 plex.createFromFile(os.path.join(os.path.abspath(os.path.dirname(__file__)), f'meshes/{test_case}.h5'))
 mesh = Mesh(plex)
+dim = 2
+Nd = dim**2
+num_inputs = config.parameters.num_inputs
 
 # Run adaptation loop
 kwargs = {
@@ -57,14 +60,33 @@ ee_plus_file = File(f'outputs/go/enriched_estimator{test_case}.pvd')
 print('Mesh 0')
 print(f'  Element count        = {elements_old}')
 for fp_iteration in range(maxiter+1):
+    features = np.array([]).reshape(0, num_inputs)
 
     # Compute goal-oriented metric
-    p0metric, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq = go_metric(mesh, config, **kwargs)
+    p0metric, hessians, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq = go_metric(mesh, config, **kwargs)
     fwd_file.write(*fwd_sol.split())
     adj_file.write(*adj_sol.split())
     adj_plus_file.write(*adj_sol_plus.split())
     ee_file.write(dwr)
     ee_plus_file.write(dwr_plus)
+
+    # Extract features
+    ar = get_aspect_ratios2d(mesh).dat.data
+    h = interpolate(CellSize(mesh), dwr.function_space()).dat.data
+    bnd_nodes = DirichletBC(mesh.coordinates.function_space(), 0, 'on_boundary').nodes
+    bnd_tags = [1 if node in bnd_nodes else 0 for node in range(elements_old)]
+    Re = config.parameters.Re(mesh)  # TODO: Mesh Reynolds number
+    shape = (elements_old, 3, Nd)
+    indices = [i*dim + j for i in range(dim) for j in range(i, dim)]
+    hessians = [np.reshape(mesh_seq.get_values_at_elements(H), shape)[:, :, indices] for H in hessians]
+    for i in range(elements_old):
+        feature = np.concatenate((*[H[i].flatten() for H in hessians], [ar[i], h[i], bnd_tags[i], Re]))
+        features = np.concatenate((features, feature.reshape(1, num_inputs)))
+    outputs = np.reshape(mesh_seq.get_values_at_elements(p0metric), (elements_old, Nd))[:, indices]
+    indicator = np.array(mesh_seq.get_values_at_elements(dwr)).flatten()
+    np.save(f'data/features{test_case}_GO{fp_iteration}', features)
+    np.save(f'data/indicator{test_case}_GO{fp_iteration}', indicator)
+    np.save(f'data/targets{test_case}_GO{fp_iteration}', outputs)
 
     # Check for QoI convergence
     qoi = mesh_seq.J

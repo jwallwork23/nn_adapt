@@ -40,24 +40,22 @@ def go_metric(mesh, config, enrichment_method='h', target_complexity=4000.0,
     :kwarg interpolant: which method to use to
         interpolate into the target space?
     :kwarg retall: if ``True``, the error indicator,
-        forward solution, adjoint solution, enriched
-        adjoint solution and :class:`GoalOrientedMeshSeq`
-        are returned, in addition to the metric
+        Hessian components, forward solution, adjoint
+        solution, enriched adjoint solution and
+        :class:`GoalOrientedMeshSeq` are returned, in
+        addition to the metric
     """
     dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq = indicate_errors(
         mesh, config, enrichment_method=enrichment_method, retall=True
     )
-    hessian = combine_metrics(
-        *get_hessians(fwd_sol),
-        *get_hessians(adj_sol),
-        average=average
-    )
+    hessians = [*get_hessians(fwd_sol), *get_hessians(adj_sol)]
+    hessian = combine_metrics(*hessians, average=average)
     metric = anisotropic_metric(
         dwr, hessian, target_complexity=target_complexity,
         target_space=TensorFunctionSpace(mesh, 'DG', 0),
         interpolant=interpolant
     )
     if retall:
-        return metric, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq
+        return metric, hessians, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq
     else:
         return metric
