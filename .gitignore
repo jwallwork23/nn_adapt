@@ -10,5 +10,6 @@ nn_adapt.egg-info/
 *.msh
 *.pdf
 *.png
+*.pt
 *.pvd
 *.vtu

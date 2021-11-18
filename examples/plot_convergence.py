@@ -12,11 +12,11 @@ model = parsed_args.model
 assert model in ['stokes']
 test_case = int(parsed_args.test_case)
 assert test_case in [0, 1, 2, 3, 4]
-labels = ['Uniform refinement', 'Goal-oriented adaptation']
+labels = ['Uniform refinement', 'Goal-oriented adaptation', 'Data-driven adaptation']
 
 # Plot
 fig, axes = plt.subplots()
-for approach, label in zip(['uniform', 'go'], labels):
+for approach, label in zip(['uniform', 'go', 'ml'], labels):
     try:
         dofs = np.load(f'{model}/data/dofs_{approach}{test_case}.npy')
         qois = np.load(f'{model}/data/qois_{approach}{test_case}.npy')

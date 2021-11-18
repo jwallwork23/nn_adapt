@@ -40,9 +40,9 @@ assert p >= 1.0
 config = importlib.import_module(f'{model}.config{test_case}')
 field = config.fields[0]
 plex = PETSc.DMPlex().create()
-plex.createFromFile(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.h5'))
+plex.createFromFile(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.h5')
 mesh = Mesh(plex)
-dim = 2
+dim = mesh.topological_dimension()
 Nd = dim**2
 num_inputs = config.parameters.num_inputs
 
@@ -88,11 +88,11 @@ for fp_iteration in range(maxiter+1):
     for i in range(elements_old):
         feature = np.concatenate((*[H[i].flatten() for H in hessians], [ar[i], h[i], bnd_tags[i], Re]))
         features = np.concatenate((features, feature.reshape(1, num_inputs)))
-    outputs = np.reshape(mesh_seq.get_values_at_elements(p0metric), (elements_old, Nd))[:, indices]
+    targets = np.reshape(mesh_seq.get_values_at_elements(p0metric), (elements_old, Nd))[:, indices]
     indicator = np.array(mesh_seq.get_values_at_elements(dwr)).flatten()
     np.save(f'{model}/data/features{test_case}_GO{fp_iteration}', features)
     np.save(f'{model}/data/indicator{test_case}_GO{fp_iteration}', indicator)
-    np.save(f'{model}/data/targets{test_case}_GO{fp_iteration}', outputs)
+    np.save(f'{model}/data/targets{test_case}_GO{fp_iteration}', targets)
 
     # Check for QoI convergence
     qoi = mesh_seq.J

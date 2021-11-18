@@ -28,7 +28,7 @@ dofs = []
 elements = []
 print(f'Test case {test_case}')
 for i in range(num_refinements+1):
-    mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__)}/{model}/meshes/{test_case}.{i}.msh'))
+    mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.{i}.msh')
     print(f'  Mesh {i}')
     print(f'    Element count        = {mesh.num_cells()}')
     fwd_sol, mesh_seq = get_solutions(mesh, setup, adjoint=False)
