@@ -2,6 +2,7 @@ from nn_adapt import *
 import argparse
 import importlib
 import numpy as np
+from time import perf_counter
 
 
 set_log_level(ERROR)
@@ -41,6 +42,7 @@ qois = []
 dofs = []
 elements = []
 estimators = []
+times = []
 print(f'Test case {test_case}')
 for i in range(num_refinements+1):
     target_complexity = 1000.0*4**i
@@ -59,6 +61,7 @@ for i in range(num_refinements+1):
     converged_reason = None
     print(f'  Target {target_complexity}\n    Mesh 0')
     print(f'      Element count        = {elements_old}')
+    cpu_timestamp = perf_counter()
     for fp_iteration in range(maxiter+1):
 
         # Compute goal-oriented metric
@@ -102,6 +105,7 @@ for i in range(num_refinements+1):
         if fp_iteration == maxiter:
             converged_reason = 'reaching maximum iteration count'
     print(f'    Terminated after {fp_iteration+1} iterations due to {converged_reason}')
+    times.append(perf_counter() - cpu_timestamp)
     qois.append(qoi)
     dofs.append(sum(fwd_sol.function_space().dof_count))
     elements.append(elements_old)
