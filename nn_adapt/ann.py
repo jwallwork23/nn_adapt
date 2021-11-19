@@ -35,21 +35,29 @@ def set_seed(seed):
 
 class SimpleNet(nn.Module):
     """
-    Fully Connected Neural Network (FCNN).
+    Fully Connected Neural Network (FCNN)
+    for goal-oriented metric-based mesh
+    adaptation.
 
     Input layer:
+    ============
         [3 Stokes fields] x [3 unique Hessian entries]
           x [3 vertices per element] x [2 forward/adjoint]
-          + [element area] + [element aspect ratio]
-          = 57
+          + [element orientation]
+          + [element shape]
+          + [element size]
+          + [mesh Reynolds number]
+          = 59
 
     Hidden layer:
+    =============
         720 neurons
 
     Output layer:
+    =============
         [3 unique metric entries]
     """
-    def __init__(self, num_inputs=58, num_outputs=3, num_hidden_neurons=720):
+    def __init__(self, num_inputs=59, num_outputs=3, num_hidden_neurons=720):
         super(SimpleNet, self).__init__()
         self.linear_1 = nn.Linear(num_inputs, num_hidden_neurons)
         self.activate_1 = nn.Tanh()

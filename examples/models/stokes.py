@@ -4,16 +4,20 @@ from pyroteus_adjoint import *
 
 class Parameters(object):
     viscosity = Constant(1.0)
-    num_inputs = 58
+    num_inputs = 59
     num_outputs = 3
     dofs_per_element = 3
 
     def u_inflow(self, mesh):
         raise NotImplementedError
 
-    def Re(self, mesh):
-        u = self.u_inflow(mesh)[0]
-        return assemble(u/self.viscosity*ds(1, domain=mesh))
+    def Re(self, fwd_sol):
+        u = fwd_sol.split()[0]
+        unorm = sqrt(dot(u, u))
+        mesh = u.function_space().mesh()
+        P0 = FunctionSpace(mesh, 'DG', 0)
+        h = CellSize(mesh)
+        return interpolate(0.5*h*unorm/self.viscosity, P0)
 
 
 PETSc.Sys.popErrorHandler()

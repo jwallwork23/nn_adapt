@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser(prog='test_and_train.py')
 parser.add_argument('model', help='The equation set being solved')
 parser.add_argument('-learning_rate', help='The step length (default 5.0e-05)')
 parser.add_argument('-num_epochs', help='The number of iterations (default 4000)')
-parser.add_argument('-preproc', help='Function for preprocessing data (default "arctan")')
+parser.add_argument('-preproc', help='Function for preprocessing data (default "none")')
 parser.add_argument('-batch_size')
 parser.add_argument('-test_batch_size')
 args = parser.parse_args()
@@ -16,7 +16,7 @@ model = args.model
 assert model in ['stokes']
 lr = float(args.learning_rate or 5.0e-05)
 num_epochs = int(args.num_epochs or 4000)
-preproc = args.preproc or 'arctan'
+preproc = args.preproc or 'none'
 batch_size = int(args.batch_size or 32)
 test_batch_size = int(args.test_batch_size or 100)
 
@@ -68,9 +68,9 @@ for epoch in epochs:
     timestamp = perf_counter()
     train_losses.append(train(train_loader, nn, criterion, optimizer))
     validation_losses.append(validate(validate_loader, nn, criterion, epoch, num_epochs, timestamp))
-np.save('{model}/data/epochs', list(epochs))
-np.save('{model}/data/train_losses', train_losses)
-np.save('{model}/data/validation_losses', validation_losses)
+    np.save(f'{model}/data/epochs', epochs)
+    np.save(f'{model}/data/train_losses', train_losses)
+    np.save(f'{model}/data/validation_losses', validation_losses)
 
 # Save the model
-torch.save(nn.state_dict(), '{model}/model.pt')
+torch.save(nn.state_dict(), f'{model}/model.pt')

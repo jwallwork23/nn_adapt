@@ -79,18 +79,24 @@ for fp_iteration in range(maxiter+1):
     ee_file.write(dwr)
     ee_plus_file.write(dwr_plus)
     metric_file.write(p0metric)
+    P0 = dwr.function_space()
 
     # Extract features
-    ar = get_aspect_ratios2d(mesh).dat.data
-    h = interpolate(CellSize(mesh), dwr.function_space()).dat.data
+    J = interpolate(dot(transpose(Jacobian(mesh)), Jacobian(mesh)), p0metric.function_space())
+    evecs, evals = compute_eigendecomposition(J, reorder=True)
+    ar = interpolate(sqrt(evals[0]/evals[1]), P0)
+    theta = interpolate(atan(evecs[1, 1]/evecs[1, 0]), P0)
+    s1 = interpolate(cos(theta)**2/ar + sin(theta)**2*ar, P0).dat.data
+    s2 = interpolate((1/ar - ar)*sin(theta)*cos(theta), P0).dat.data
+    h = interpolate(CellSize(mesh), P0).dat.data
+    Re = config.parameters.Re(fwd_sol).dat.data
     bnd_nodes = DirichletBC(mesh.coordinates.function_space(), 0, 'on_boundary').nodes
     bnd_tags = [1 if node in bnd_nodes else 0 for node in range(elements_old)]
-    Re = config.parameters.Re(mesh)  # TODO: Mesh Reynolds number
     shape = (elements_old, 3, Nd)
     indices = [i*dim + j for i in range(dim) for j in range(i, dim)]
-    hessians = [np.reshape(mesh_seq.get_values_at_elements(H), shape)[:, :, indices] for H in hessians]
+    hessians = [np.reshape(get_values_at_elements(H).dat.data, shape)[:, :, indices] for H in hessians]
     for i in range(elements_old):
-        feature = np.concatenate((*[H[i].flatten() for H in hessians], [ar[i], h[i], bnd_tags[i], Re]))
+        feature = np.concatenate((*[H[i].flatten() for H in hessians], [s1[i], s2[i], h[i], Re[i], bnd_tags[i]]))
         features = np.concatenate((features, feature.reshape(1, num_inputs)))
     targets = np.reshape(p0metric.dat.data.flatten(), (elements_old, Nd))[:, indices]
     indicator = dwr.dat.data.flatten()

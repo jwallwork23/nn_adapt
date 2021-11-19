@@ -17,7 +17,7 @@ parser.add_argument('-qoi_rtol', help='Relative tolerance for QoI (default 0.001
 parser.add_argument('-element_rtol', help='Relative tolerance for element count (default 0.005)')
 parser.add_argument('-target_complexity', help='Target metric complexity (default 4000.0)')
 parser.add_argument('-norm_order', help='Metric normalisation order (default 1.0)')
-parser.add_argument('-preproc', help='Function for preprocessing data (default "arctan")')
+parser.add_argument('-preproc', help='Function for preprocessing data (default "none")')
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 assert model in ['stokes']
@@ -35,7 +35,7 @@ target_complexity = float(parsed_args.target_complexity or 4000.0)
 assert target_complexity > 0.0
 p = float(parsed_args.norm_order or 1.0)
 assert p >= 1.0
-preproc = parsed_args.preproc or 'arctan'
+preproc = parsed_args.preproc or 'none'
 if preproc == 'arctan':
     f = np.arctan
 elif preproc == 'tanh':
@@ -100,19 +100,21 @@ for fp_iteration in range(maxiter+1):
     with PETSc.Log.Event('nn_adapt.extract_features'):
         num_inputs = config.parameters.num_inputs
         features = np.array([]).reshape(0, num_inputs)
-        targets = np.array([]).reshape(0, 3)
-        errors = np.array([])
-        ar = get_aspect_ratios2d(mesh)
-        h = interpolate(CellSize(mesh), ar.function_space()).dat.data
-        ar = ar.dat.data
+        J = interpolate(dot(transpose(Jacobian(mesh)), Jacobian(mesh)), p0metric.function_space())
+        evecs, evals = compute_eigendecomposition(J, reorder=True)
+        ar = interpolate(sqrt(evals[0]/evals[1]), P0)
+        theta = interpolate(atan(evecs[1, 1]/evecs[1, 0]), P0)
+        s1 = interpolate(ln(cos(theta)**2/ar + sin(theta)**2*ar), P0).dat.data
+        s2 = interpolate(ln((1/ar - ar)*sin(theta)*cos(theta)), P0).dat.data
+        h = interpolate(CellSize(mesh), P0).dat.data
+        Re = config.parameters.Re(fwd_sol).dat.data
         bnd_nodes = DirichletBC(mesh.coordinates.function_space(), 0, 'on_boundary').nodes
         bnd_tags = [1 if node in bnd_nodes else 0 for node in range(elements_old)]
-        Re = config.parameters.Re(mesh)  # TODO: Mesh Reynolds number
         shape = (elements_old, 3, Nd)
         indices = [i*dim + j for i in range(dim) for j in range(i, dim)]
         hessians = [np.reshape(get_values_at_elements(H).dat.data, shape)[:, :, indices] for H in hessians]
         for i in range(elements_old):
-            feature = np.concatenate((*[H[i].flatten() for H in hessians], [ar[i], h[i], bnd_tags[i], Re]))
+            feature = np.concatenate((*[H[i].flatten() for H in hessians], [s1[i], s2[i], h[i], Re[i], bnd_tags[i]]))
             features = np.concatenate((features, feature.reshape(1, num_inputs)))
 
     # Preprocess features
