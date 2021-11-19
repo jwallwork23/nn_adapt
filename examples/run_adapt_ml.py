@@ -86,6 +86,7 @@ for fp_iteration in range(maxiter+1):
     hessians = [*get_hessians(fwd_sol), *get_hessians(adj_sol)]
     fwd_file.write(*fwd_sol.split())
     adj_file.write(*adj_sol.split())
+    P0_ten = TensorFunctionSpace(mesh, 'DG', 0)
 
     # Check for QoI convergence
     qoi = mesh_seq.J
@@ -110,9 +111,9 @@ for fp_iteration in range(maxiter+1):
         Re = config.parameters.Re(fwd_sol).dat.data
         bnd_nodes = DirichletBC(mesh.coordinates.function_space(), 0, 'on_boundary').nodes
         bnd_tags = [1 if node in bnd_nodes else 0 for node in range(elements_old)]
-        shape = (elements_old, 3, Nd)
+        shape = (elements_old, Nd)
         indices = [i*dim + j for i in range(dim) for j in range(i, dim)]
-        hessians = [np.reshape(get_values_at_elements(H).dat.data, shape)[:, :, indices] for H in hessians]
+        hessians = [np.reshape(interpolate(H, P0_ten).dat.data, shape)[:, indices] for H in hessians]
         for i in range(elements_old):
             feature = np.concatenate((*[H[i].flatten() for H in hessians], [s1[i], s2[i], h[i], Re[i], bnd_tags[i]]))
             features = np.concatenate((features, feature.reshape(1, num_inputs)))
@@ -138,7 +139,6 @@ for fp_iteration in range(maxiter+1):
         M = np.c_[test_targets, np.ones(test_targets.shape[0])]
         M[:, 3] = M[:, 2]
         M[:, 2] = M[:, 1]
-        P0_ten = TensorFunctionSpace(mesh, 'DG', 0)
         p0metric = Function(P0_ten)
         p0metric.dat.data[:] = M.reshape(p0metric.dat.data.shape)
         metric_file.write(p0metric)

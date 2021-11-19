@@ -4,7 +4,7 @@ from pyroteus_adjoint import *
 
 class Parameters(object):
     viscosity = Constant(1.0)
-    num_inputs = 59
+    num_inputs = 23
     num_outputs = 3
     dofs_per_element = 3
 
