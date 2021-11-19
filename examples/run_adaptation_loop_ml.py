@@ -97,26 +97,7 @@ for i in range(num_refinements+1):
         qoi_old = qoi
 
         # Extract features
-        num_inputs = config.parameters.num_inputs
-        features = np.array([]).reshape(0, num_inputs)
-        J = interpolate(dot(transpose(Jacobian(mesh)), Jacobian(mesh)), p0metric.function_space())
-        evecs, evals = compute_eigendecomposition(J, reorder=True)
-        ar = interpolate(sqrt(evals[0]/evals[1]), P0)
-        theta = interpolate(atan(evecs[1, 1]/evecs[1, 0]), P0)
-        s1 = interpolate(ln(cos(theta)**2/ar + sin(theta)**2*ar), P0).dat.data
-        s2 = interpolate(ln((1/ar - ar)*sin(theta)*cos(theta)), P0).dat.data
-        h = interpolate(CellSize(mesh), P0).dat.data
-        Re = config.parameters.Re(fwd_sol).dat.data
-        bnd_nodes = DirichletBC(mesh.coordinates.function_space(), 0, 'on_boundary').nodes
-        bnd_tags = [1 if node in bnd_nodes else 0 for node in range(elements_old)]
-        shape = (elements_old, Nd)
-        indices = [i*dim + j for i in range(dim) for j in range(i, dim)]
-        hessians = [np.reshape(interpolate(H, P0_ten).dat.data, shape)[:, indices] for H in hessians]
-        for i in range(elements_old):
-            feature = np.concatenate((*[H[i].flatten() for H in hessians], [s1[i], s2[i], h[i], Re[i], bnd_tags[i]]))
-            features = np.concatenate((features, feature.reshape(1, num_inputs)))
-
-        # Preprocess features
+        features = extract_features(config, fwd_sol, hessians)
         shape = features.shape
         if preproc != 'none':
             features = f(features.reshape(1, shape[0]*shape[1])).reshape(*shape)

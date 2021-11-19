@@ -52,13 +52,13 @@ class SimpleNet(nn.Module):
 
     Hidden layer:
     =============
-        50 neurons
+        720 neurons
 
     Output layer:
     =============
         [3 unique metric entries]
     """
-    def __init__(self, num_inputs=23, num_outputs=3, num_hidden_neurons=50):
+    def __init__(self, num_inputs=23, num_outputs=3, num_hidden_neurons=720):
         super(SimpleNet, self).__init__()
         self.linear_1 = nn.Linear(num_inputs, num_hidden_neurons)
         self.activate_1 = nn.Tanh()

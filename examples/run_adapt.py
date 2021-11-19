@@ -44,7 +44,6 @@ plex.createFromFile(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshe
 mesh = Mesh(plex)
 dim = mesh.topological_dimension()
 Nd = dim**2
-num_inputs = config.parameters.num_inputs
 
 # Run adaptation loop
 kwargs = {
@@ -67,7 +66,6 @@ print(f'Test case {test_case}')
 print('  Mesh 0')
 print(f'    Element count        = {elements_old}')
 for fp_iteration in range(maxiter+1):
-    features = np.array([]).reshape(0, num_inputs)
 
     # Compute goal-oriented metric
     p0metric, hessians, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq = go_metric(mesh, config, **kwargs)
@@ -82,24 +80,12 @@ for fp_iteration in range(maxiter+1):
     P0 = dwr.function_space()
 
     # Extract features
-    J = interpolate(dot(transpose(Jacobian(mesh)), Jacobian(mesh)), p0metric.function_space())
-    evecs, evals = compute_eigendecomposition(J, reorder=True)
-    ar = interpolate(sqrt(evals[0]/evals[1]), P0)
-    theta = interpolate(atan(evecs[1, 1]/evecs[1, 0]), P0)
-    s1 = interpolate(cos(theta)**2/ar + sin(theta)**2*ar, P0).dat.data
-    s2 = interpolate((1/ar - ar)*sin(theta)*cos(theta), P0).dat.data
-    h = interpolate(CellSize(mesh), P0).dat.data
-    Re = config.parameters.Re(fwd_sol).dat.data
-    bnd_nodes = DirichletBC(mesh.coordinates.function_space(), 0, 'on_boundary').nodes
-    bnd_tags = [1 if node in bnd_nodes else 0 for node in range(elements_old)]
-    shape = (elements_old, Nd)
+    features = extract_features(config, fwd_sol, hessians)
     indices = [i*dim + j for i in range(dim) for j in range(i, dim)]
-    hessians = [np.reshape(interpolate(H, p0metric.function_space()).dat.data, shape)[:, indices] for H in hessians]
-    for i in range(elements_old):
-        feature = np.concatenate((*[H[i].flatten() for H in hessians], [s1[i], s2[i], h[i], Re[i], bnd_tags[i]]))
-        features = np.concatenate((features, feature.reshape(1, num_inputs)))
     targets = np.reshape(p0metric.dat.data.flatten(), (elements_old, Nd))[:, indices]
     indicator = dwr.dat.data.flatten()
+    assert not np.isnan(targets).any()
+    assert not np.isnan(indicator).any()
     np.save(f'{model}/data/features{test_case}_GO{fp_iteration}', features)
     np.save(f'{model}/data/indicator{test_case}_GO{fp_iteration}', indicator)
     np.save(f'{model}/data/targets{test_case}_GO{fp_iteration}', targets)
