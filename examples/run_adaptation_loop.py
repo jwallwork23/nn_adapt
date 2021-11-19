@@ -50,7 +50,7 @@ estimators = []
 times = []
 print(f'Test case {test_case}')
 for i in range(num_refinements+1):
-    target_complexity = 1000.0*4**i
+    target_complexity = 250.0*4**i
     kwargs = {
         'enrichment_method': 'h',
         'target_complexity': target_complexity,

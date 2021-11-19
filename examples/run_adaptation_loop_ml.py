@@ -24,7 +24,7 @@ model = parsed_args.model
 assert model in ['stokes']
 test_case = int(parsed_args.test_case)
 assert test_case in [0, 1, 2, 3, 4]
-num_refinements = int(parsed_args.num_refinements or 3)
+num_refinements = int(parsed_args.num_refinements or 4)
 assert num_refinements > 0
 miniter = int(parsed_args.miniter or 3)
 assert miniter >= 0
@@ -62,7 +62,7 @@ elements = []
 times = []
 print(f'Test case {test_case}')
 for i in range(num_refinements+1):
-    target_complexity = 1000.0*4**i
+    target_complexity = 250.0*4**i
     kwargs = {
         'enrichment_method': 'h',
         'target_complexity': target_complexity,
@@ -108,7 +108,7 @@ for i in range(num_refinements+1):
         Re = config.parameters.Re(mesh)  # TODO: Mesh Reynolds number
         shape = (elements_old, 3, Nd)
         indices = [i*dim + j for i in range(dim) for j in range(i, dim)]
-        hessians = [np.reshape(mesh_seq.get_values_at_elements(H), shape)[:, :, indices] for H in hessians]
+        hessians = [np.reshape(get_values_at_elements(H).dat.data, shape)[:, :, indices] for H in hessians]
         for i in range(elements_old):
             feature = np.concatenate((*[H[i].flatten() for H in hessians], [ar[i], h[i], bnd_tags[i], Re]))
             features = np.concatenate((features, feature.reshape(1, num_inputs)))

@@ -1,7 +1,9 @@
 from firedrake import *
+from firedrake.petsc import PETSc
 from pyroteus_adjoint import *
 
 
+@PETSc.Log.EventDecorator('nn_adapt.get_solutions')
 def get_solutions(mesh, config, adjoint=True):
     """
     Solve forward and adjoint equations on a
@@ -94,6 +96,7 @@ def split_into_components(f):
     return [f] if f.function_space().value_size == 1 else f.split()
 
 
+@PETSc.Log.EventDecorator('nn_adapt.indicate_error')
 def indicate_errors(mesh, config, enrichment_method='h', retall=False):
     """
     Indicate errors according to the ``dwr_indicator``

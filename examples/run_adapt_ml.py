@@ -1,5 +1,6 @@
 from nn_adapt import *
 from nn_adapt.ann import *
+from firedrake.petsc import PETSc
 import argparse
 import importlib
 
@@ -93,44 +94,49 @@ for fp_iteration in range(maxiter+1):
     qoi_old = qoi
 
     # Extract features
-    num_inputs = config.parameters.num_inputs
-    features = np.array([]).reshape(0, num_inputs)
-    targets = np.array([]).reshape(0, 3)
-    errors = np.array([])
-    ar = get_aspect_ratios2d(mesh)
-    h = interpolate(CellSize(mesh), ar.function_space()).dat.data
-    ar = ar.dat.data
-    bnd_nodes = DirichletBC(mesh.coordinates.function_space(), 0, 'on_boundary').nodes
-    bnd_tags = [1 if node in bnd_nodes else 0 for node in range(elements_old)]
-    Re = config.parameters.Re(mesh)  # TODO: Mesh Reynolds number
-    shape = (elements_old, 3, Nd)
-    indices = [i*dim + j for i in range(dim) for j in range(i, dim)]
-    hessians = [np.reshape(mesh_seq.get_values_at_elements(H), shape)[:, :, indices] for H in hessians]
-    for i in range(elements_old):
-        feature = np.concatenate((*[H[i].flatten() for H in hessians], [ar[i], h[i], bnd_tags[i], Re]))
-        features = np.concatenate((features, feature.reshape(1, num_inputs)))
+    with PETSc.Log.Event('nn_adapt.extract_features'):
+        num_inputs = config.parameters.num_inputs
+        features = np.array([]).reshape(0, num_inputs)
+        targets = np.array([]).reshape(0, 3)
+        errors = np.array([])
+        ar = get_aspect_ratios2d(mesh)
+        h = interpolate(CellSize(mesh), ar.function_space()).dat.data
+        ar = ar.dat.data
+        bnd_nodes = DirichletBC(mesh.coordinates.function_space(), 0, 'on_boundary').nodes
+        bnd_tags = [1 if node in bnd_nodes else 0 for node in range(elements_old)]
+        Re = config.parameters.Re(mesh)  # TODO: Mesh Reynolds number
+        shape = (elements_old, 3, Nd)
+        indices = [i*dim + j for i in range(dim) for j in range(i, dim)]
+        hessians = [np.reshape(get_values_at_elements(H).dat.data, shape)[:, :, indices] for H in hessians]
+        for i in range(elements_old):
+            feature = np.concatenate((*[H[i].flatten() for H in hessians], [ar[i], h[i], bnd_tags[i], Re]))
+            features = np.concatenate((features, feature.reshape(1, num_inputs)))
 
     # Preprocess features
-    shape = features.shape
-    if preproc != 'none':
-        features = f(features.reshape(1, shape[0]*shape[1])).reshape(*shape)
+    with PETSc.Log.Event('nn_adapt.preprocess_features'):
+        shape = features.shape
+        if preproc != 'none':
+            features = f(features.reshape(1, shape[0]*shape[1])).reshape(*shape)
 
     # Run model
-    test_targets = np.array([])
-    with torch.no_grad():
-        for i in range(features.shape[0]):
-            test_x = torch.Tensor(features[i]).to(device)
-            test_prediction = nn(test_x)
-            test_targets = np.concatenate((test_targets, np.array(test_prediction.cpu())))
+    with PETSc.Log.Event('nn_adapt.run_model'):
+        test_targets = np.array([])
+        with torch.no_grad():
+            for i in range(features.shape[0]):
+                test_x = torch.Tensor(features[i]).to(device)
+                test_prediction = nn(test_x)
+                test_targets = np.concatenate((test_targets, np.array(test_prediction.cpu())))
 
     # Extract metric
-    test_targets = test_targets.reshape(test_targets.shape[0]//3, 3)
-    M = np.c_[test_targets, np.ones(test_targets.shape[0])]
-    M[:, 3] = M[:, 2]
-    M[:, 2] = M[:, 1]
-    P0_ten = TensorFunctionSpace(mesh, 'DG', 0)
-    p0metric = Function(P0_ten)
-    p0metric.dat.data[:] = M.reshape(p0metric.dat.data.shape)
+    with PETSc.Log.Event('nn_adapt.extract_metric'):
+        test_targets = test_targets.reshape(test_targets.shape[0]//3, 3)
+        M = np.c_[test_targets, np.ones(test_targets.shape[0])]
+        M[:, 3] = M[:, 2]
+        M[:, 2] = M[:, 1]
+        P0_ten = TensorFunctionSpace(mesh, 'DG', 0)
+        p0metric = Function(P0_ten)
+        p0metric.dat.data[:] = M.reshape(p0metric.dat.data.shape)
+        metric_file.write(p0metric)
 
     # Process metric
     P1_ten = TensorFunctionSpace(mesh, 'CG', 1)

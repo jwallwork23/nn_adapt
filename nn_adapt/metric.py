@@ -1,6 +1,7 @@
 from nn_adapt.solving import *
 
 
+@PETSc.Log.EventDecorator('nn_adapt.get_hessians')
 def get_hessians(f, **kwargs):
     """
     Compute Hessians for each component of
@@ -21,6 +22,7 @@ def get_hessians(f, **kwargs):
     ]
 
 
+@PETSc.Log.EventDecorator('nn_adapt.go_metric')
 def go_metric(mesh, config, enrichment_method='h', target_complexity=4000.0,
               average=True, interpolant='L2', retall=False):
     """
