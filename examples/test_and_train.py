@@ -1,7 +1,5 @@
 import argparse
-import os
 from sklearn import model_selection
-import matplotlib.pyplot as plt
 from nn_adapt.ann import *
 
 
@@ -21,21 +19,17 @@ num_epochs = int(args.num_epochs or 4000)
 preproc = args.preproc or 'arctan'
 batch_size = int(args.batch_size or 32)
 test_batch_size = int(args.test_batch_size or 100)
-input_dir = os.path.join(model, 'data')
-plot_dir = os.path.join(model, 'plots')
-
-# Setup empty arrays
-features = np.array([]).reshape(0, 58)
-targets = np.array([]).reshape(0, 3)
-errors = np.array([])
 
 # Load data
-load = lambda name: np.load(os.path.join(input_dir, f'{name}.npy'))
+concat = lambda a, b: b if a is None else np.concatenate((a, b), axis=0)
+features = None
+targets = None
+errors = None
 for run in ['GO0', 'GO1', 'GO2', 'GO3']:
     for i in [0, 1, 2, 3]:
-        features = np.concatenate((features, load(f'features{i}_{run}')), axis=0)
-        targets = np.concatenate((targets, load(f'targets{i}_{run}')), axis=0)
-        errors = np.concatenate((errors, load(f'indicator{i}_{run}')), axis=0)
+        features = concat(features, np.load(f'{model}/data/features{i}_{run}.npy'))
+        targets = concat(targets, np.load(f'{model}/data/targets{i}_{run}.npy'))
+        errors = concat(errors, np.load(f'{model}/data/indicator{i}_{run}.npy'))
 
 # Pre-process features
 shape = features.shape
@@ -74,27 +68,9 @@ for epoch in epochs:
     timestamp = perf_counter()
     train_losses.append(train(train_loader, nn, criterion, optimizer))
     validation_losses.append(validate(validate_loader, nn, criterion, epoch, num_epochs, timestamp))
-epochs = list(epochs)
-
-# Plot losses
-fig, axes = plt.subplots()
-axes.semilogx(epochs, train_losses, label='Training loss')
-axes.set_xlabel('Number of epochs')
-axes.set_ylabel('Mean squared error loss')
-axes.legend()
-axes.grid(True)
-plt.tight_layout()
-plt.savefig(os.path.join(plot_dir, 'training_losses.pdf'))
-
-# Plot losses
-fig, axes = plt.subplots()
-axes.semilogx(epochs, validation_losses, label='Validation loss')
-axes.set_xlabel('Number of epochs')
-axes.set_ylabel('Mean squared error loss')
-axes.legend()
-axes.grid(True)
-plt.tight_layout()
-plt.savefig(os.path.join(plot_dir, 'validation_losses.pdf'))
+np.save('{model}/data/epochs', list(epochs))
+np.save('{model}/data/train_losses', train_losses)
+np.save('{model}/data/validation_losses', validation_losses)
 
 # Save the model
-torch.save(nn.state_dict(), os.path.join(model, 'model.pt'))
+torch.save(nn.state_dict(), '{model}/model.pt')

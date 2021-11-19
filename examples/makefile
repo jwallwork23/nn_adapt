@@ -11,6 +11,7 @@ features:
 
 train:
 	python3 test_and_train.py stokes
+	python3 plot_progress.py stokes
 
 uniform:
 	for i in 0 1 2 3 4; do python3 run_uniform_refinement.py stokes $$i; done

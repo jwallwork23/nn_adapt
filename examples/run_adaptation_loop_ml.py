@@ -15,7 +15,7 @@ parser.add_argument('test_case', help='The configuration file number')
 parser.add_argument('-num_refinements', help='Number of refinements to consider (default 3)')
 parser.add_argument('-miniter', help='Minimum number of iterations (default 3)')
 parser.add_argument('-maxiter', help='Maximum number of iterations (default 35)')
-parser.add_argument('-qoi_rtol', help='Relative tolerance for QoI (default 0.005)')
+parser.add_argument('-qoi_rtol', help='Relative tolerance for QoI (default 0.001)')
 parser.add_argument('-element_rtol', help='Relative tolerance for element count (default 0.005)')
 parser.add_argument('-norm_order', help='Metric normalisation order (default 1.0)')
 parser.add_argument('-preproc', help='Function for preprocessing data (default "arctan")')
@@ -30,7 +30,7 @@ miniter = int(parsed_args.miniter or 3)
 assert miniter >= 0
 maxiter = int(parsed_args.maxiter or 35)
 assert maxiter >= miniter
-qoi_rtol = float(parsed_args.qoi_rtol or 0.005)
+qoi_rtol = float(parsed_args.qoi_rtol or 0.001)
 assert qoi_rtol > 0.0
 element_rtol = float(parsed_args.element_rtol or 0.005)
 assert element_rtol > 0.0
