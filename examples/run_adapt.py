@@ -92,8 +92,8 @@ for fp_iteration in range(maxiter+1):
     for i in range(elements_old):
         feature = np.concatenate((*[H[i].flatten() for H in hessians], [ar[i], h[i], bnd_tags[i], Re]))
         features = np.concatenate((features, feature.reshape(1, num_inputs)))
-    targets = np.reshape(mesh_seq.get_values_at_elements(p0metric), (elements_old, Nd))[:, indices]
-    indicator = np.array(mesh_seq.get_values_at_elements(dwr)).flatten()
+    targets = np.reshape(p0metric.dat.data.flatten(), (elements_old, Nd))[:, indices]
+    indicator = dwr.dat.data.flatten()
     np.save(f'{model}/data/features{test_case}_GO{fp_iteration}', features)
     np.save(f'{model}/data/indicator{test_case}_GO{fp_iteration}', indicator)
     np.save(f'{model}/data/targets{test_case}_GO{fp_iteration}', targets)

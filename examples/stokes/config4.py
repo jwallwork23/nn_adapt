@@ -1,4 +1,4 @@
-from setup import *
+from models.stokes import *
 
 
 def get_qoi(mesh_seq, i):
