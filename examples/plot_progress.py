@@ -11,9 +11,9 @@ model = args.model
 assert model in ['stokes']
 
 # Load data
-epochs = np.load('{model}/data/epochs.npy')
-train_losses = np.load('{model}/data/train_losses.npy')
-validation_losses = np.load('{model}/data/validation_losses.npy')
+epochs = np.load(f'{model}/data/epochs.npy')
+train_losses = np.load(f'{model}/data/train_losses.npy')
+validation_losses = np.load(f'{model}/data/validation_losses.npy')
 
 # Plot losses
 fig, axes = plt.subplots()
@@ -23,7 +23,7 @@ axes.set_ylabel('Mean squared error loss')
 axes.legend()
 axes.grid(True)
 plt.tight_layout()
-plt.savefig('{model}/plots/training_losses.pdf')
+plt.savefig(f'{model}/plots/training_losses.pdf')
 
 # Plot losses
 fig, axes = plt.subplots()
@@ -33,4 +33,4 @@ axes.set_ylabel('Mean squared error loss')
 axes.legend()
 axes.grid(True)
 plt.tight_layout()
-plt.savefig('{model}/plots/validation_losses.pdf')
+plt.savefig(f'{model}/plots/validation_losses.pdf')

@@ -63,9 +63,9 @@ epochs = []
 train_losses = []
 validation_losses = []
 set_seed(42)
-epochs = range(num_epochs)
-for epoch in epochs:
+for epoch in range(num_epochs):
     timestamp = perf_counter()
+    epochs.append(epoch)
     train_losses.append(train(train_loader, nn, criterion, optimizer))
     validation_losses.append(validate(validate_loader, nn, criterion, epoch, num_epochs, timestamp))
     np.save(f'{model}/data/epochs', epochs)
