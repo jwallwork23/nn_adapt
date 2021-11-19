@@ -62,6 +62,7 @@ adj_file = File(f'{model}/outputs/go/adjoint{test_case}.pvd')
 adj_plus_file = File(f'{model}/outputs/go/enriched_adjoint{test_case}.pvd')
 ee_file = File(f'{model}/outputs/go/estimator{test_case}.pvd')
 ee_plus_file = File(f'{model}/outputs/go/enriched_estimator{test_case}.pvd')
+metric_file = File(f'{model}/outputs/go/metric{test_case}.pvd')
 print(f'Test case {test_case}')
 print('  Mesh 0')
 print(f'    Element count        = {elements_old}')
@@ -70,11 +71,14 @@ for fp_iteration in range(maxiter+1):
 
     # Compute goal-oriented metric
     p0metric, hessians, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq = go_metric(mesh, config, **kwargs)
+    dof = sum(fwd_sol.function_space().dof_count)
+    print(f'    DoF count            = {dof}')
     fwd_file.write(*fwd_sol.split())
     adj_file.write(*adj_sol.split())
     adj_plus_file.write(*adj_sol_plus.split())
     ee_file.write(dwr)
     ee_plus_file.write(dwr_plus)
+    metric_file.write(p0metric)
 
     # Extract features
     ar = get_aspect_ratios2d(mesh).dat.data

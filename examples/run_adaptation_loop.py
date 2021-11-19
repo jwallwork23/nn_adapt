@@ -71,6 +71,8 @@ for i in range(num_refinements+1):
 
         # Compute goal-oriented metric
         p0metric, hessians, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq = go_metric(mesh, config, **kwargs)
+        dof = sum(fwd_sol.function_space().dof_count)
+        print(f'      DoF count            = {dof}')
 
         # Check for QoI convergence
         qoi = mesh_seq.J
@@ -112,7 +114,7 @@ for i in range(num_refinements+1):
     print(f'    Terminated after {fp_iteration+1} iterations due to {converged_reason}')
     times.append(perf_counter() - cpu_timestamp)
     qois.append(qoi)
-    dofs.append(sum(fwd_sol.function_space().dof_count))
+    dofs.append(dof)
     elements.append(elements_old)
     estimators.append(estimator)
     np.save(f'{model}/data/qois_go{test_case}', qois)

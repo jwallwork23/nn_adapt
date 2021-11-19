@@ -72,6 +72,7 @@ elements_old = mesh.num_cells()
 converged_reason = None
 fwd_file = File(f'{model}/outputs/ml/forward{test_case}.pvd')
 adj_file = File(f'{model}/outputs/ml/adjoint{test_case}.pvd')
+metric_file = File(f'{model}/outputs/ml/metric{test_case}.pvd')
 print(f'Test case {test_case}')
 print('  Mesh 0')
 print(f'    Element count        = {elements_old}')
@@ -80,6 +81,8 @@ for fp_iteration in range(maxiter+1):
 
     # Solve forward and adjoint and compute Hessians
     fwd_sol, adj_sol, mesh_seq = get_solutions(mesh, config)
+    dof = sum(fwd_sol.function_space().dof_count)
+    print(f'    DoF count            = {dof}')
     hessians = [*get_hessians(fwd_sol), *get_hessians(adj_sol)]
     fwd_file.write(*fwd_sol.split())
     adj_file.write(*adj_sol.split())
