@@ -13,7 +13,7 @@ parser.add_argument('-batch_size')
 parser.add_argument('-test_batch_size')
 args = parser.parse_args()
 model = args.model
-assert model in ['stokes']
+assert model in ['stokes', 'turbine']
 lr = float(args.learning_rate or 5.0e-05)
 num_epochs = int(args.num_epochs or 4000)
 preproc = args.preproc or 'none'

@@ -18,7 +18,7 @@ parser.add_argument('-target_complexity', help='Target metric complexity (defaul
 parser.add_argument('-norm_order', help='Metric normalisation order (default 1.0)')
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
-assert model in ['stokes']
+assert model in ['stokes', 'turbine']
 test_case = int(parsed_args.test_case)
 assert test_case in [0, 1, 2, 3, 4]
 miniter = int(parsed_args.miniter or 3)
@@ -39,9 +39,12 @@ assert p >= 1.0
 # Setup
 config = importlib.import_module(f'{model}.config{test_case}')
 field = config.fields[0]
-plex = PETSc.DMPlex().create()
-plex.createFromFile(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.h5')
-mesh = Mesh(plex)
+if model == 'stokes':
+    plex = PETSc.DMPlex().create()
+    plex.createFromFile(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.h5')
+    mesh = Mesh(plex)
+else:
+    mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.0.msh')
 dim = mesh.topological_dimension()
 Nd = dim**2
 

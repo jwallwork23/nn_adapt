@@ -20,7 +20,7 @@ parser.add_argument('-estimator_rtol', help='Relative tolerance for error estima
 parser.add_argument('-norm_order', help='Metric normalisation order (default 1.0)')
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
-assert model in ['stokes']
+assert model in ['stokes', 'turbine']
 test_case = int(parsed_args.test_case)
 assert test_case in [0, 1, 2, 3, 4]
 num_refinements = int(parsed_args.num_refinements or 3)

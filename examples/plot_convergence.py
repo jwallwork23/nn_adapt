@@ -9,7 +9,7 @@ parser.add_argument('model', help='The model')
 parser.add_argument('test_case', help='The configuration file number')
 parsed_args = parser.parse_args()
 model = parsed_args.model
-assert model in ['stokes']
+assert model in ['stokes', 'turbine']
 test_case = int(parsed_args.test_case)
 assert test_case in [0, 1, 2, 3, 4]
 labels = ['Uniform refinement', 'Goal-oriented adaptation', 'Data-driven adaptation']
