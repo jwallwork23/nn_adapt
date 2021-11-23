@@ -7,6 +7,8 @@ class Parameters(object):
     num_inputs = 23
     num_outputs = 3
     dofs_per_element = 3
+    h_min = 1.0e-05
+    h_max = 10.0
 
     def u_inflow(self, mesh):
         raise NotImplementedError

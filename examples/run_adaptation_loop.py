@@ -57,9 +57,12 @@ for i in range(num_refinements+1):
         'average': True,
         'retall': True,
     }
-    plex = PETSc.DMPlex().create()
-    plex.createFromFile(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.h5')
-    mesh = Mesh(plex)
+    if model == 'stokes':
+        plex = PETSc.DMPlex().create()
+        plex.createFromFile(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.h5')
+        mesh = Mesh(plex)
+    else:
+        mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.0.msh')
     qoi_old = None
     elements_old = mesh.num_cells()
     estimator_old = None

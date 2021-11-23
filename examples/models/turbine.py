@@ -6,6 +6,8 @@ class Parameters(object):
     num_inputs = 23
     num_outputs = 3
     dofs_per_element = 3
+    h_min = 1.0e-05
+    h_max = 500.0
 
     viscosity = Constant(0.5)
     depth = 40.0

@@ -72,5 +72,6 @@ for epoch in range(num_epochs):
     np.save(f'{model}/data/train_losses', train_losses)
     np.save(f'{model}/data/validation_losses', validation_losses)
 
-# Save the model
-torch.save(nn.state_dict(), f'{model}/model.pt')
+    # Save the model
+    if epoch % 100 == 0 or epoch == num_epochs-1:
+        torch.save(nn.state_dict(), f'{model}/model.pt')

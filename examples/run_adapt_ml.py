@@ -5,8 +5,6 @@ import argparse
 import importlib
 
 
-set_log_level(ERROR)
-
 # Parse for test case and number of refinements
 parser = argparse.ArgumentParser()
 parser.add_argument('model', help='The model')
@@ -48,9 +46,12 @@ elif preproc != 'none':
 # Setup
 config = importlib.import_module(f'{model}.config{test_case}')
 field = config.fields[0]
-plex = PETSc.DMPlex().create()
-plex.createFromFile(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.h5')
-mesh = Mesh(plex)
+if model == 'stokes':
+    plex = PETSc.DMPlex().create()
+    plex.createFromFile(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.h5')
+    mesh = Mesh(plex)
+else:
+    mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.0.msh')
 dim = mesh.topological_dimension()
 Nd = dim**2
 num_inputs = config.parameters.num_inputs
@@ -61,12 +62,6 @@ nn.load_state_dict(torch.load(f'{model}/model.pt'))
 nn.eval()
 
 # Run adaptation loop
-kwargs = {
-    'enrichment_method': 'h',
-    'target_complexity': target_complexity,
-    'average': True,
-    'retall': True,
-}
 qoi_old = None
 elements_old = mesh.num_cells()
 converged_reason = None
@@ -77,7 +72,6 @@ print(f'Test case {test_case}')
 print('  Mesh 0')
 print(f'    Element count        = {elements_old}')
 for fp_iteration in range(maxiter+1):
-    features = np.array([]).reshape(0, num_inputs)
 
     # Solve forward and adjoint and compute Hessians
     fwd_sol, adj_sol, mesh_seq = get_solutions(mesh, config)

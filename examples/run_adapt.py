@@ -115,7 +115,10 @@ for fp_iteration in range(maxiter+1):
     P1_ten = TensorFunctionSpace(mesh, 'CG', 1)
     p1metric = hessian_metric(clement_interpolant(p0metric))
     space_normalise(p1metric, target_complexity, p)
-    enforce_element_constraints(p1metric, 1.0e-05, 10.0, 1.0e+05)
+    enforce_element_constraints(p1metric,
+                                config.parameters.h_min,
+                                config.parameters.h_max,
+                                1.0e+05)
 
     # Adapt the mesh and check for element count convergence
     mesh = adapt(mesh, p1metric)
