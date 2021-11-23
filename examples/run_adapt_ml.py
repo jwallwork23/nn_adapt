@@ -34,14 +34,6 @@ assert target_complexity > 0.0
 p = float(parsed_args.norm_order or 1.0)
 assert p >= 1.0
 preproc = parsed_args.preproc or 'none'
-if preproc == 'arctan':
-    f = np.arctan
-elif preproc == 'tanh':
-    f = np.tanh
-elif preproc == 'logabs':
-    f = lambda x: np.ln(np.abs(x))
-elif preproc != 'none':
-    raise ValueError(f'Preprocessor "{preproc}" not recognised.')
 
 # Setup
 config = importlib.import_module(f'{model}.config{test_case}')
@@ -93,11 +85,7 @@ for fp_iteration in range(maxiter+1):
     qoi_old = qoi
 
     # Extract features
-    features = extract_features(config, fwd_sol, hessians)
-    with PETSc.Log.Event('nn_adapt.preprocess_features'):
-        shape = features.shape
-        if preproc != 'none':
-            features = f(features.reshape(1, shape[0]*shape[1])).reshape(*shape)
+    features = extract_features(config, fwd_sol, hessians, preproc=preproc)
 
     # Run model
     with PETSc.Log.Event('nn_adapt.run_model'):

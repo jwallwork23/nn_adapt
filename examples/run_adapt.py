@@ -16,6 +16,7 @@ parser.add_argument('-element_rtol', help='Relative tolerance for element count 
 parser.add_argument('-estimator_rtol', help='Relative tolerance for error estimator (default 0.005)')
 parser.add_argument('-target_complexity', help='Target metric complexity (default 4000.0)')
 parser.add_argument('-norm_order', help='Metric normalisation order (default 1.0)')
+parser.add_argument('-preproc', help='Function for preprocessing data (default "none")')
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 assert model in ['stokes', 'turbine']
@@ -35,6 +36,7 @@ target_complexity = float(parsed_args.target_complexity or 4000.0)
 assert target_complexity > 0.0
 p = float(parsed_args.norm_order or 1.0)
 assert p >= 1.0
+preproc = parsed_args.preproc or 'none'
 
 # Setup
 config = importlib.import_module(f'{model}.config{test_case}')
@@ -83,7 +85,7 @@ for fp_iteration in range(maxiter+1):
     P0 = dwr.function_space()
 
     # Extract features
-    features = extract_features(config, fwd_sol, hessians)
+    features = extract_features(config, fwd_sol, hessians, preproc=preproc)
     indices = [i*dim + j for i in range(dim) for j in range(i, dim)]
     targets = np.reshape(p0metric.dat.data.flatten(), (elements_old, Nd))[:, indices]
     indicator = dwr.dat.data.flatten()
