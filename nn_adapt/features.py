@@ -5,7 +5,7 @@ from pyroteus.metric import density_and_quotients
 import ufl
 
 
-__all__ = ['extract_features']
+__all__ = ['extract_features', 'preprocess_features']
 
 
 @PETSc.Log.EventDecorator('nn_adapt.extract_components')
@@ -28,7 +28,7 @@ def extract_components(matrix):
 
 
 @PETSc.Log.EventDecorator('nn_adapt.extract_features')
-def extract_features(config, fwd_sol, hessians):
+def extract_features(config, fwd_sol, hessians, preproc='none'):
     """
     Extract features from the outputs of a run.
 
@@ -36,6 +36,7 @@ def extract_features(config, fwd_sol, hessians):
     :arg fwd_sol: the forward solution
     :arg hessians: Hessians of each component of
         the forward and adjoint solutions
+    :kwarg preproc: preprocessor function
     """
     mesh = fwd_sol.function_space().mesh()
     P0 = firedrake.FunctionSpace(mesh, 'DG', 0)
@@ -58,4 +59,27 @@ def extract_features(config, fwd_sol, hessians):
     for i in range(mesh.num_cells()):
         features = np.concatenate((features, np.reshape([d[i] for d in data], (1, num_inputs))))
     assert not np.isnan(features).any()
-    return features
+    return preprocess_features(features, preproc=preproc)
+
+
+@PETSc.Log.EventDecorator('nn_adapt.preprocess_features')
+def preprocess_features(features, preproc='none'):
+    """
+    Pre-process features so that they are
+    similarly scaled.
+
+    :arg features: the array of features
+    :kwarg preproc: preprocessor function
+    """
+    if preproc == 'none':
+        return features
+    if preproc == 'arctan':
+        f = np.arctan
+    elif preproc == 'tanh':
+        f = np.tanh
+    elif preproc == 'logabs':
+        f = lambda x: np.ln(np.abs(x))
+    else:
+        raise ValueError(f'Preprocessor "{preproc}" not recognised.')
+    shape = features.shape
+    return f(features.reshape(1, shape[0]*shape[1])).reshape(*shape)
