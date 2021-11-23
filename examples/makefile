@@ -29,6 +29,15 @@ plot_progress:
 		python3 plot_progress.py $$model; \
 	done
 
+# --- Snapshots
+
+snapshot:
+	for model in stokes; do \
+		for i in 0 1 2 3 4; do \
+			python3 run_adapt_ml.py $$model $$i; \
+		done; \
+	done
+
 # --- Perform convergence analysis
 
 convergence: uniform go ml plot_convergence
