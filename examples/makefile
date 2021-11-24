@@ -15,14 +15,16 @@ mesh:
 setup: features train plot_progress
 
 features:
-	for model in stokes turbine; do \
+	# for model in stokes turbine; do
+	for model in turbine; do \
 		for i in 0 1 2 3 4; do \
 			python3 run_adapt.py $$model $$i; \
 		done; \
 	done
 
 train:
-	for model in stokes turbine; do \
+	# for model in stokes turbine; do
+	for model in turbine; do \
 		python3 test_and_train.py $$model; \
 	done
 
@@ -34,7 +36,8 @@ plot_progress:
 # --- Snapshots
 
 snapshot:
-	for model in stokes turbine; do \
+	# for model in stokes turbine; do
+	for model in turbine; do \
 		for i in 0 1 2 3 4; do \
 			python3 run_adapt_ml.py $$model $$i; \
 		done; \
@@ -45,21 +48,24 @@ snapshot:
 convergence: uniform go ml plot_convergence
 
 uniform:
-	for model in stokes turbine; do \
+	# for model in stokes turbine; do
+	for model in turbine; do \
 		for i in 0 1 2 3 4; do \
 			python3 run_uniform_refinement.py $$model $$i; \
 		done; \
 	done
 
 go:
-	for model in stokes turbine; do \
+	# for model in stokes turbine; do
+	for model in turbine; do \
 		for i in 0 1 2 3 4; do \
 			python3 run_adaptation_loop.py $$model $$i; \
 		done; \
 	done
 
 ml:
-	for model in stokes turbine; do \
+	# for model in stokes turbine; do
+	for model in turbine; do \
 		for i in 0 1 2 3 4; do \
 			python3 run_adaptation_loop_ml.py $$model $$i; \
 		done; \
