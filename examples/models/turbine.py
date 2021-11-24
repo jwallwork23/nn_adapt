@@ -16,7 +16,7 @@ class Parameters(object):
     turbine_diameter = 18.0
     num_turbines = 1
     thrust_coefficient = 0.8
-    density = Constant(1030.0)
+    density = Constant(1030.0*1.0e-06)
 
     @property
     def turbine_ids(self):
