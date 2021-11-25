@@ -41,24 +41,25 @@ class SimpleNet(nn.Module):
 
     Input layer:
     ============
-        [3 Stokes fields] x [3 unique Hessian entries]
-          x [2 forward/adjoint]
+        [9 forward DoFs per element]
+          + [9 adjoint DoFs per element]
           + [element orientation]
           + [element shape]
           + [element size]
           + [mesh Reynolds number]
           + [boundary element?]
-          = 23
+          + [error indicator on coarse mesh]
+          = 24
 
     Hidden layer:
     =============
-        720 neurons
+        240 neurons
 
     Output layer:
     =============
-        [3 unique metric entries]
+        [1 error indicator value]
     """
-    def __init__(self, num_inputs=23, num_outputs=3, num_hidden_neurons=720):
+    def __init__(self, num_inputs=24, num_outputs=1, num_hidden_neurons=240):
         super(SimpleNet, self).__init__()
         self.linear_1 = nn.Linear(num_inputs, num_hidden_neurons)
         self.activate_1 = nn.Tanh()

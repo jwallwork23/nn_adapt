@@ -1,6 +1,5 @@
 from nn_adapt import *
 from nn_adapt.ann import *
-from firedrake.petsc import PETSc
 import argparse
 import importlib
 
@@ -13,6 +12,7 @@ parser.add_argument('-miniter', help='Minimum number of iterations (default 3)')
 parser.add_argument('-maxiter', help='Maximum number of iterations (default 35)')
 parser.add_argument('-qoi_rtol', help='Relative tolerance for QoI (default 0.001)')
 parser.add_argument('-element_rtol', help='Relative tolerance for element count (default 0.005)')
+parser.add_argument('-estimator_rtol', help='Relative tolerance for error estimator (default 0.005)')
 parser.add_argument('-target_complexity', help='Target metric complexity (default 4000.0)')
 parser.add_argument('-norm_order', help='Metric normalisation order (default 1.0)')
 parser.add_argument('-preproc', help='Function for preprocessing data (default "none")')
@@ -29,6 +29,8 @@ qoi_rtol = float(parsed_args.qoi_rtol or 0.001)
 assert qoi_rtol > 0.0
 element_rtol = float(parsed_args.element_rtol or 0.005)
 assert element_rtol > 0.0
+estimator_rtol = float(parsed_args.estimator_rtol or 0.005)
+assert estimator_rtol > 0.0
 target_complexity = float(parsed_args.target_complexity or 4000.0)
 assert target_complexity > 0.0
 p = float(parsed_args.norm_order or 1.0)
@@ -56,9 +58,11 @@ nn.eval()
 # Run adaptation loop
 qoi_old = None
 elements_old = mesh.num_cells()
+estimator_old = None
 converged_reason = None
 fwd_file = File(f'{model}/outputs/ml/forward{test_case}.pvd')
 adj_file = File(f'{model}/outputs/ml/adjoint{test_case}.pvd')
+ee_file = File(f'{model}/outputs/ml/estimator{test_case}.pvd')
 metric_file = File(f'{model}/outputs/ml/metric{test_case}.pvd')
 print(f'Test case {test_case}')
 print('  Mesh 0')
@@ -69,7 +73,6 @@ for fp_iteration in range(maxiter+1):
     fwd_sol, adj_sol, mesh_seq = get_solutions(mesh, config)
     dof = sum(fwd_sol.function_space().dof_count)
     print(f'    DoF count            = {dof}')
-    hessians = [*get_hessians(fwd_sol), *get_hessians(adj_sol)]
     fwd_file.write(*fwd_sol.split())
     adj_file.write(*adj_sol.split())
     P0 = FunctionSpace(mesh, 'DG', 0)
@@ -85,7 +88,7 @@ for fp_iteration in range(maxiter+1):
     qoi_old = qoi
 
     # Extract features
-    features = extract_features(config, fwd_sol, hessians, preproc=preproc)
+    features = extract_features(config, fwd_sol, adj_sol, mesh_seq, preproc=preproc)
 
     # Run model
     with PETSc.Log.Event('nn_adapt.run_model'):
@@ -95,16 +98,28 @@ for fp_iteration in range(maxiter+1):
                 test_x = torch.Tensor(features[i]).to(device)
                 test_prediction = nn(test_x)
                 test_targets = np.concatenate((test_targets, np.array(test_prediction.cpu())))
+        dwr = Function(P0)
+        dwr.dat.data[:] = np.abs(test_targets)
 
-    # Extract metric
-    with PETSc.Log.Event('nn_adapt.extract_metric'):
-        test_targets = test_targets.reshape(test_targets.shape[0]//3, 3)
-        M = np.c_[test_targets, np.ones(test_targets.shape[0])]
-        M[:, 3] = M[:, 2]
-        M[:, 2] = M[:, 1]
-        p0metric = Function(P0_ten)
-        p0metric.dat.data[:] = M.reshape(p0metric.dat.data.shape)
-        metric_file.write(p0metric)
+    # Check for error estimator convergence
+    estimator = dwr.vector().gather().sum()
+    print(f'    Error estimator      = {estimator}')
+    if estimator_old is not None and fp_iteration >= miniter:
+        if abs(estimator - estimator_old) < estimator_rtol*abs(estimator_old):
+            converged_reason = 'error estimator convergence'
+            break
+    estimator_old = estimator
+
+    # Construct metric
+    # TODO: isotropic mode
+    with PETSc.Log.Event('nn_adapt.construct_metric'):
+        hessian = combine_metrics(*get_hessians(adj_sol), average=True)
+        p0metric = anisotropic_metric(
+            dwr, hessian, target_complexity=target_complexity,
+            target_space=P0_ten, interpolant='L2'
+        )
+    ee_file.write(dwr)
+    metric_file.write(p0metric)
 
     # Process metric
     P1_ten = TensorFunctionSpace(mesh, 'CG', 1)
