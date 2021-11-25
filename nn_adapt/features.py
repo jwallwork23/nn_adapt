@@ -1,7 +1,7 @@
 import firedrake
 from firedrake.petsc import PETSc
 import numpy as np
-from pyroteus.metric import density_and_quotients
+from pyroteus.metric import *
 import ufl
 
 
@@ -20,11 +20,20 @@ def extract_components(matrix):
     """
     density, quotients, evecs = density_and_quotients(matrix, reorder=True)
     fs = density.function_space()
-    yield density.dat.data
-    ar = firedrake.interpolate(ufl.sqrt(quotients[0]), fs)
+    ar = firedrake.interpolate(ufl.sqrt(quotients[1]), fs)
+    armin = ar.vector().gather().min()
+    assert armin >= 1.0, f'An element has aspect ratio is less than one ({armin})'
     theta = firedrake.interpolate(ufl.atan(evecs[1, 1]/evecs[1, 0]), fs)
-    yield firedrake.interpolate(ufl.cos(theta)**2/ar + ufl.sin(theta)**2*ar, fs).dat.data
-    yield firedrake.interpolate((1/ar - ar)*ufl.sin(theta)*ufl.cos(theta), fs).dat.data
+    return density.dat.data, ar.dat.data, theta.dat.data
+    # h1 = firedrake.interpolate(ufl.cos(theta)**2/ar + ufl.sin(theta)**2*ar, fs)
+    # h2 = firedrake.interpolate((1/ar - ar)*ufl.sin(theta)*ufl.cos(theta), fs)
+    # H = firedrake.interpolate(ufl.as_matrix([[h1, h2], [h2, h1]]), matrix.function_space())
+    # V, Lambda = compute_eigendecomposition(H)
+    # lmin = Lambda.vector().gather().min()
+    # assert lmin > 0.0, f'Normalised Hessian is not positive-definite (min eigenvalue {lmin})'
+    # Lambda.dat.data[:] = np.log(Lambda.dat.data)
+    # logH = assemble_eigendecomposition(V, Lambda)
+    # return density.dat.data, logH.dat.data[:, 0, 0], logH.dat.data[:, 0, 1]
 
 
 @PETSc.Log.EventDecorator('nn_adapt.extract_features')

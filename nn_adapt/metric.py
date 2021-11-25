@@ -50,13 +50,14 @@ def go_metric(mesh, config, enrichment_method='h', target_complexity=4000.0,
     dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq = indicate_errors(
         mesh, config, enrichment_method=enrichment_method, retall=True
     )
-    hessians = [*get_hessians(fwd_sol), *get_hessians(adj_sol)]
+    hessians = get_hessians(fwd_sol)
     hessian = combine_metrics(*hessians, average=average)
     metric = anisotropic_metric(
         dwr, hessian, target_complexity=target_complexity,
         target_space=TensorFunctionSpace(mesh, 'DG', 0),
         interpolant=interpolant
     )
+    hessians = [*hessians, *get_hessians(adj_sol)]
     if retall:
         return metric, hessians, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq
     else:
