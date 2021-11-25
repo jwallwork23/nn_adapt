@@ -73,6 +73,7 @@ for i in range(num_refinements+1):
     for fp_iteration in range(maxiter+1):
 
         # Compute goal-oriented metric
+        # TODO: isotropic mode
         p0metric, hessians, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq = go_metric(mesh, config, **kwargs)
         dof = sum(fwd_sol.function_space().dof_count)
         print(f'      DoF count            = {dof}')

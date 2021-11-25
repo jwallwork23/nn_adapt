@@ -73,6 +73,7 @@ print(f'    Element count        = {elements_old}')
 for fp_iteration in range(maxiter+1):
 
     # Compute goal-oriented metric
+    # TODO: isotropic mode
     p0metric, hessians, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq = go_metric(mesh, config, **kwargs)
     dof = sum(fwd_sol.function_space().dof_count)
     print(f'    DoF count            = {dof}')
@@ -85,14 +86,10 @@ for fp_iteration in range(maxiter+1):
     P0 = dwr.function_space()
 
     # Extract features
-    features = extract_features(config, fwd_sol, hessians, preproc=preproc)
-    indices = [i*dim + j for i in range(dim) for j in range(i, dim)]
-    targets = np.reshape(p0metric.dat.data.flatten(), (elements_old, Nd))[:, indices]
-    indicator = dwr.dat.data.flatten()
+    features = extract_features(config, fwd_sol, adj_sol, mesh_seq, preproc=preproc)
+    targets = dwr.dat.data.flatten()
     assert not np.isnan(targets).any()
-    assert not np.isnan(indicator).any()
     np.save(f'{model}/data/features{test_case}_GO{fp_iteration}', features)
-    np.save(f'{model}/data/indicator{test_case}_GO{fp_iteration}', indicator)
     np.save(f'{model}/data/targets{test_case}_GO{fp_iteration}', targets)
 
     # Check for QoI convergence

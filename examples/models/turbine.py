@@ -3,7 +3,7 @@ from pyroteus_adjoint import *
 
 
 class Parameters(object):
-    num_inputs = 23
+    num_inputs = 24
     num_outputs = 3
     dofs_per_element = 3
     h_min = 1.0e-05

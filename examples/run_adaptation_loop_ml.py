@@ -17,6 +17,7 @@ parser.add_argument('-miniter', help='Minimum number of iterations (default 3)')
 parser.add_argument('-maxiter', help='Maximum number of iterations (default 35)')
 parser.add_argument('-qoi_rtol', help='Relative tolerance for QoI (default 0.001)')
 parser.add_argument('-element_rtol', help='Relative tolerance for element count (default 0.005)')
+parser.add_argument('-estimator_rtol', help='Relative tolerance for error estimator (default 0.005)')
 parser.add_argument('-norm_order', help='Metric normalisation order (default 1.0)')
 parser.add_argument('-preproc', help='Function for preprocessing data (default "none")')
 parsed_args, unknown_args = parser.parse_known_args()
@@ -34,6 +35,8 @@ qoi_rtol = float(parsed_args.qoi_rtol or 0.001)
 assert qoi_rtol > 0.0
 element_rtol = float(parsed_args.element_rtol or 0.005)
 assert element_rtol > 0.0
+estimator_rtol = float(parsed_args.estimator_rtol or 0.005)
+assert estimator_rtol > 0.0
 p = float(parsed_args.norm_order or 1.0)
 assert p >= 1.0
 preproc = parsed_args.preproc or 'none'
@@ -71,6 +74,7 @@ for i in range(num_refinements+1):
     Nd = dim**2
     qoi_old = None
     elements_old = mesh.num_cells()
+    estimator_old = None
     converged_reason = None
     print(f'  Target {target_complexity}\n    Mesh 0')
     print(f'      Element count        = {elements_old}')
@@ -80,6 +84,7 @@ for i in range(num_refinements+1):
         # Solve forward and adjoint and compute Hessians
         fwd_sol, adj_sol, mesh_seq = get_solutions(mesh, config)
         hessians = [*get_hessians(fwd_sol), *get_hessians(adj_sol)]
+        P0 = FunctionSpace(mesh, 'DG', 0)
         P0_ten = TensorFunctionSpace(mesh, 'DG', 0)
 
         # Check for QoI convergence
@@ -92,7 +97,7 @@ for i in range(num_refinements+1):
         qoi_old = qoi
 
         # Extract features
-        features = extract_features(config, fwd_sol, hessians, preproc=preproc)
+        features = extract_features(config, fwd_sol, adj_sol, mesh_seq, preproc=preproc)
 
         # Run model
         test_targets = np.array([])
@@ -101,14 +106,25 @@ for i in range(num_refinements+1):
                 test_x = torch.Tensor(features[i]).to(device)
                 test_prediction = nn(test_x)
                 test_targets = np.concatenate((test_targets, np.array(test_prediction.cpu())))
+        dwr = Function(P0)
+        dwr.dat.data[:] = np.abs(test_targets)
 
-        # Extract metric
-        test_targets = test_targets.reshape(test_targets.shape[0]//3, 3)
-        M = np.c_[test_targets, np.ones(test_targets.shape[0])]
-        M[:, 3] = M[:, 2]
-        M[:, 2] = M[:, 1]
-        p0metric = Function(P0_ten)
-        p0metric.dat.data[:] = M.reshape(p0metric.dat.data.shape)
+        # Check for error estimator convergence
+        estimator = dwr.vector().gather().sum()
+        print(f'    Error estimator      = {estimator}')
+        if estimator_old is not None and fp_iteration >= miniter:
+            if abs(estimator - estimator_old) < estimator_rtol*abs(estimator_old):
+                converged_reason = 'error estimator convergence'
+                break
+        estimator_old = estimator
+
+        # Construct metric
+        # TODO: isotropic mode
+        hessian = combine_metrics(*get_hessians(adj_sol), average=True)
+        p0metric = anisotropic_metric(
+            dwr, hessian, target_complexity=target_complexity,
+            target_space=P0_ten, interpolant='L2'
+        )
 
         # Process metric
         P1_ten = TensorFunctionSpace(mesh, 'CG', 1)

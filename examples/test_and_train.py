@@ -7,7 +7,7 @@ from nn_adapt.ann import *
 parser = argparse.ArgumentParser(prog='test_and_train.py')
 parser.add_argument('model', help='The equation set being solved')
 parser.add_argument('-learning_rate', help='The step length (default 5.0e-05)')
-parser.add_argument('-num_epochs', help='The number of iterations (default 4000)')
+parser.add_argument('-num_epochs', help='The number of iterations (default 100)')
 parser.add_argument('-preproc', help='Function for preprocessing data (default "none")')
 parser.add_argument('-batch_size')
 parser.add_argument('-test_batch_size')
@@ -15,7 +15,7 @@ args = parser.parse_args()
 model = args.model
 assert model in ['stokes', 'turbine']
 lr = float(args.learning_rate or 5.0e-05)
-num_epochs = int(args.num_epochs or 4000)
+num_epochs = int(args.num_epochs or 100)
 preproc = args.preproc or 'none'
 batch_size = int(args.batch_size or 32)
 test_batch_size = int(args.test_batch_size or 100)
@@ -51,11 +51,22 @@ train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, sh
 validate_data = torch.utils.data.TensorDataset(torch.Tensor(xval), torch.Tensor(yval))
 validate_loader = torch.utils.data.DataLoader(validate_data, batch_size=test_batch_size, shuffle=False, num_workers=0)
 
+
+def MSE_Loss(size_average=None, reduce=None, reduction: str = 'mean'):
+    """
+    Custom mean square error loss.
+
+    Needed when there is only one output value.
+    """
+    def mse(tens1, tens2):
+        return torch.nn.MSELoss(size_average, reduce, reduction)(tens1, tens2.reshape(*tens1.shape))
+    return mse
+
+
 # Setup model
 nn = SimpleNet().to(device)
 optimizer = torch.optim.Adam(nn.parameters(), lr=lr)
-# criterion = torch.nn.MSELoss(reduction='sum')
-criterion = torch.nn.MSELoss()
+criterion = MSE_Loss()
 print(f"Model parameters are{'' if all(p.is_cuda for p in nn.parameters()) else ' not'} using GPU cores.")
 
 # Train
@@ -68,10 +79,9 @@ for epoch in range(num_epochs):
     epochs.append(epoch)
     train_losses.append(train(train_loader, nn, criterion, optimizer))
     validation_losses.append(validate(validate_loader, nn, criterion, epoch, num_epochs, timestamp))
+
+    # Stash progreess
     np.save(f'{model}/data/epochs', epochs)
     np.save(f'{model}/data/train_losses', train_losses)
     np.save(f'{model}/data/validation_losses', validation_losses)
-
-    # Save the model
-    if epoch % 100 == 0 or epoch == num_epochs-1:
-        torch.save(nn.state_dict(), f'{model}/model.pt')
+    torch.save(nn.state_dict(), f'{model}/model.pt')
