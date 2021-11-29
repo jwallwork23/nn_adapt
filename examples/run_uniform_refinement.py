@@ -14,7 +14,7 @@ parsed_args = parser.parse_args()
 model = parsed_args.model
 assert model in ['stokes', 'turbine']
 test_case = int(parsed_args.test_case)
-assert test_case in [0, 1, 2, 3, 4]
+assert test_case in list(range(10))
 num_refinements = int(parsed_args.num_refinements or 5)
 assert num_refinements >= 0
 
@@ -39,6 +39,6 @@ for i, mesh in enumerate(mh):
     qois.append(qoi)
     dofs.append(sum(fs.dof_count))
     elements.append(mesh.num_cells())
-    np.save(f'{model}/data/qois_uniform{test_case}', qois)
-    np.save(f'{model}/data/dofs_uniform{test_case}', dofs)
-    np.save(f'{model}/data/elements_uniform{test_case}', elements)
+    np.save(f'{model}/data/qois_uniform_{test_case}', qois)
+    np.save(f'{model}/data/dofs_uniform_{test_case}', dofs)
+    np.save(f'{model}/data/elements_uniform_{test_case}', elements)

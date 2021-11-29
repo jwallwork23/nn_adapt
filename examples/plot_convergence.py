@@ -11,19 +11,25 @@ parsed_args = parser.parse_args()
 model = parsed_args.model
 assert model in ['stokes', 'turbine']
 test_case = int(parsed_args.test_case)
-assert test_case in [0, 1, 2, 3, 4]
-labels = ['Uniform refinement', 'Goal-oriented adaptation', 'Data-driven adaptation']
+assert test_case in list(range(10))
+approaches = {
+    'uniform': {'label': 'Uniform refinement', 'color': 'cornflowerblue', 'marker': 'x', 'linestyle': '-'},
+    'GOisotropic': {'label': 'Isotropic goal-oriented adaptation', 'color': 'orange', 'marker': '^', 'linestyle': '-'},
+    'GOanisotropic': {'label': 'Anisotropic goal-oriented adaptation', 'color': 'g', 'marker': 'o', 'linestyle': '-'},
+    'MLisotropic': {'label': 'Isotropic data-driven adaptation', 'color': 'orange', 'marker': '^', 'linestyle': '--'},
+    'MLanisotropic': {'label': 'Anisotropic data-driven adaptation', 'color': 'g', 'marker': 'o', 'linestyle': '--'},
+}
 
 # Plot
 fig, axes = plt.subplots()
-for approach, label in zip(['uniform', 'go', 'ml'], labels):
+for approach, metadata in approaches.items():
     try:
-        dofs = np.load(f'{model}/data/dofs_{approach}{test_case}.npy')
-        qois = np.load(f'{model}/data/qois_{approach}{test_case}.npy')
+        dofs = np.load(f'{model}/data/dofs_{approach}_{test_case}.npy')
+        qois = np.load(f'{model}/data/qois_{approach}_{test_case}.npy')
     except IOError:
         print(f'Cannot load {approach} data for test case {test_case}')
         continue
-    axes.semilogx(dofs, qois, '--x', label=label)
+    axes.semilogx(dofs, qois, **metadata)
 axes.set_xlabel('DoF count')
 axes.set_ylabel('Quantity of Interest')
 axes.grid(True)

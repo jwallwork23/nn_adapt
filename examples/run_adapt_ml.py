@@ -62,10 +62,10 @@ qoi_old = None
 elements_old = mesh.num_cells()
 estimator_old = None
 converged_reason = None
-fwd_file = File(f'{model}/outputs/ml/forward{test_case}.pvd')
-adj_file = File(f'{model}/outputs/ml/adjoint{test_case}.pvd')
-ee_file = File(f'{model}/outputs/ml/estimator{test_case}.pvd')
-metric_file = File(f'{model}/outputs/ml/metric{test_case}.pvd')
+fwd_file = File(f'{model}/outputs/ML/{approach}/forward{test_case}.pvd')
+adj_file = File(f'{model}/outputs/ML/{approach}/adjoint{test_case}.pvd')
+ee_file = File(f'{model}/outputs/ML/{approach}/estimator{test_case}.pvd')
+metric_file = File(f'{model}/outputs/ML/{approach}/metric{test_case}.pvd')
 print(f'Test case {test_case}')
 print('  Mesh 0')
 print(f'    Element count        = {elements_old}')
