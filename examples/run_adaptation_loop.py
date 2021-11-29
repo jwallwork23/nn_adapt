@@ -22,7 +22,7 @@ parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 assert model in ['stokes', 'turbine']
 test_case = int(parsed_args.test_case)
-assert test_case in [0, 1, 2, 3, 4]
+assert test_case in list(range(10))
 num_refinements = int(parsed_args.num_refinements or 3)
 assert num_refinements > 0
 miniter = int(parsed_args.miniter or 3)

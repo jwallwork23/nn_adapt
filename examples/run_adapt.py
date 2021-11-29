@@ -16,12 +16,11 @@ parser.add_argument('-element_rtol', help='Relative tolerance for element count 
 parser.add_argument('-estimator_rtol', help='Relative tolerance for error estimator (default 0.005)')
 parser.add_argument('-target_complexity', help='Target metric complexity (default 4000.0)')
 parser.add_argument('-norm_order', help='Metric normalisation order (default 1.0)')
-parser.add_argument('-preproc', help='Function for preprocessing data (default "none")')
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 assert model in ['stokes', 'turbine']
 test_case = int(parsed_args.test_case)
-assert test_case in [0, 1, 2, 3, 4]
+assert test_case in list(range(10))
 miniter = int(parsed_args.miniter or 3)
 assert miniter >= 0
 maxiter = int(parsed_args.maxiter or 35)
@@ -36,7 +35,6 @@ target_complexity = float(parsed_args.target_complexity or 4000.0)
 assert target_complexity > 0.0
 p = float(parsed_args.norm_order or 1.0)
 assert p >= 1.0
-preproc = parsed_args.preproc or 'none'
 
 # Setup
 config = importlib.import_module(f'{model}.config{test_case}')
@@ -86,7 +84,7 @@ for fp_iteration in range(maxiter+1):
     P0 = dwr.function_space()
 
     # Extract features
-    features = extract_features(config, fwd_sol, adj_sol, mesh_seq, preproc=preproc)
+    features = extract_features(config, fwd_sol, adj_sol, mesh_seq)
     targets = dwr.dat.data.flatten()
     assert not np.isnan(targets).any()
     np.save(f'{model}/data/features{test_case}_GO{fp_iteration}', features)

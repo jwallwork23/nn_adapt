@@ -53,22 +53,22 @@ class SimpleNet(nn.Module):
 
     Hidden layer:
     =============
-        240 neurons
+        60 neurons
 
     Output layer:
     =============
         [1 error indicator value]
     """
-    def __init__(self, num_inputs=24, num_outputs=1, num_hidden_neurons=240):
+    def __init__(self, num_inputs=24, num_outputs=1, num_hidden_neurons=60):
         super(SimpleNet, self).__init__()
-        self.linear_1 = nn.Linear(num_inputs, num_hidden_neurons)
-        self.activate_1 = nn.Tanh()
-        self.linear_2 = nn.Linear(num_hidden_neurons, num_outputs)
+        self.linear1 = nn.Linear(num_inputs, num_hidden_neurons)
+        self.activate1 = nn.Sigmoid()
+        self.linear2 = nn.Linear(num_hidden_neurons, num_outputs)
 
     def forward(self, x):
-        z1 = self.linear_1(x)
-        a1 = self.activate_1(z1)
-        z2 = self.linear_2(a1)
+        z1 = self.linear1(x)
+        a1 = self.activate1(z1)
+        z2 = self.linear2(a1)
         return z2
 
 
@@ -81,14 +81,14 @@ def train(data_loader, model, loss_fn, optimizer):
     :arg loss_fn: PyTorch loss function instance
     :arg optimizer: PyTorch optimizer instance
     """
+    num_batches = len(data_loader)
     cumulative_loss = 0
 
     for x, y in data_loader:
 
         # Compute prediction and loss
-        x, y = x.to(device), y.to(device)
-        prediction = model(x)
-        loss = loss_fn(prediction, y)
+        prediction = model(x.to(device))
+        loss = loss_fn(prediction, y.to(device))
         cumulative_loss += loss.item()
 
         # Backpropagation
@@ -96,7 +96,7 @@ def train(data_loader, model, loss_fn, optimizer):
         loss.backward()
         optimizer.step()
 
-    return cumulative_loss
+    return cumulative_loss/num_batches
 
 
 def validate(data_loader, model, loss_fn, epoch, num_epochs, timestamp):
@@ -115,11 +115,12 @@ def validate(data_loader, model, loss_fn, epoch, num_epochs, timestamp):
 
     with torch.no_grad():
         for x, y in data_loader:
-            x, y = x.to(device), y.to(device)
-            prediction = model(x)
-            cumulative_loss += loss_fn(prediction, y).item()
+            prediction = model(x.to(device))
+            loss = loss_fn(prediction, y.to(device))
+            cumulative_loss += loss.item()
 
-    print(f"Epoch {epoch:4d}/{num_epochs}"
-          f"  avg loss: {cumulative_loss/num_batches:.4e}"
+    loss = cumulative_loss/num_batches
+    print(f"Epoch {epoch:4d}/{num_epochs:d}"
+          f"  avg loss: {loss:.4e}"
           f"  wallclock {perf_counter() - timestamp:.1f}s")
-    return cumulative_loss
+    return loss
