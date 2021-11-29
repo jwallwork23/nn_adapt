@@ -1,13 +1,13 @@
 // Domain and turbine specification
-L = 1000.0;
+L = 1200.0;
 W = 500.0;
-D = 20.0;
+D = 15.0;
 dx_outer = 40.0;
 dx_inner = 8.0;
-xt0=256.0;  // x-location of turbine 1
-yt0=250.0;  // y-location of turbine 1
-xt1=544.0;  // x-location of turbine 2
-yt1=250.0;  // y-location of turbine 2
+xt0=456.0;  // x-location of turbine 1
+yt0=44.0;  // y-location of turbine 1
+xt1=456.0;  // x-location of turbine 2
+yt1=456.0;  // y-location of turbine 2
 
 // Domain and turbine footprints
 Point(1) = {0, 0, 0, dx_outer};
@@ -22,14 +22,14 @@ Physical Line(1) = {4};   // Left boundary
 Physical Line(2) = {2};   // Right boundary
 Physical Line(3) = {1,3}; // Sides
 Line Loop(1) = {1, 2, 3, 4};  // outside loop
-Point(5) = {xt0-D/2, yt0+D/2, 0., dx_inner};
-Point(6) = {xt0+D/2, yt0+D/2, 0., dx_inner};
-Point(7) = {xt0+D/2, yt0+3*D/2, 0., dx_inner};
-Point(8) = {xt0-D/2, yt0+3*D/2, 0., dx_inner};
-Point(9) = {xt1-D/2, yt1-3*D/2, 0., dx_inner};
-Point(10) = {xt1+D/2, yt1-3*D/2, 0., dx_inner};
-Point(11) = {xt1+D/2, yt1-D/2, 0., dx_inner};
-Point(12) = {xt1-D/2, yt1-D/2, 0., dx_inner};
+Point(5) = {xt0-D/2, yt0-D/2, 0., dx_inner};
+Point(6) = {xt0+D/2, yt0-D/2, 0., dx_inner};
+Point(7) = {xt0+D/2, yt0+D/2, 0., dx_inner};
+Point(8) = {xt0-D/2, yt0+D/2, 0., dx_inner};
+Point(9) = {xt1-D/2, yt1-D/2, 0., dx_inner};
+Point(10) = {xt1+D/2, yt1-D/2, 0., dx_inner};
+Point(11) = {xt1+D/2, yt1+D/2, 0., dx_inner};
+Point(12) = {xt1-D/2, yt1+D/2, 0., dx_inner};
 Line(5) = {5, 6};
 Line(6) = {6, 7};
 Line(7) = {7, 8};

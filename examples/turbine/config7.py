@@ -1,5 +1,5 @@
 from models.turbine import *
 
 
-parameters.viscosity = Constant(0.5)
+parameters.viscosity = Constant(5.0)
 parameters.num_turbines = 2

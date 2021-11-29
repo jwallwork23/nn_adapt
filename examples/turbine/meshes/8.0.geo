@@ -1,13 +1,15 @@
 // Domain and turbine specification
-L = 1000.0;
+L = 1200.0;
 W = 500.0;
-D = 20.0;
+D = 18.0;
 dx_outer = 40.0;
 dx_inner = 8.0;
-xt0=256.0;  // x-location of turbine 1
+xt0=400.0;  // x-location of turbine 1
 yt0=250.0;  // y-location of turbine 1
-xt1=544.0;  // x-location of turbine 2
+xt1=600.0;  // x-location of turbine 2
 yt1=250.0;  // y-location of turbine 2
+xt2=800.0;  // x-location of turbine 3
+yt2=250.0;  // y-location of turbine 3
 
 // Domain and turbine footprints
 Point(1) = {0, 0, 0, dx_outer};
@@ -26,10 +28,14 @@ Point(5) = {xt0-D/2, yt0+D/2, 0., dx_inner};
 Point(6) = {xt0+D/2, yt0+D/2, 0., dx_inner};
 Point(7) = {xt0+D/2, yt0+3*D/2, 0., dx_inner};
 Point(8) = {xt0-D/2, yt0+3*D/2, 0., dx_inner};
-Point(9) = {xt1-D/2, yt1-3*D/2, 0., dx_inner};
-Point(10) = {xt1+D/2, yt1-3*D/2, 0., dx_inner};
-Point(11) = {xt1+D/2, yt1-D/2, 0., dx_inner};
-Point(12) = {xt1-D/2, yt1-D/2, 0., dx_inner};
+Point(9) = {xt1-D/2, yt1-D/2, 0., dx_inner};
+Point(10) = {xt1+D/2, yt1-D/2, 0., dx_inner};
+Point(11) = {xt1+D/2, yt1+D/2, 0., dx_inner};
+Point(12) = {xt1-D/2, yt1+D/2, 0., dx_inner};
+Point(13) = {xt2-D/2, yt2-3*D/2, 0., dx_inner};
+Point(14) = {xt2+D/2, yt2-3*D/2, 0., dx_inner};
+Point(15) = {xt2+D/2, yt2-D/2, 0., dx_inner};
+Point(16) = {xt2-D/2, yt2-D/2, 0., dx_inner};
 Line(5) = {5, 6};
 Line(6) = {6, 7};
 Line(7) = {7, 8};
@@ -38,13 +44,20 @@ Line(9) = {9, 10};
 Line(10) = {10, 11};
 Line(11) = {11, 12};
 Line(12) = {12, 9};
+Line(13) = {13, 14};
+Line(14) = {14, 15};
+Line(15) = {15, 16};
+Line(16) = {16, 13};
 Line Loop(2) = {5, 6, 7, 8};  // inside loop 1
 Line Loop(3) = {9, 10, 11, 12};  // inside loop 2
+Line Loop(4) = {13, 14, 15, 16};  // inside loop 3
 
 // Surfaces
-Plane Surface(1) = {1, 2, 3};
+Plane Surface(1) = {1, 2, 3, 4};
 Plane Surface(2) = {2};
 Plane Surface(3) = {3};
+Plane Surface(4) = {4};
 Physical Surface(1) = {1};  // outside turbine
 Physical Surface(2) = {2};  // inside turbine 1
 Physical Surface(3) = {3};  // inside turbine 2
+Physical Surface(4) = {4};  // inside turbine 3
