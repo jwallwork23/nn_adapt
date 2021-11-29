@@ -24,7 +24,7 @@ def get_hessians(f, **kwargs):
 
 @PETSc.Log.EventDecorator('nn_adapt.go_metric')
 def go_metric(mesh, config, enrichment_method='h', target_complexity=4000.0,
-              average=True, interpolant='L2', retall=False):
+              average=True, interpolant='L2', anisotropic=False, retall=False):
     """
     Compute an anisotropic goal-oriented
     metric field, based on a mesh and
@@ -41,24 +41,27 @@ def go_metric(mesh, config, enrichment_method='h', target_complexity=4000.0,
         be combined using averaging (or intersection)?
     :kwarg interpolant: which method to use to
         interpolate into the target space?
+    :kwarg anisotropic: toggle isotropic vs.
+        anisotropic metric
     :kwarg retall: if ``True``, the error indicator,
-        Hessian components, forward solution, adjoint
-        solution, enriched adjoint solution and
-        :class:`GoalOrientedMeshSeq` are returned, in
-        addition to the metric
+        forward solution, adjoint solution, enriched
+        adjoint solution and :class:`GoalOrientedMeshSeq`
+        are returned, in addition to the metric
     """
     dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq = indicate_errors(
         mesh, config, enrichment_method=enrichment_method, retall=True
     )
-    hessians = get_hessians(adj_sol)
-    hessian = combine_metrics(*hessians, average=average)
+    if anisotropic:
+        hessian = combine_metrics(*get_hessians(adj_sol), average=average)
+    else:
+        hessian = None
     metric = anisotropic_metric(
-        dwr, hessian, target_complexity=target_complexity,
+        dwr, hessian=hessian,
+        target_complexity=target_complexity,
         target_space=TensorFunctionSpace(mesh, 'DG', 0),
         interpolant=interpolant
     )
-    hessians = [*get_hessians(adj_sol), *hessians]
     if retall:
-        return metric, hessians, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq
+        return metric, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq
     else:
         return metric

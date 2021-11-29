@@ -8,6 +8,7 @@ import importlib
 parser = argparse.ArgumentParser()
 parser.add_argument('model', help='The model')
 parser.add_argument('test_case', help='The configuration file number')
+parser.add_argument('-anisotropic', help='Toggle isotropic vs. anisotropic metric')
 parser.add_argument('-miniter', help='Minimum number of iterations (default 3)')
 parser.add_argument('-maxiter', help='Maximum number of iterations (default 35)')
 parser.add_argument('-qoi_rtol', help='Relative tolerance for QoI (default 0.001)')
@@ -21,6 +22,7 @@ model = parsed_args.model
 assert model in ['stokes', 'turbine']
 test_case = int(parsed_args.test_case)
 assert test_case in list(range(10))
+approach = 'isotropic' if parsed_args.anisotropic in [None, '0'] else 'anisotropic'
 miniter = int(parsed_args.miniter or 3)
 assert miniter >= 0
 maxiter = int(parsed_args.maxiter or 35)
@@ -111,9 +113,11 @@ for fp_iteration in range(maxiter+1):
     estimator_old = estimator
 
     # Construct metric
-    # TODO: isotropic mode
     with PETSc.Log.Event('nn_adapt.construct_metric'):
-        hessian = combine_metrics(*get_hessians(adj_sol), average=True)
+        if approach == 'anisotropic':
+            hessian = combine_metrics(*get_hessians(adj_sol), average=True)
+        else:
+            hessian = None
         p0metric = anisotropic_metric(
             dwr, hessian, target_complexity=target_complexity,
             target_space=P0_ten, interpolant='L2'

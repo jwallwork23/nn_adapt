@@ -9,6 +9,7 @@ set_log_level(ERROR)
 parser = argparse.ArgumentParser()
 parser.add_argument('model', help='The model')
 parser.add_argument('test_case', help='The configuration file number')
+parser.add_argument('-anisotropic', help='Toggle isotropic vs. anisotropic metric')
 parser.add_argument('-miniter', help='Minimum number of iterations (default 3)')
 parser.add_argument('-maxiter', help='Maximum number of iterations (default 35)')
 parser.add_argument('-qoi_rtol', help='Relative tolerance for QoI (default 0.001)')
@@ -21,6 +22,7 @@ model = parsed_args.model
 assert model in ['stokes', 'turbine']
 test_case = int(parsed_args.test_case)
 assert test_case in list(range(10))
+approach = 'isotropic' if parsed_args.anisotropic in [None, '0'] else 'anisotropic'
 miniter = int(parsed_args.miniter or 3)
 assert miniter >= 0
 maxiter = int(parsed_args.maxiter or 35)
@@ -53,26 +55,26 @@ kwargs = {
     'enrichment_method': 'h',
     'target_complexity': target_complexity,
     'average': True,
+    'anisotropic': approach == 'anisotropic',
     'retall': True,
 }
 qoi_old = None
 elements_old = mesh.num_cells()
 estimator_old = None
 converged_reason = None
-fwd_file = File(f'{model}/outputs/go/forward{test_case}.pvd')
-adj_file = File(f'{model}/outputs/go/adjoint{test_case}.pvd')
-adj_plus_file = File(f'{model}/outputs/go/enriched_adjoint{test_case}.pvd')
-ee_file = File(f'{model}/outputs/go/estimator{test_case}.pvd')
-ee_plus_file = File(f'{model}/outputs/go/enriched_estimator{test_case}.pvd')
-metric_file = File(f'{model}/outputs/go/metric{test_case}.pvd')
+fwd_file = File(f'{model}/outputs/{approach}/forward{test_case}.pvd')
+adj_file = File(f'{model}/outputs/{approach}/adjoint{test_case}.pvd')
+adj_plus_file = File(f'{model}/outputs/{approach}/enriched_adjoint{test_case}.pvd')
+ee_file = File(f'{model}/outputs/{approach}/estimator{test_case}.pvd')
+ee_plus_file = File(f'{model}/outputs/{approach}/enriched_estimator{test_case}.pvd')
+metric_file = File(f'{model}/outputs/{approach}/metric{test_case}.pvd')
 print(f'Test case {test_case}')
 print('  Mesh 0')
 print(f'    Element count        = {elements_old}')
 for fp_iteration in range(maxiter+1):
 
     # Compute goal-oriented metric
-    # TODO: isotropic mode
-    p0metric, hessians, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq = go_metric(mesh, config, **kwargs)
+    p0metric, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq = go_metric(mesh, config, **kwargs)
     dof = sum(fwd_sol.function_space().dof_count)
     print(f'    DoF count            = {dof}')
     fwd_file.write(*fwd_sol.split())
@@ -87,8 +89,8 @@ for fp_iteration in range(maxiter+1):
     features = extract_features(config, fwd_sol, adj_sol, mesh_seq)
     targets = dwr.dat.data.flatten()
     assert not np.isnan(targets).any()
-    np.save(f'{model}/data/features{test_case}_GO{fp_iteration}', features)
-    np.save(f'{model}/data/targets{test_case}_GO{fp_iteration}', targets)
+    np.save(f'{model}/data/features{test_case}_GO{approach}_{fp_iteration}', features)
+    np.save(f'{model}/data/targets{test_case}_GO{approach}_{fp_iteration}', targets)
 
     # Check for QoI convergence
     qoi = mesh_seq.J

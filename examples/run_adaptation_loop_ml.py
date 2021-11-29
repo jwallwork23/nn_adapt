@@ -12,6 +12,7 @@ set_log_level(ERROR)
 parser = argparse.ArgumentParser()
 parser.add_argument('model', help='The model')
 parser.add_argument('test_case', help='The configuration file number')
+parser.add_argument('-anisotropic', help='Toggle isotropic vs. anisotropic metric')
 parser.add_argument('-num_refinements', help='Number of refinements to consider (default 3)')
 parser.add_argument('-miniter', help='Minimum number of iterations (default 3)')
 parser.add_argument('-maxiter', help='Maximum number of iterations (default 35)')
@@ -25,6 +26,7 @@ model = parsed_args.model
 assert model in ['stokes', 'turbine']
 test_case = int(parsed_args.test_case)
 assert test_case in list(range(10))
+approach = 'isotropic' if parsed_args.anisotropic in [None, '0'] else 'anisotropic'
 num_refinements = int(parsed_args.num_refinements or 4)
 assert num_refinements > 0
 miniter = int(parsed_args.miniter or 3)
@@ -58,12 +60,6 @@ times = []
 print(f'Test case {test_case}')
 for i in range(num_refinements+1):
     target_complexity = 250.0*4**i
-    kwargs = {
-        'enrichment_method': 'h',
-        'target_complexity': target_complexity,
-        'average': True,
-        'retall': True,
-    }
     if model == 'stokes':
         plex = PETSc.DMPlex().create()
         plex.createFromFile(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.h5')
@@ -83,7 +79,6 @@ for i in range(num_refinements+1):
 
         # Solve forward and adjoint and compute Hessians
         fwd_sol, adj_sol, mesh_seq = get_solutions(mesh, config)
-        hessians = [*get_hessians(fwd_sol), *get_hessians(adj_sol)]
         P0 = FunctionSpace(mesh, 'DG', 0)
         P0_ten = TensorFunctionSpace(mesh, 'DG', 0)
 
@@ -119,8 +114,10 @@ for i in range(num_refinements+1):
         estimator_old = estimator
 
         # Construct metric
-        # TODO: isotropic mode
-        hessian = combine_metrics(*get_hessians(adj_sol), average=True)
+        if approach == 'anisotropic':
+            hessian = combine_metrics(*get_hessians(adj_sol), average=True)
+        else:
+            hessian = None
         p0metric = anisotropic_metric(
             dwr, hessian, target_complexity=target_complexity,
             target_space=P0_ten, interpolant='L2'
@@ -153,6 +150,6 @@ for i in range(num_refinements+1):
     qois.append(qoi)
     dofs.append(sum(fwd_sol.function_space().dof_count))
     elements.append(elements_old)
-    np.save(f'{model}/data/qois_ml{test_case}', qois)
-    np.save(f'{model}/data/dofs_ml{test_case}', dofs)
-    np.save(f'{model}/data/elements_ml{test_case}', elements)
+    np.save(f'{model}/data/qois_ML{approach}_{test_case}', qois)
+    np.save(f'{model}/data/dofs_ML{approach}_{test_case}', dofs)
+    np.save(f'{model}/data/elements_ML{approach}_{test_case}', elements)
