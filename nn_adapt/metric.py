@@ -16,7 +16,7 @@ def get_hessians(f, **kwargs):
     """
     kwargs.setdefault('method', 'L2')
     return [
-        hessian_metric(recover_hessian(fij, **kwargs))
+        space_normalise(hessian_metric(recover_hessian(fij, **kwargs)), 4000.0, 'inf')
         for i, fi in split_into_scalars(f).items()
         for fij in fi
     ]
