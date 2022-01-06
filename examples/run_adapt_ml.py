@@ -131,7 +131,9 @@ for fp_iteration in range(maxiter+1):
                                 1.0e+05)
 
     # Adapt the mesh and check for element count convergence
-    mesh = adapt(mesh, p1metric)
+    metric = RiemannianMetric(mesh)
+    metric.assign(p1metric)
+    mesh = adapt(mesh, metric)
     elements = mesh.num_cells()
     print(f'  Mesh {fp_iteration+1}')
     print(f'    Element count        = {elements}')

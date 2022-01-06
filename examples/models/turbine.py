@@ -82,7 +82,8 @@ def setup_solver(mesh, ic):
         'snes_max_it': 100,
         'ksp_type': 'preonly',
         'pc_type': 'lu',
-        'pc_factor_mat_solver_type': 'mumps',
+        # 'pc_factor_mat_solver_type': 'mumps',
+        'pc_factor_mat_solver_type': 'superlu',
     }
     options.use_grad_div_viscosity_term = False
     options.horizontal_viscosity = parameters.viscosity
