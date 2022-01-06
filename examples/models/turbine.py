@@ -45,7 +45,7 @@ class Parameters(object):
         u = fwd_sol.split()[0]
         unorm = sqrt(dot(u, u))
         mesh = u.function_space().mesh()
-        P0 = FunctionSpace(mesh, 'DG', 0)
+        P0 = get_functionspace(mesh, 'DG', 0)
         h = CellSize(mesh)
         return interpolate(0.5*h*unorm/self.viscosity, P0)
 
@@ -56,7 +56,7 @@ fields = ['q']
 
 
 def get_function_spaces(mesh):
-    return {'q': VectorFunctionSpace(mesh, 'DG', 1)*get_functionspace(mesh, 'DG', 1)}
+    return {'q': get_functionspace(mesh, 'DG', 1, vector=True)*get_functionspace(mesh, 'DG', 1)}
 
 
 def setup_solver(mesh, ic):
@@ -166,7 +166,7 @@ def dwr_indicator(mesh_seq, q, q_star):
     dwr_plus = get_dwr_indicator(F, q_star, test_space=V)
 
     # Project down to base space
-    P0 = FunctionSpace(mesh_seq[0], 'DG', 0)
+    P0 = get_functionspace(mesh_seq[0], 'DG', 0)
     dwr = project(dwr_plus, P0)
     dwr.interpolate(abs(dwr))
     return dwr, dwr_plus
