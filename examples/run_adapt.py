@@ -16,7 +16,6 @@ parser.add_argument('-qoi_rtol', help='Relative tolerance for QoI (default 0.001
 parser.add_argument('-element_rtol', help='Relative tolerance for element count (default 0.005)')
 parser.add_argument('-estimator_rtol', help='Relative tolerance for error estimator (default 0.005)')
 parser.add_argument('-target_complexity', help='Target metric complexity (default 4000.0)')
-parser.add_argument('-norm_order', help='Metric normalisation order (default 1.0)')
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 assert model in ['stokes', 'turbine']
@@ -35,8 +34,6 @@ estimator_rtol = float(parsed_args.estimator_rtol or 0.005)
 assert estimator_rtol > 0.0
 target_complexity = float(parsed_args.target_complexity or 4000.0)
 assert target_complexity > 0.0
-p = float(parsed_args.norm_order or 1.0)
-assert p >= 1.0
 
 # Setup
 config = importlib.import_module(f'{model}.config{test_case}')
@@ -113,7 +110,6 @@ for fp_iteration in range(maxiter+1):
     # Process metric
     P1_ten = TensorFunctionSpace(mesh, 'CG', 1)
     p1metric = hessian_metric(clement_interpolant(p0metric))
-    space_normalise(p1metric, target_complexity, p)
     enforce_element_constraints(p1metric,
                                 config.parameters.h_min,
                                 config.parameters.h_max,
