@@ -56,7 +56,7 @@ fields = ['q']
 
 
 def get_function_spaces(mesh):
-    return {'q': get_functionspace(mesh, 'DG', 1, vector=True)*get_functionspace(mesh, 'DG', 1)}
+    return {'q': get_functionspace(mesh, 'DG', 1, vector=True)*get_functionspace(mesh, 'CG', 2)}
 
 
 def setup_solver(mesh, ic):
@@ -69,6 +69,7 @@ def setup_solver(mesh, ic):
     # Create solver object
     solver_obj = solver2d.FlowSolver2d(mesh, bathymetry)
     options = solver_obj.options
+    options.element_family = 'dg-cg'
     options.timestep = 20.0
     options.simulation_export_time = 20.0
     options.simulation_end_time = 18.0
