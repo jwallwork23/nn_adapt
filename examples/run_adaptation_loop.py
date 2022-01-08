@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('model', help='The model')
 parser.add_argument('test_case', help='The configuration file number')
 parser.add_argument('-anisotropic', help='Toggle isotropic vs. anisotropic metric')
-parser.add_argument('-num_refinements', help='Number of refinements to consider (default 3)')
+parser.add_argument('-num_refinements', help='Number of refinements to consider (default 4)')
 parser.add_argument('-miniter', help='Minimum number of iterations (default 3)')
 parser.add_argument('-maxiter', help='Maximum number of iterations (default 35)')
 parser.add_argument('-qoi_rtol', help='Relative tolerance for QoI (default 0.001)')
@@ -24,7 +24,7 @@ assert model in ['stokes', 'turbine']
 test_case = int(parsed_args.test_case)
 assert test_case in list(range(10))
 approach = 'isotropic' if parsed_args.anisotropic in [None, '0'] else 'anisotropic'
-num_refinements = int(parsed_args.num_refinements or 3)
+num_refinements = int(parsed_args.num_refinements or 4)
 assert num_refinements > 0
 miniter = int(parsed_args.miniter or 3)
 assert miniter >= 0
