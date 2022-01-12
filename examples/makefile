@@ -77,14 +77,22 @@ plot_convergence:
 
 profile: profile_stokes profile_turbine
 
-profile_stokes:
+profile_stokes: profile_stokes_go profile_stokes_ml
+
+profile_stokes_go:
 	python3 run_adapt.py stokes 0 -log_view :logview.txt:ascii_flamegraph
 	flamegraph.pl --title "Goal-Oriented Stokes 0" logview.txt > stokes/outputs/go0.svg && rm logview.txt
+
+profile_stokes_ml:
 	python3 run_adapt_ml.py stokes 0 -log_view :logview.txt:ascii_flamegraph
 	flamegraph.pl --title "Data-driven Stokes 0" logview.txt > stokes/outputs/ml0.svg && rm logview.txt
 
-profile_turbine:
+profile_turbine: profile_turbine_go profile_turbine_ml
+
+profile_turbine_go:
 	python3 run_adapt.py turbine 0 -log_view :logview.txt:ascii_flamegraph
 	flamegraph.pl --title "Goal-Oriented 2-turbine 0" logview.txt > turbine/outputs/go0.svg && rm logview.txt
+
+profile_turbine_ml:
 	python3 run_adapt_ml.py turbine 0 -log_view :logview.txt:ascii_flamegraph
 	flamegraph.pl --title "Data-driven 2-turbine 0" logview.txt > turbine/outputs/ml0.svg && rm logview.txt
