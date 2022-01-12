@@ -1,12 +1,13 @@
 import firedrake
 from firedrake.petsc import PETSc
+from firedrake import op2
 import numpy as np
-from pyroteus.metric import *
 from nn_adapt.solving import split_into_scalars
+from pyroteus.metric import *
 import ufl
 
 
-__all__ = ['extract_features', 'preprocess_features']
+__all__ = ['extract_features', 'get_values_at_elements', 'preprocess_features']
 
 
 @PETSc.Log.EventDecorator('nn_adapt.extract_components')
@@ -38,6 +39,37 @@ def extract_components(matrix):
     # return density.dat.data, logH.dat.data[:, 0, 0], logH.dat.data[:, 0, 1]
 
 
+@PETSc.Log.EventDecorator("nn_adapt.get_values_at_elements")
+def get_values_at_elements(M):
+    r"""
+    Extract the values for all degrees of freedom associated
+    with each element.
+
+    :arg M: a :math:`\mathbb P1` metric :class:`Function`
+    :return: a vector :class:`Function` holding all DoFs
+    """
+    fs = M.function_space()
+    mesh = fs.mesh()
+    dim = mesh.topological_dimension()
+    if dim == 2:
+        assert fs.ufl_element().cell() == ufl.triangle, 'Simplex meshes only'
+    elif dim == 3:
+        assert fs.ufl_element().cell() == ufl.tetrahedron, 'Simplex meshes only'
+    else:
+        raise ValueError(f'Dimension {dim} not supported')
+    el = fs.ufl_element()
+    if el.sub_elements() == []:
+        size = (dim+1)*el.value_size()*el.degree()
+    else:
+        size = (dim+1)*sum(sel.value_size()*sel.degree() for sel in el.sub_elements())
+    P0_vec = firedrake.VectorFunctionSpace(mesh, 'DG', 0, dim=size)
+    values = firedrake.Function(P0_vec)
+    kernel = "for (int i=0; i < vertexwise.dofs; i++) elementwise[i] += vertexwise[i];"
+    keys = {'vertexwise': (M, op2.READ), 'elementwise': (values, op2.INC)}
+    firedrake.par_loop(kernel, ufl.dx, keys)
+    return values
+
+
 @PETSc.Log.EventDecorator('nn_adapt.extract_features')
 def extract_features(config, fwd_sol, adj_sol, mesh_seq, preproc='none'):
     """
@@ -49,7 +81,6 @@ def extract_features(config, fwd_sol, adj_sol, mesh_seq, preproc='none'):
     :kwarg preproc: preprocessor function
     """
     mesh = fwd_sol.function_space().mesh()
-    dim = mesh.topological_dimension()
     P0 = firedrake.FunctionSpace(mesh, 'DG', 0)
     P0_ten = firedrake.TensorFunctionSpace(mesh, 'DG', 0)
 
