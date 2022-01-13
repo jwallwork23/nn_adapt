@@ -112,7 +112,7 @@ def extract_features(config, fwd_sol, adj_sol, mesh_seq, preproc='none'):
     features = np.array([]).reshape(0, num_inputs)
     for i in range(mesh.num_cells()):
         mesh_features = [d[i], h1[i], h2[i], bnd_tags[i]]
-        solution_features = [v[i][j] for v in vals for j in range(3)]
+        solution_features = [vv for v in vals for vv in v[i]]
         feature = [Re[i]] + mesh_features + solution_features + [dwr[i]]
         feature = np.reshape(feature, (1, num_inputs))
         features = np.concatenate((features, feature))

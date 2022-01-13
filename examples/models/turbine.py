@@ -3,9 +3,9 @@ from pyroteus_adjoint import *
 
 
 class Parameters(object):
-    num_inputs = 24
-    num_outputs = 3
-    dofs_per_element = 3
+    num_inputs = 30
+    num_outputs = 1
+    dofs_per_element = 12
     h_min = 1.0e-05
     h_max = 500.0
 
