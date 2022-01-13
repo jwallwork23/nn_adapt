@@ -11,7 +11,7 @@ parsed_args = parser.parse_args()
 model = parsed_args.model
 assert model in ['stokes', 'turbine']
 test_case = int(parsed_args.test_case)
-assert test_case in list(range(10))
+assert test_case in list(range(12))
 approaches = {
     'uniform': {'label': 'Uniform refinement', 'color': 'cornflowerblue', 'marker': 'x', 'linestyle': '-'},
     'GOisotropic': {'label': 'Isotropic goal-oriented adaptation', 'color': 'orange', 'marker': '^', 'linestyle': '-'},

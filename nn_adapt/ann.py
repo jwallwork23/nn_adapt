@@ -41,15 +41,15 @@ class SimpleNet(nn.Module):
 
     Input layer:
     ============
-        [9 forward DoFs per element]
-          + [9 adjoint DoFs per element]
+        [12 forward DoFs per element]
+          + [12 adjoint DoFs per element]
           + [element orientation]
           + [element shape]
           + [element size]
-          + [mesh Reynolds number]
           + [boundary element?]
+          + [mesh Reynolds number]
           + [error indicator on coarse mesh]
-          = 24
+          = 30
 
     Hidden layer:
     =============
@@ -59,7 +59,7 @@ class SimpleNet(nn.Module):
     =============
         [1 error indicator value]
     """
-    def __init__(self, num_inputs=24, num_outputs=1, num_hidden_neurons=60):
+    def __init__(self, num_inputs=30, num_outputs=1, num_hidden_neurons=60):
         super(SimpleNet, self).__init__()
         self.linear1 = nn.Linear(num_inputs, num_hidden_neurons)
         self.activate1 = nn.Sigmoid()

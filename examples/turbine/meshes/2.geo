@@ -1,7 +1,7 @@
 // Domain and turbine specification
-L = 800.0;
-W = 200.0;
-D = 15.0;
+L = 1200.0;
+W = 500.0;
+D = 18.0;
 dx_outer = 40.0;
 dx_inner = 8.0;
 
@@ -18,10 +18,10 @@ Physical Line(1) = {4};   // Left boundary
 Physical Line(2) = {2};   // Right boundary
 Physical Line(3) = {1,3}; // Sides
 Line Loop(1) = {1, 2, 3, 4};  // outside loop
-Point(5) = {L/2-D/2, W/2-D/2, 0., dx_inner};
-Point(6) = {L/2+D/2, W/2-D/2, 0., dx_inner};
-Point(7) = {L/2+D/2, W/2+D/2, 0., dx_inner};
-Point(8) = {L/2-D/2, W/2+D/2, 0., dx_inner};
+Point(5) = {50-D/2, W/2-D/2, 0., dx_inner};
+Point(6) = {50+D/2, W/2-D/2, 0., dx_inner};
+Point(7) = {50+D/2, W/2+D/2, 0., dx_inner};
+Point(8) = {50-D/2, W/2+D/2, 0., dx_inner};
 Line(5) = {5, 6};
 Line(6) = {6, 7};
 Line(7) = {7, 8};

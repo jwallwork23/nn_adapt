@@ -1,7 +1,7 @@
 // Domain and turbine specification
 L = 1200.0;
 W = 500.0;
-D = 15.0;
+D = 18.0;
 dx_outer = 40.0;
 dx_inner = 8.0;
 xt0=456.0;  // x-location of turbine 1

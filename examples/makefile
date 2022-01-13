@@ -36,6 +36,7 @@ snapshot:
 	for model in turbine; do \
 		for i in `seq 0 11`; do \
 			python3 run_adapt_ml.py $$model $$i; \
+			python3 run_adapt_ml.py $$model $$i -anisotropic 1; \
 		done; \
 	done
 
@@ -54,6 +55,7 @@ go:
 	for model in turbine; do \
 		for i in `seq 0 11`; do \
 			python3 run_adaptation_loop.py $$model $$i; \
+			python3 run_adaptation_loop.py $$model $$i -anisotropic 1; \
 		done; \
 	done
 
@@ -61,13 +63,14 @@ ml:
 	for model in turbine; do \
 		for i in `seq 0 11`; do \
 			python3 run_adaptation_loop_ml.py $$model $$i; \
+			python3 run_adaptation_loop_ml.py $$model $$i -anisotropic 1; \
 		done; \
 	done
 
 plot_convergence:
 	for model in turbine; do \
 		for i in `seq 0 11`; do \
-			do python3 plot_convergence.py $$model $$i; \
+			python3 plot_convergence.py $$model $$i; \
 		done; \
 	done
 

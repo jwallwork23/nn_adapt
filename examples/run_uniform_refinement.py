@@ -14,14 +14,14 @@ parsed_args = parser.parse_args()
 model = parsed_args.model
 assert model in ['stokes', 'turbine']
 test_case = int(parsed_args.test_case)
-assert test_case in list(range(10))
+assert test_case in list(range(12))
 num_refinements = int(parsed_args.num_refinements or 5)
 assert num_refinements >= 0
 
 # Setup
 setup = importlib.import_module(f'{model}.config{test_case}')
 field = setup.fields[0]
-mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.0.msh')
+mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.msh')
 mh = MeshHierarchy(mesh, num_refinements)
 
 # Run uniform refinement

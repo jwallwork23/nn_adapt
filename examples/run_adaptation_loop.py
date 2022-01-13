@@ -22,7 +22,7 @@ parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 assert model in ['stokes', 'turbine']
 test_case = int(parsed_args.test_case)
-assert test_case in list(range(10))
+assert test_case in list(range(12))
 approach = 'isotropic' if parsed_args.anisotropic in [None, '0'] else 'anisotropic'
 num_refinements = int(parsed_args.num_refinements or 4)
 assert num_refinements > 0
@@ -62,7 +62,7 @@ for i in range(num_refinements+1):
         plex.createFromFile(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.h5')
         mesh = Mesh(plex)
     else:
-        mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.0.msh')
+        mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.msh')
     qoi_old = None
     elements_old = mesh.num_cells()
     estimator_old = None

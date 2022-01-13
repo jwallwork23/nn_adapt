@@ -32,7 +32,7 @@ targets = None
 errors = None
 for run in range(4):
     for approach in ('isotropic', 'anisotropic'):
-        for i in range(8):
+        for i in range(9):
             features = concat(features, np.load(f'{model}/data/features{i}_GO{approach}_{run}.npy'))
             targets = concat(targets, np.load(f'{model}/data/targets{i}_GO{approach}_{run}.npy'))
 print(f'Total number of features: {len(features.flatten())}')
