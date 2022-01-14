@@ -1,21 +1,12 @@
 from firedrake import *
+from plotting import *
 
 import argparse
 import importlib
-import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 
 
-# Set plotting parameters
-matplotlib.rc('text', usetex=True)
-matplotlib.rcParams['mathtext.fontset'] = 'custom'
-matplotlib.rcParams['mathtext.rm'] = 'Bitstream Vera Sans'
-matplotlib.rcParams['mathtext.it'] = 'Bitstream Vera Sans:italic'
-matplotlib.rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
-matplotlib.rcParams['mathtext.fontset'] = 'stix'
-matplotlib.rcParams['font.family'] = 'STIXGeneral'
 matplotlib.rcParams['font.size'] = 12
 
 # Parse model
