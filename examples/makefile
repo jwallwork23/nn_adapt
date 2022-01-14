@@ -1,6 +1,6 @@
 all: dir mesh
 
-.PHONY: plot_progress, plot_convergence
+.PHONY: plot_test_cases, plot_weights, plot_progress, plot_convergence
 
 dir:
 	cd turbine && make dir
@@ -8,9 +8,14 @@ dir:
 mesh:
 	cd turbine && make mesh
 
+plot_test_cases:
+	for model in turbine; do \
+		python3 plot_test_cases.py $$model; \
+	done
+
 # --- Train the neural network
 
-setup: features train plot_progress
+setup: features train plot_weights plot_progress
 
 features:
 	for model in turbine; do \
@@ -23,6 +28,11 @@ features:
 train:
 	for model in turbine; do \
 		python3 test_and_train.py $$model; \
+	done
+
+plot_weights:
+	for model in turbine; do \
+		python3 plot_weights.py $$model; \
 	done
 
 plot_progress:
