@@ -1,6 +1,6 @@
-# Emulating goal-oriented metric-based mesh adaptation using neural networks
+# Accelerating goal-oriented error estimation using artificial neural networks
 
-This repo emulates the metric construction step for anisotropic
+This repo emulates the error estimation step for anisotropic
 goal-oriented mesh adaptation using artificial neural networks.
 
 This is research of the Applied Modelling and Computation Group
