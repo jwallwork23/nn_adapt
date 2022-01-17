@@ -96,7 +96,8 @@ def train(data_loader, model, loss_fn, optimizer):
         loss.backward()
         optimizer.step()
 
-    return cumulative_loss
+    out = cumulative_loss/num_batches
+    return out
 
 
 def validate(data_loader, model, loss_fn, epoch, num_epochs, timestamp):
@@ -119,7 +120,8 @@ def validate(data_loader, model, loss_fn, epoch, num_epochs, timestamp):
             loss = loss_fn(prediction, y.to(device))
             cumulative_loss += loss.item()
 
+    out = cumulative_loss/num_batches
     print(f"Epoch {epoch:4d}/{num_epochs:d}"
-          f"  avg loss: {cumulative_loss/num_batches:.4e}"
+          f"  avg loss: {out:.4e}"
           f"  wallclock {perf_counter() - timestamp:.1f}s")
-    return cumulative_loss
+    return out
