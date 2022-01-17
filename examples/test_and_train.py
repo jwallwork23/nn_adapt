@@ -6,7 +6,7 @@ from nn_adapt.ann import *
 # Configuration
 parser = argparse.ArgumentParser(prog='test_and_train.py')
 parser.add_argument('model', help='The equation set being solved')
-parser.add_argument('-learning_rate', help='The step length (default 1.0e-03)')
+parser.add_argument('-learning_rate', help='The step length (default 2.0e-03)')
 parser.add_argument('-num_epochs', help='The number of iterations (default 1000)')
 parser.add_argument('-preproc', help='Function for preprocessing data (default "arctan")')
 parser.add_argument('-batch_size', help='Number of data points per training iteration (default 1000)')
@@ -15,7 +15,7 @@ parser.add_argument('-test_size', help='Proportion of data used for validation (
 args = parser.parse_args()
 model = args.model
 assert model in ['stokes', 'turbine']
-lr = float(args.learning_rate or 1.0e-03)
+lr = float(args.learning_rate or 2.0e-03)
 num_epochs = int(args.num_epochs or 1000)
 preproc = args.preproc or 'arctan'
 batch_size = int(args.batch_size or 1000)
