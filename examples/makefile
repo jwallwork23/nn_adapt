@@ -79,9 +79,7 @@ ml:
 
 plot_convergence:
 	for model in turbine; do \
-		for i in `seq 0 11`; do \
-			python3 plot_convergence.py $$model $$i; \
-		done; \
+		python3 plot_convergence.py $$model; \
 	done
 
 # --- Do profiling experiments

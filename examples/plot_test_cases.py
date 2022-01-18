@@ -3,7 +3,6 @@ from plotting import *
 
 import argparse
 import importlib
-import numpy as np
 import os
 
 

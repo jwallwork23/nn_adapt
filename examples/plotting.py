@@ -1,5 +1,5 @@
 import matplotlib
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # noqa
 
 
 matplotlib.rc('text', usetex=True)

@@ -2,7 +2,6 @@ from nn_adapt.ann import *
 from plotting import *
 
 import argparse
-import numpy as np
 import torch
 
 
