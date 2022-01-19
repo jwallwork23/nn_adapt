@@ -32,10 +32,10 @@ print(f'Test case {test_case}')
 for i, mesh in enumerate(mh):
     print(f'  Mesh {i}')
     print(f'    Element count        = {mesh.num_cells()}')
-    fwd_sol, mesh_seq = get_solutions(mesh, setup, adjoint=False)
-    fs = mesh_seq.function_spaces[field][0]
-    qoi = mesh_seq.J
-    print(f'    Quantity of Interest = {qoi}')
+    fwd_sol = get_solutions(mesh, setup, solve_adjoint=False)
+    fs = fwd_sol.function_space()
+    J = assemble(setup.get_qoi(mesh)(fwd_sol))
+    print(f'    Quantity of Interest = {J}')
     qois.append(qoi)
     dofs.append(sum(fs.dof_count))
     elements.append(mesh.num_cells())

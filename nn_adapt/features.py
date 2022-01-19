@@ -71,7 +71,7 @@ def get_values_at_elements(M):
 
 
 @PETSc.Log.EventDecorator('nn_adapt.extract_features')
-def extract_features(config, fwd_sol, adj_sol, mesh_seq, preproc='none'):
+def extract_features(config, fwd_sol, adj_sol, preproc='none'):
     """
     Extract features from the outputs of a run.
 
@@ -105,7 +105,7 @@ def extract_features(config, fwd_sol, adj_sol, mesh_seq, preproc='none'):
     vals = [get_values_at_elements(s).dat.data for s in sols]
 
     # Coarse approximation of the error indicator
-    dwr = config.dwr_indicator(mesh_seq, fwd_sol, adj_sol)[0].dat.data
+    dwr = config.dwr_indicator(mesh, fwd_sol, adj_sol)[0].dat.data
 
     # Combine the features together
     num_inputs = config.parameters.num_inputs

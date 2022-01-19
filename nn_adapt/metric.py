@@ -1,3 +1,4 @@
+from pyroteus import *
 from nn_adapt.solving import *
 
 
@@ -48,7 +49,7 @@ def go_metric(mesh, config, enrichment_method='h', target_complexity=4000.0,
         adjoint solution and :class:`GoalOrientedMeshSeq`
         are returned, in addition to the metric
     """
-    dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq = indicate_errors(
+    dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus = indicate_errors(
         mesh, config, enrichment_method=enrichment_method, retall=True
     )
     if anisotropic:
@@ -62,6 +63,6 @@ def go_metric(mesh, config, enrichment_method='h', target_complexity=4000.0,
         interpolant=interpolant
     )
     if retall:
-        return metric, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq
+        return metric, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus
     else:
         return metric

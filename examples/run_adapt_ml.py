@@ -1,5 +1,6 @@
 from nn_adapt import *
 from nn_adapt.ann import *
+from pyroteus.utility import File
 import argparse
 import importlib
 
@@ -7,7 +8,7 @@ import importlib
 # Parse for test case and number of refinements
 parser = argparse.ArgumentParser()
 parser.add_argument('model', help='The model')
-parser.add_argument('test_case', help='The configuration file number')
+parser.add_argument('test_case', help='The setupuration file number')
 parser.add_argument('-anisotropic', help='Toggle isotropic vs. anisotropic metric')
 parser.add_argument('-miniter', help='Minimum number of iterations (default 3)')
 parser.add_argument('-maxiter', help='Maximum number of iterations (default 35)')
@@ -37,8 +38,8 @@ assert target_complexity > 0.0
 preproc = parsed_args.preproc or 'arctan'
 
 # Setup
-config = importlib.import_module(f'{model}.config{test_case}')
-field = config.fields[0]
+setup = importlib.import_module(f'{model}.config{test_case}')
+field = setup.fields[0]
 if model == 'stokes':
     plex = PETSc.DMPlex().create()
     plex.createFromFile(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.h5')
@@ -47,7 +48,7 @@ else:
     mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.msh')
 dim = mesh.topological_dimension()
 Nd = dim**2
-num_inputs = config.parameters.num_inputs
+num_inputs = setup.parameters.num_inputs
 
 # Load the model
 nn = SimpleNet().to(device)
@@ -69,7 +70,7 @@ print(f'    Element count        = {elements_old}')
 for fp_iteration in range(maxiter+1):
 
     # Solve forward and adjoint and compute Hessians
-    fwd_sol, adj_sol, mesh_seq = get_solutions(mesh, config)
+    fwd_sol, adj_sol = get_solutions(mesh, setup)
     dof = sum(fwd_sol.function_space().dof_count)
     print(f'    DoF count            = {dof}')
     fwd_file.write(*fwd_sol.split())
@@ -78,7 +79,7 @@ for fp_iteration in range(maxiter+1):
     P0_ten = TensorFunctionSpace(mesh, 'DG', 0)
 
     # Check for QoI convergence
-    qoi = mesh_seq.J
+    qoi = assemble(setup.get_qoi(mesh)(fwd_sol))
     print(f'    Quantity of Interest = {qoi}')
     if qoi_old is not None and fp_iteration >= miniter:
         if abs(qoi - qoi_old) < qoi_rtol*abs(qoi_old):
@@ -87,7 +88,7 @@ for fp_iteration in range(maxiter+1):
     qoi_old = qoi
 
     # Extract features
-    features = extract_features(config, fwd_sol, adj_sol, mesh_seq, preproc=preproc)
+    features = extract_features(setup, fwd_sol, adj_sol, preproc=preproc)
 
     # Run model
     with PETSc.Log.Event('nn_adapt.run_model'):
@@ -126,8 +127,8 @@ for fp_iteration in range(maxiter+1):
     P1_ten = TensorFunctionSpace(mesh, 'CG', 1)
     p1metric = hessian_metric(clement_interpolant(p0metric))
     enforce_element_constraints(p1metric,
-                                config.parameters.h_min,
-                                config.parameters.h_max,
+                                setup.parameters.h_min,
+                                setup.parameters.h_max,
                                 1.0e+05)
 
     # Adapt the mesh and check for element count convergence

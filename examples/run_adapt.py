@@ -1,6 +1,9 @@
 from nn_adapt import *
+from pyroteus.utility import File
 import argparse
 import importlib
+import numpy as np
+import os
 
 
 set_log_level(ERROR)
@@ -8,7 +11,7 @@ set_log_level(ERROR)
 # Parse for test case and number of refinements
 parser = argparse.ArgumentParser()
 parser.add_argument('model', help='The model')
-parser.add_argument('test_case', help='The configuration file number')
+parser.add_argument('test_case', help='The setupuration file number')
 parser.add_argument('-anisotropic', help='Toggle isotropic vs. anisotropic metric')
 parser.add_argument('-miniter', help='Minimum number of iterations (default 3)')
 parser.add_argument('-maxiter', help='Maximum number of iterations (default 35)')
@@ -36,8 +39,8 @@ target_complexity = float(parsed_args.target_complexity or 4000.0)
 assert target_complexity > 0.0
 
 # Setup
-config = importlib.import_module(f'{model}.config{test_case}')
-field = config.fields[0]
+setup = importlib.import_module(f'{model}.config{test_case}')
+field = setup.fields[0]
 if model == 'stokes':
     plex = PETSc.DMPlex().create()
     plex.createFromFile(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.h5')
@@ -71,7 +74,7 @@ print(f'    Element count        = {elements_old}')
 for fp_iteration in range(maxiter+1):
 
     # Compute goal-oriented metric
-    p0metric, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq = go_metric(mesh, config, **kwargs)
+    p0metric, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus = go_metric(mesh, setup, **kwargs)
     dof = sum(fwd_sol.function_space().dof_count)
     print(f'    DoF count            = {dof}')
     fwd_file.write(*fwd_sol.split())
@@ -83,14 +86,14 @@ for fp_iteration in range(maxiter+1):
     P0 = dwr.function_space()
 
     # Extract features
-    features = extract_features(config, fwd_sol, adj_sol, mesh_seq)
+    features = extract_features(setup, fwd_sol, adj_sol)
     targets = dwr.dat.data.flatten()
     assert not np.isnan(targets).any()
     np.save(f'{model}/data/features{test_case}_GO{approach}_{fp_iteration}', features)
     np.save(f'{model}/data/targets{test_case}_GO{approach}_{fp_iteration}', targets)
 
     # Check for QoI convergence
-    qoi = mesh_seq.J
+    qoi = assemble(setup.get_qoi(mesh)(fwd_sol))
     print(f'    Quantity of Interest = {qoi}')
     if qoi_old is not None and fp_iteration >= miniter:
         if abs(qoi - qoi_old) < qoi_rtol*abs(qoi_old):
@@ -111,8 +114,8 @@ for fp_iteration in range(maxiter+1):
     P1_ten = TensorFunctionSpace(mesh, 'CG', 1)
     p1metric = hessian_metric(clement_interpolant(p0metric))
     enforce_element_constraints(p1metric,
-                                config.parameters.h_min,
-                                config.parameters.h_max,
+                                setup.parameters.h_min,
+                                setup.parameters.h_max,
                                 1.0e+05)
 
     # Adapt the mesh and check for element count convergence

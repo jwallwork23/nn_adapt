@@ -1,10 +1,13 @@
 from firedrake import *
 from firedrake.petsc import PETSc
-from pyroteus_adjoint import *
+from firedrake.mg.embedded import TransferManager
+
+
+tm = TransferManager()
 
 
 @PETSc.Log.EventDecorator('nn_adapt.get_solutions')
-def get_solutions(mesh, config, adjoint=True):
+def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None):
     """
     Solve forward and adjoint equations on a
     given mesh.
@@ -14,41 +17,54 @@ def get_solutions(mesh, config, adjoint=True):
     :arg mesh: input mesh
     :arg config: configuration file, which
         specifies the PDE and QoI
-    :kwarg adjoint: solve the adjoint problem,
-        as well as the forward problem?
+    :kwarg solve_adjoint: should we solve the
+        adjoint problem?
+    :kwarg refined_mesh: refined mesh to compute
+        enriched adjoint solution on
     :return: forward solution, adjoint solution
-        and :class:`GoalOrientedMeshSeq`
+        and enriched adjoint solution (if requested)
     """
     fields = config.fields
     assert len(fields) == 1, "Multiple fields not supported"
-    field = fields[0]
 
-    # We restrict attention to steady-state problems
-    dt = 20.0
-    end_time = dt
-    num_subintervals = 1
-    time_partition = TimePartition(
-        end_time, num_subintervals, dt, fields, debug=True,
-    )
+    # Solve forward problem in base space
+    with PETSc.Log.Event('Forward solve'):
+        V = config.get_function_space(mesh)
+        ic = config.get_initial_condition(V)
+        solver_obj = config.setup_solver(mesh, ic)
+        solver_obj.iterate()
+    q = solver_obj.fields.solution_2d
+    if not solve_adjoint:
+        return q
 
-    # Create MeshSeq object
-    mesh_seq = GoalOrientedMeshSeq(
-        time_partition, mesh, config.get_function_spaces,
-        config.get_initial_condition, config.get_solver,
-        config.get_qoi, qoi_type="end_time", steady=True,
-    )
+    # Solve adjoint problem in base space
+    sp = config.parameters.adjoint_solver_parameters
+    with PETSc.Log.Event('Adjoint solve'):
+        J = config.get_qoi(mesh)(q)
+        q_star = Function(V)
+        F = solver_obj.timestepper.F
+        dFdq = derivative(F, q, TrialFunction(V))
+        dFdq_transpose = adjoint(dFdq)
+        dJdq = derivative(J, q, TestFunction(V))
+        solve(dFdq_transpose == dJdq, q_star, solver_parameters=sp)
+    if refined_mesh is None:
+        return q, q_star
 
-    # Solve forward and adjoint problems
-    if adjoint:
-        adj_kwargs = {"options_prefix": "adjoint"}
-        sols = mesh_seq.solve_adjoint(adj_solver_kwargs=adj_kwargs)
-        fwd_sols = sols[field].forward[0][0]
-        adj_sols = sols[field].adjoint[0][0]
-        return fwd_sols, adj_sols, mesh_seq
-    else:
-        sols = mesh_seq.get_checkpoints(run_final_subinterval=True)
-        fwd_sols = sols[0][field]
-        return fwd_sols, mesh_seq
+    # Solve adjoint problem in enriched space
+    with PETSc.Log.Event('Enriched adjoint solve'):
+        V = config.get_function_space(refined_mesh)
+        q_plus = Function(V)
+        solver_obj = config.setup_solver(refined_mesh, q_plus)
+        q_plus = solver_obj.fields.solution_2d
+        J = config.get_qoi(refined_mesh)(q_plus)
+        F = solver_obj.timestepper.F
+        tm.prolong(q, q_plus)
+        q_star_plus = Function(V)
+        dFdq = derivative(F, q_plus, TrialFunction(V))
+        dFdq_transpose = adjoint(dFdq)
+        dJdq = derivative(J, q_plus, TestFunction(V))
+        solve(dFdq_transpose == dJdq, q_star_plus, solver_parameters=sp)
+    return q, q_star, q_star_plus
 
 
 def split_into_scalars(f):
@@ -114,23 +130,17 @@ def indicate_errors(mesh, config, enrichment_method='h', retall=False):
         in addition to the dual-weighted residual
         error indicator
     """
-    fwd_sol, adj_sol, mesh_seq = get_solutions(mesh, config)
-
-    # Solve PDE in enriched space
-    adj_kwargs = {"options_prefix": "adjoint_enriched"}
-    enriched_solutions = mesh_seq.global_enrichment(
-        enrichment_method=enrichment_method,
-        adj_solver_kwargs=adj_kwargs
-    )
-    field = config.fields[0]
-    adj_sol_plus = enriched_solutions[field].adjoint[0][0]
+    if not enrichment_method == 'h':
+        raise NotImplementedError  # TODO
+    mesh, refined_mesh = MeshHierarchy(mesh, 1)
+    fwd_sol, adj_sol, adj_sol_plus = get_solutions(mesh, config, refined_mesh=refined_mesh)
 
     # Prolong
     V_plus = adj_sol_plus.function_space()
     fwd_sol_plg = Function(V_plus)
-    prolong(fwd_sol, fwd_sol_plg)
+    tm.prolong(fwd_sol, fwd_sol_plg)
     adj_sol_plg = Function(V_plus)
-    prolong(adj_sol, adj_sol_plg)
+    tm.prolong(adj_sol, adj_sol_plg)
 
     # Subtract prolonged adjoint solution from enriched version
     adj_error = Function(V_plus)
@@ -140,8 +150,8 @@ def indicate_errors(mesh, config, enrichment_method='h', retall=False):
         err += adj_sols_plus[i] - adj_sols_plg[i]
 
     # Evaluate errors
-    dwr, dwr_plus = config.dwr_indicator(mesh_seq, fwd_sol_plg, adj_error)
+    dwr, dwr_plus = config.dwr_indicator(mesh, fwd_sol_plg, adj_error)
     if retall:
-        return dwr, fwd_sol, adj_sol, dwr_plus, adj_error, mesh_seq
+        return dwr, fwd_sol, adj_sol, dwr_plus, adj_error
     else:
         return dwr

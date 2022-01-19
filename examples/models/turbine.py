@@ -1,5 +1,5 @@
 from thetis import *
-from pyroteus_adjoint import *
+import numpy as np
 
 
 class Parameters(object):
@@ -17,6 +17,18 @@ class Parameters(object):
     num_turbines = 1
     thrust_coefficient = 0.8
     density = Constant(1030.0*1.0e-06)
+
+    solver_parameters = {
+        'mat_type': 'aij',
+        'snes_type': 'newtonls',
+        'snes_linesearch_type': 'bt',
+        'snes_rtol': 1.0e-08,
+        'snes_max_it': 100,
+        'ksp_type': 'preonly',
+        'pc_type': 'lu',
+        'pc_factor_mat_solver_type': 'mumps',
+    }
+    adjoint_solver_parameters = solver_parameters
 
     @property
     def turbine_ids(self):
@@ -55,8 +67,8 @@ parameters = Parameters()
 fields = ['q']
 
 
-def get_function_spaces(mesh):
-    return {'q': get_functionspace(mesh, 'DG', 1, vector=True)*get_functionspace(mesh, 'CG', 2)}
+def get_function_space(mesh):
+    return get_functionspace(mesh, 'DG', 1, vector=True)*get_functionspace(mesh, 'CG', 2)
 
 
 def setup_solver(mesh, ic):
@@ -74,16 +86,7 @@ def setup_solver(mesh, ic):
     options.simulation_export_time = 20.0
     options.simulation_end_time = 18.0
     options.swe_timestepper_type = 'SteadyState'
-    options.swe_timestepper_options.solver_parameters = {
-        'mat_type': 'aij',
-        'snes_type': 'newtonls',
-        'snes_linesearch_type': 'bt',
-        'snes_rtol': 1.0e-08,
-        'snes_max_it': 100,
-        'ksp_type': 'preonly',
-        'pc_type': 'lu',
-        'pc_factor_mat_solver_type': 'mumps',
-    }
+    options.swe_timestepper_options.solver_parameters = parameters.solver_parameters
     options.use_grad_div_viscosity_term = False
     options.horizontal_viscosity = parameters.viscosity
     options.quadratic_drag_coefficient = Cd
@@ -115,31 +118,19 @@ def setup_solver(mesh, ic):
     }
 
     # Apply initial guess
-    u_init, eta_init = ic['q'].split()
+    u_init, eta_init = ic.split()
     solver_obj.assign_initial_conditions(uv=u_init, elev=eta_init)
     return solver_obj
 
 
-def get_solver(mesh_seq):
-
-    def solver(i, ic):
-        mesh = mesh_seq[i]
-        solver_obj = setup_solver(mesh, ic)
-        solver_obj.iterate()
-        return {'q': solver_obj.fields.solution_2d}
-
-    return solver
-
-
-def get_initial_condition(mesh_seq):
-    fs = mesh_seq.function_spaces['q'][0]
-    q = Function(fs)
+def get_initial_condition(function_space):
+    q = Function(function_space)
     u, eta = q.split()
-    u.interpolate(parameters.u_inflow(mesh_seq[0]))
-    return {'q': q}
+    u.interpolate(parameters.u_inflow(function_space.mesh()))
+    return q
 
 
-def get_qoi(mesh_seq, i):
+def get_qoi(mesh):
     rho = parameters.density
     At = parameters.turbine_area
     Aswept = parameters.swept_area
@@ -147,7 +138,7 @@ def get_qoi(mesh_seq, i):
     ct = Constant(0.5*Aswept*Ct/At)
 
     def qoi(sol):
-        u, eta = sol['q'].split()
+        u, eta = split(sol)
         J = rho*ct*sum([
             pow(dot(u, u), 1.5)*dx(tag)
             for tag in parameters.turbine_ids
@@ -178,11 +169,11 @@ def get_bnd_functions(n, eta_in, u_in, bnd_marker, bnd_conditions):
     return eta_ext, u_ext
 
 
-def dwr_indicator(mesh_seq, q, q_star):
+def dwr_indicator(mesh, q, q_star):
     mesh_plus = q.function_space().mesh()
 
     # Extract parameters from solver object
-    solver_obj = setup_solver(mesh_plus, {'q': q})
+    solver_obj = setup_solver(mesh_plus, q)
     options = solver_obj.options
     b = solver_obj.fields.bathymetry_2d
     g = physical_constants['g_grav']
@@ -350,7 +341,7 @@ def dwr_indicator(mesh_seq, q, q_star):
     dwr_plus = Function(P0_plus).assign(residual + flux)
 
     # Project down to base space
-    P0 = get_functionspace(mesh_seq[0], 'DG', 0)
+    P0 = get_functionspace(mesh, 'DG', 0)
     dwr = project(dwr_plus, P0)
     dwr.interpolate(abs(dwr))
     return dwr, dwr_plus

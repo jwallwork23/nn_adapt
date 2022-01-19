@@ -10,7 +10,7 @@ set_log_level(ERROR)
 # Parse for test case and number of refinements
 parser = argparse.ArgumentParser()
 parser.add_argument('model', help='The model')
-parser.add_argument('test_case', help='The configuration file number')
+parser.add_argument('test_case', help='The setupuration file number')
 parser.add_argument('-anisotropic', help='Toggle isotropic vs. anisotropic metric')
 parser.add_argument('-num_refinements', help='Number of refinements to consider (default 4)')
 parser.add_argument('-miniter', help='Minimum number of iterations (default 3)')
@@ -38,8 +38,8 @@ estimator_rtol = float(parsed_args.estimator_rtol or 0.005)
 assert estimator_rtol > 0.0
 
 # Setup
-config = importlib.import_module(f'{model}.config{test_case}')
-field = config.fields[0]
+setup = importlib.import_module(f'{model}.config{test_case}')
+field = setup.fields[0]
 
 # Run adaptation loop
 qois = []
@@ -73,12 +73,12 @@ for i in range(num_refinements+1):
     for fp_iteration in range(maxiter+1):
 
         # Compute goal-oriented metric
-        p0metric, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus, mesh_seq = go_metric(mesh, config, **kwargs)
+        p0metric, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus = go_metric(mesh, setup, **kwargs)
         dof = sum(fwd_sol.function_space().dof_count)
         print(f'      DoF count            = {dof}')
 
         # Check for QoI convergence
-        qoi = mesh_seq.J
+        qoi = assemble(setup.get_qoi(mesh)(fwd_sol))
         print(f'      Quantity of Interest = {qoi}')
         if qoi_old is not None and fp_iteration >= miniter:
             if abs(qoi - qoi_old) < qoi_rtol*abs(qoi_old):
@@ -99,8 +99,8 @@ for i in range(num_refinements+1):
         P1_ten = TensorFunctionSpace(mesh, 'CG', 1)
         p1metric = hessian_metric(clement_interpolant(p0metric))
         enforce_element_constraints(p1metric,
-                                    config.parameters.h_min,
-                                    config.parameters.h_max,
+                                    setup.parameters.h_min,
+                                    setup.parameters.h_max,
                                     1.0e+05)
 
         # Adapt the mesh and check for element count convergence
