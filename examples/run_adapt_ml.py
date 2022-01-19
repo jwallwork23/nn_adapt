@@ -1,9 +1,11 @@
 from nn_adapt import *
 from nn_adapt.ann import *
-from pyroteus.utility import File
 import argparse
 import importlib
+from time import perf_counter
 
+
+start_time = perf_counter()
 
 # Parse for test case and number of refinements
 parser = argparse.ArgumentParser()
@@ -17,6 +19,7 @@ parser.add_argument('-element_rtol', help='Relative tolerance for element count 
 parser.add_argument('-estimator_rtol', help='Relative tolerance for error estimator (default 0.005)')
 parser.add_argument('-target_complexity', help='Target metric complexity (default 4000.0)')
 parser.add_argument('-preproc', help='Function for preprocessing data (default "arctan")')
+parser.add_argument('-optimise', help='Turn off plotting and debugging (default False)')
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 assert model in ['stokes', 'turbine']
@@ -36,6 +39,9 @@ assert estimator_rtol > 0.0
 target_complexity = float(parsed_args.target_complexity or 4000.0)
 assert target_complexity > 0.0
 preproc = parsed_args.preproc or 'arctan'
+optimise = bool(parsed_args.optimise or False)
+if not optimise:
+    from pyroteus.utility import File
 
 # Setup
 setup = importlib.import_module(f'{model}.config{test_case}')
@@ -60,10 +66,11 @@ qoi_old = None
 elements_old = mesh.num_cells()
 estimator_old = None
 converged_reason = None
-fwd_file = File(f'{model}/outputs/ML/{approach}/forward{test_case}.pvd')
-adj_file = File(f'{model}/outputs/ML/{approach}/adjoint{test_case}.pvd')
-ee_file = File(f'{model}/outputs/ML/{approach}/estimator{test_case}.pvd')
-metric_file = File(f'{model}/outputs/ML/{approach}/metric{test_case}.pvd')
+if not optimise:
+    fwd_file = File(f'{model}/outputs/ML/{approach}/forward{test_case}.pvd')
+    adj_file = File(f'{model}/outputs/ML/{approach}/adjoint{test_case}.pvd')
+    ee_file = File(f'{model}/outputs/ML/{approach}/estimator{test_case}.pvd')
+    metric_file = File(f'{model}/outputs/ML/{approach}/metric{test_case}.pvd')
 print(f'Test case {test_case}')
 print('  Mesh 0')
 print(f'    Element count        = {elements_old}')
@@ -73,8 +80,9 @@ for fp_iteration in range(maxiter+1):
     fwd_sol, adj_sol = get_solutions(mesh, setup)
     dof = sum(fwd_sol.function_space().dof_count)
     print(f'    DoF count            = {dof}')
-    fwd_file.write(*fwd_sol.split())
-    adj_file.write(*adj_sol.split())
+    if not optimise:
+        fwd_file.write(*fwd_sol.split())
+        adj_file.write(*adj_sol.split())
     P0 = FunctionSpace(mesh, 'DG', 0)
     P0_ten = TensorFunctionSpace(mesh, 'DG', 0)
 
@@ -109,6 +117,8 @@ for fp_iteration in range(maxiter+1):
             converged_reason = 'error estimator convergence'
             break
     estimator_old = estimator
+    if not optimise:
+        ee_file.write(dwr)
 
     # Construct metric
     with PETSc.Log.Event('nn_adapt.construct_metric'):
@@ -120,8 +130,8 @@ for fp_iteration in range(maxiter+1):
             dwr, hessian, target_complexity=target_complexity,
             target_space=P0_ten, interpolant='L2'
         )
-    ee_file.write(dwr)
-    metric_file.write(p0metric)
+    if not optimise:
+        metric_file.write(p0metric)
 
     # Process metric
     P1_ten = TensorFunctionSpace(mesh, 'CG', 1)
@@ -148,3 +158,4 @@ for fp_iteration in range(maxiter+1):
     if fp_iteration == maxiter:
         converged_reason = 'reaching maximum iteration count'
 print(f'  Terminated after {fp_iteration+1} iterations due to {converged_reason}')
+print(f'  Total time taken: {perf_counter() - start_time:.2f} seconds')

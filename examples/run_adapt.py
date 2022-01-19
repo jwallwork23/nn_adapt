@@ -1,11 +1,12 @@
 from nn_adapt import *
-from pyroteus.utility import File
 import argparse
 import importlib
 import numpy as np
 import os
+from time import perf_counter
 
 
+start_time = perf_counter()
 set_log_level(ERROR)
 
 # Parse for test case and number of refinements
@@ -19,6 +20,7 @@ parser.add_argument('-qoi_rtol', help='Relative tolerance for QoI (default 0.001
 parser.add_argument('-element_rtol', help='Relative tolerance for element count (default 0.005)')
 parser.add_argument('-estimator_rtol', help='Relative tolerance for error estimator (default 0.005)')
 parser.add_argument('-target_complexity', help='Target metric complexity (default 4000.0)')
+parser.add_argument('-optimise', help='Turn off plotting and debugging (default False)')
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 assert model in ['stokes', 'turbine']
@@ -37,6 +39,9 @@ estimator_rtol = float(parsed_args.estimator_rtol or 0.005)
 assert estimator_rtol > 0.0
 target_complexity = float(parsed_args.target_complexity or 4000.0)
 assert target_complexity > 0.0
+optimise = bool(parsed_args.optimise or False)
+if not optimise:
+    from pyroteus.utility import File
 
 # Setup
 setup = importlib.import_module(f'{model}.config{test_case}')
@@ -62,12 +67,13 @@ qoi_old = None
 elements_old = mesh.num_cells()
 estimator_old = None
 converged_reason = None
-fwd_file = File(f'{model}/outputs/GO/{approach}/forward{test_case}.pvd')
-adj_file = File(f'{model}/outputs/GO/{approach}/adjoint{test_case}.pvd')
-adj_plus_file = File(f'{model}/outputs/GO/{approach}/enriched_adjoint{test_case}.pvd')
-ee_file = File(f'{model}/outputs/GO/{approach}/estimator{test_case}.pvd')
-ee_plus_file = File(f'{model}/outputs/GO/{approach}/enriched_estimator{test_case}.pvd')
-metric_file = File(f'{model}/outputs/GO/{approach}/metric{test_case}.pvd')
+if not optimise:
+    fwd_file = File(f'{model}/outputs/GO/{approach}/forward{test_case}.pvd')
+    adj_file = File(f'{model}/outputs/GO/{approach}/adjoint{test_case}.pvd')
+    adj_plus_file = File(f'{model}/outputs/GO/{approach}/enriched_adjoint{test_case}.pvd')
+    ee_file = File(f'{model}/outputs/GO/{approach}/estimator{test_case}.pvd')
+    ee_plus_file = File(f'{model}/outputs/GO/{approach}/enriched_estimator{test_case}.pvd')
+    metric_file = File(f'{model}/outputs/GO/{approach}/metric{test_case}.pvd')
 print(f'Test case {test_case}')
 print('  Mesh 0')
 print(f'    Element count        = {elements_old}')
@@ -77,20 +83,22 @@ for fp_iteration in range(maxiter+1):
     p0metric, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus = go_metric(mesh, setup, **kwargs)
     dof = sum(fwd_sol.function_space().dof_count)
     print(f'    DoF count            = {dof}')
-    fwd_file.write(*fwd_sol.split())
-    adj_file.write(*adj_sol.split())
-    adj_plus_file.write(*adj_sol_plus.split())
-    ee_file.write(dwr)
-    ee_plus_file.write(dwr_plus)
-    metric_file.write(p0metric)
+    if not optimise:
+        fwd_file.write(*fwd_sol.split())
+        adj_file.write(*adj_sol.split())
+        adj_plus_file.write(*adj_sol_plus.split())
+        ee_file.write(dwr)
+        ee_plus_file.write(dwr_plus)
+        metric_file.write(p0metric)
     P0 = dwr.function_space()
 
     # Extract features
-    features = extract_features(setup, fwd_sol, adj_sol)
-    targets = dwr.dat.data.flatten()
-    assert not np.isnan(targets).any()
-    np.save(f'{model}/data/features{test_case}_GO{approach}_{fp_iteration}', features)
-    np.save(f'{model}/data/targets{test_case}_GO{approach}_{fp_iteration}', targets)
+    if not optimise:
+        features = extract_features(setup, fwd_sol, adj_sol)
+        targets = dwr.dat.data.flatten()
+        assert not np.isnan(targets).any()
+        np.save(f'{model}/data/features{test_case}_GO{approach}_{fp_iteration}', features)
+        np.save(f'{model}/data/targets{test_case}_GO{approach}_{fp_iteration}', targets)
 
     # Check for QoI convergence
     qoi = assemble(setup.get_qoi(mesh)(fwd_sol))
@@ -135,3 +143,4 @@ for fp_iteration in range(maxiter+1):
     if fp_iteration == maxiter:
         converged_reason = 'reaching maximum iteration count'
 print(f'  Terminated after {fp_iteration+1} iterations due to {converged_reason}')
+print(f'  Total time taken: {perf_counter() - start_time:.2f} seconds')
