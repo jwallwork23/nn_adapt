@@ -32,6 +32,8 @@ targets = None
 errors = None
 for run in range(4):
     for approach in ('isotropic', 'anisotropic'):
+        if run == 0 and approach == 'anisotropic':
+            continue
         for i in range(9):
             features = concat(features, np.load(f'{model}/data/features{i}_GO{approach}_{run}.npy'))
             targets = concat(targets, np.load(f'{model}/data/targets{i}_GO{approach}_{run}.npy'))
@@ -59,14 +61,14 @@ validate_data = torch.utils.data.TensorDataset(torch.Tensor(xval), torch.Tensor(
 validate_loader = torch.utils.data.DataLoader(validate_data, batch_size=test_batch_size, shuffle=False, num_workers=0)
 
 
-def Loss(size_average=None, reduce=None, reduction: str = 'mean'):
+def Loss():
     """
     Custom loss function.
 
     Needed when there is only one output value.
     """
     def mse(tens1, tens2):
-        return torch.nn.MSELoss(size_average, reduce, reduction)(tens1, tens2.reshape(*tens1.shape))
+        return torch.nn.MSELoss(reduction='mean')(tens1, tens2.reshape(*tens1.shape))
     return mse
 
 

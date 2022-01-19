@@ -48,18 +48,17 @@ class SimpleNet(nn.Module):
           + [element size]
           + [boundary element?]
           + [mesh Reynolds number]
-          + [error indicator on coarse mesh]
-          = 30
+          = 29
 
     Hidden layer:
     =============
-        60 neurons
+        58 neurons
 
     Output layer:
     =============
         [1 error indicator value]
     """
-    def __init__(self, num_inputs=30, num_outputs=1, num_hidden_neurons=60):
+    def __init__(self, num_inputs=29, num_outputs=1, num_hidden_neurons=58):
         super(SimpleNet, self).__init__()
         self.linear1 = nn.Linear(num_inputs, num_hidden_neurons)
         self.activate1 = nn.Sigmoid()

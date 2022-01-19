@@ -104,16 +104,13 @@ def extract_features(config, fwd_sol, adj_sol, preproc='none'):
         + sum([ai for i, ai in adj_sols.items()], start=[])
     vals = [get_values_at_elements(s).dat.data for s in sols]
 
-    # Coarse approximation of the error indicator
-    dwr = config.dwr_indicator(mesh, fwd_sol, adj_sol)[0].dat.data
-
     # Combine the features together
     num_inputs = config.parameters.num_inputs
     features = np.array([]).reshape(0, num_inputs)
     for i in range(mesh.num_cells()):
         mesh_features = [d[i], h1[i], h2[i], bnd_tags[i]]
         solution_features = [vv for v in vals for vv in v[i]]
-        feature = [Re[i]] + mesh_features + solution_features + [dwr[i]]
+        feature = [Re[i]] + mesh_features + solution_features
         feature = np.reshape(feature, (1, num_inputs))
         features = np.concatenate((features, feature))
     assert not np.isnan(features).any()
