@@ -1,4 +1,5 @@
 from nn_adapt import *
+from firedrake.petsc import PETSc
 import argparse
 import importlib
 import numpy as np
@@ -90,7 +91,6 @@ for fp_iteration in range(maxiter+1):
         ee_file.write(dwr)
         ee_plus_file.write(dwr_plus)
         metric_file.write(p0metric)
-    P0 = dwr.function_space()
 
     # Extract features
     if not optimise:
@@ -109,26 +109,29 @@ for fp_iteration in range(maxiter+1):
             break
     qoi_old = qoi
 
-    # Check for error estimator convergence
-    estimator = dwr.vector().gather().sum()
-    print(f'    Error estimator      = {estimator}')
-    if estimator_old is not None and fp_iteration >= miniter:
-        if abs(estimator - estimator_old) < estimator_rtol*abs(estimator_old):
-            converged_reason = 'error estimator convergence'
-            break
-    estimator_old = estimator
+    with PETSc.Log.Event('Metric'):
 
-    # Process metric
-    P1_ten = TensorFunctionSpace(mesh, 'CG', 1)
-    p1metric = hessian_metric(clement_interpolant(p0metric))
-    enforce_element_constraints(p1metric,
-                                setup.parameters.h_min,
-                                setup.parameters.h_max,
-                                1.0e+05)
+        # Check for error estimator convergence
+        P0 = dwr.function_space()
+        estimator = dwr.vector().gather().sum()
+        print(f'    Error estimator      = {estimator}')
+        if estimator_old is not None and fp_iteration >= miniter:
+            if abs(estimator - estimator_old) < estimator_rtol*abs(estimator_old):
+                converged_reason = 'error estimator convergence'
+                break
+        estimator_old = estimator
+
+        # Process metric
+        P1_ten = TensorFunctionSpace(mesh, 'CG', 1)
+        p1metric = hessian_metric(clement_interpolant(p0metric))
+        enforce_element_constraints(p1metric,
+                                    setup.parameters.h_min,
+                                    setup.parameters.h_max,
+                                    1.0e+05)
+        metric = RiemannianMetric(mesh)
+        metric.assign(p1metric)
 
     # Adapt the mesh and check for element count convergence
-    metric = RiemannianMetric(mesh)
-    metric.assign(p1metric)
     mesh = adapt(mesh, metric)
     elements = mesh.num_cells()
     print(f'  Mesh {fp_iteration+1}')

@@ -28,10 +28,10 @@ def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None):
     assert len(fields) == 1, "Multiple fields not supported"
 
     # Solve forward problem in base space
+    V = config.get_function_space(mesh)
+    ic = config.get_initial_condition(V)
+    solver_obj = config.setup_solver(mesh, ic)
     with PETSc.Log.Event('Forward solve'):
-        V = config.get_function_space(mesh)
-        ic = config.get_initial_condition(V)
-        solver_obj = config.setup_solver(mesh, ic)
         solver_obj.iterate()
     q = solver_obj.fields.solution_2d
     if not solve_adjoint:
@@ -39,19 +39,19 @@ def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None):
 
     # Solve adjoint problem in base space
     sp = config.parameters.adjoint_solver_parameters
+    J = config.get_qoi(mesh)(q)
+    q_star = Function(V)
+    F = solver_obj.timestepper.F
+    dFdq = derivative(F, q, TrialFunction(V))
+    dFdq_transpose = adjoint(dFdq)
+    dJdq = derivative(J, q, TestFunction(V))
     with PETSc.Log.Event('Adjoint solve'):
-        J = config.get_qoi(mesh)(q)
-        q_star = Function(V)
-        F = solver_obj.timestepper.F
-        dFdq = derivative(F, q, TrialFunction(V))
-        dFdq_transpose = adjoint(dFdq)
-        dJdq = derivative(J, q, TestFunction(V))
         solve(dFdq_transpose == dJdq, q_star, solver_parameters=sp)
     if refined_mesh is None:
         return q, q_star
 
     # Solve adjoint problem in enriched space
-    with PETSc.Log.Event('Enriched adjoint solve'):
+    with PETSc.Log.Event('Metric'):
         V = config.get_function_space(refined_mesh)
         q_plus = Function(V)
         solver_obj = config.setup_solver(refined_mesh, q_plus)
@@ -132,25 +132,31 @@ def indicate_errors(mesh, config, enrichment_method='h', retall=False):
     """
     if not enrichment_method == 'h':
         raise NotImplementedError  # TODO
-    mesh, refined_mesh = MeshHierarchy(mesh, 1)
+    with PETSc.Log.Event('Metric'):
+        mesh, refined_mesh = MeshHierarchy(mesh, 1)
+
+    # Solve the forward and adjoint problems
     fwd_sol, adj_sol, adj_sol_plus = get_solutions(mesh, config, refined_mesh=refined_mesh)
 
-    # Prolong
-    V_plus = adj_sol_plus.function_space()
-    fwd_sol_plg = Function(V_plus)
-    tm.prolong(fwd_sol, fwd_sol_plg)
-    adj_sol_plg = Function(V_plus)
-    tm.prolong(adj_sol, adj_sol_plg)
+    with PETSc.Log.Event('Metric'):
 
-    # Subtract prolonged adjoint solution from enriched version
-    adj_error = Function(V_plus)
-    adj_sols_plus = split_into_components(adj_sol_plus)
-    adj_sols_plg = split_into_components(adj_sol_plg)
-    for i, err in enumerate(split_into_components(adj_error)):
-        err += adj_sols_plus[i] - adj_sols_plg[i]
+        # Prolong
+        V_plus = adj_sol_plus.function_space()
+        fwd_sol_plg = Function(V_plus)
+        tm.prolong(fwd_sol, fwd_sol_plg)
+        adj_sol_plg = Function(V_plus)
+        tm.prolong(adj_sol, adj_sol_plg)
 
-    # Evaluate errors
-    dwr, dwr_plus = config.dwr_indicator(mesh, fwd_sol_plg, adj_error)
+        # Subtract prolonged adjoint solution from enriched version
+        adj_error = Function(V_plus)
+        adj_sols_plus = split_into_components(adj_sol_plus)
+        adj_sols_plg = split_into_components(adj_sol_plg)
+        for i, err in enumerate(split_into_components(adj_error)):
+            err += adj_sols_plus[i] - adj_sols_plg[i]
+
+        # Evaluate errors
+        dwr, dwr_plus = config.dwr_indicator(mesh, fwd_sol_plg, adj_error)
+
     if retall:
         return dwr, fwd_sol, adj_sol, dwr_plus, adj_error
     else:
