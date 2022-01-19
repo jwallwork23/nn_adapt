@@ -3,6 +3,7 @@ outputs/
 plots/
 __pycache__/
 nn_adapt.egg-info/
+.ipynb_checkpoints/
 
 *.h5
 *.jpeg
