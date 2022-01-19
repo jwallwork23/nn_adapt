@@ -89,9 +89,9 @@ profile: profile_turbine
 profile_turbine: profile_turbine_go profile_turbine_ml
 
 profile_turbine_go:
-	python3 run_adapt.py turbine 0 -log_view :logview.txt:ascii_flamegraph
-	flamegraph.pl --title "Goal-Oriented 2-turbine 0" logview.txt > turbine/outputs/go0.svg && rm logview.txt
+	python3 run_adapt.py turbine 0 -target_complexity 32000 -log_view :logview.txt:ascii_flamegraph
+	flamegraph.pl --title "Goal-Oriented (test case 0)" logview.txt > turbine/outputs/go0.svg && rm logview.txt
 
 profile_turbine_ml:
-	python3 run_adapt_ml.py turbine 0 -log_view :logview.txt:ascii_flamegraph
-	flamegraph.pl --title "Data-driven 2-turbine 0" logview.txt > turbine/outputs/ml0.svg && rm logview.txt
+	python3 run_adapt_ml.py turbine 0 -target_complexity 32000 -log_view :logview.txt:ascii_flamegraph
+	flamegraph.pl --title "Data-driven (test case 0)" logview.txt > turbine/outputs/ml0.svg && rm logview.txt
