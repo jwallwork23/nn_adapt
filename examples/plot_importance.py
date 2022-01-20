@@ -5,20 +5,6 @@ import argparse
 import numpy as np
 
 
-# Parse model
-parser = argparse.ArgumentParser(prog='test_importance.py')
-parser.add_argument('model', help='The equation set being solved')
-parser.add_argument('test_case', help='The configuration file number')
-parsed_args = parser.parse_args()
-model = parsed_args.model
-assert model in ['stokes', 'turbine']
-test_case = int(parsed_args.test_case)
-assert test_case in list(range(12))
-
-# Number of perturbations to the input parameters
-N = 100
-
-
 def Loss():
     """
     Custom loss function.
@@ -30,40 +16,51 @@ def Loss():
     return mse
 
 
+# Hard-coded parameters
+num_test_cases = 12
+num_inputs = 29
+num_runs = 7
+
+# Parse model
+parser = argparse.ArgumentParser(prog='test_importance.py')
+parser.add_argument('model', help='The equation set being solved')
+parsed_args = parser.parse_args()
+model = parsed_args.model
+assert model in ['stokes', 'turbine']
+
 # Load the model
 nn = SimpleNet().to(device)
 nn.load_state_dict(torch.load(f'{model}/model.pt'))
 nn.eval()
-loss = Loss()
+loss_fn = Loss()
 
-# Load some data
-features = torch.from_numpy(np.load(f'{model}/data/features{test_case}_GOanisotropic_0.npy')).type(torch.float32)
-expected = torch.from_numpy(np.load(f'{model}/data/targets{test_case}_GOanisotropic_0.npy')).type(torch.float32)
+sensitivity = torch.zeros(29)
+for approach in ['isotropic', 'anisotropic']:
+    for run in range(4):
+        if run == 0 and approach == 'anisotropic':
+            continue
+        for test_case in range(num_test_cases):
 
-# Evaluate the loss
-before = loss(expected, nn.forward(features))
+            # Load some data and mark inputs as independent
+            features = torch.from_numpy(np.load(f'{model}/data/features{test_case}_GO{approach}_{run}.npy')).type(torch.float32)
+            expected = torch.from_numpy(np.load(f'{model}/data/targets{test_case}_GO{approach}_{run}.npy')).type(torch.float32)
+            features.requires_grad_(True)
 
-# Perturb the desired input parameter and evaluate the loss again
-increase = []
-for i in range(29):
-    inc = 0
-    for k in range(N):
-        eps = np.random.rand(len(features))
-        features[:, i] += eps
-        after = loss(expected, nn.forward(features))
-        features[:, i] -= eps
-        inc += abs(after - before)/before*100
-    inc /= N
-    print(f'Input {i:2d}:  before {before:6.2f}  after {after:6.2f}  increase {inc:6.2f}%')
-    increase.append(inc.detach().numpy())
+            # Evaluate the loss
+            loss = loss_fn(expected, nn(features))
+
+            # Backpropagate and average to get the sensitivities
+            loss.backward()
+            sensitivity += features.grad.abs().mean(axis=0)
+sensitivity /= num_test_cases*num_runs
 
 # Plot increases as a bar chart
 fig, axes = plt.subplots()
-colours = ['0'] + 4*['0.2'] + 12*['0.4'] + 12*['0.6']
-axes.bar(list(range(1)), increase[:1], color='0', label='Physics')
-axes.bar(list(range(1, 5)), increase[1:5], color='0.2', label='Mesh')
-axes.bar(list(range(5, 17)), increase[5:17], color='0.4', label='Forward')
-axes.bar(list(range(17, 29)), increase[17:], color='0.6', label='Adjoint')
+colours = ['C0'] + 4*['deepskyblue'] + 12*['mediumturquoise'] + 12*['mediumseagreen']
+axes.bar(list(range(1)), sensitivity[:1], color='C0', label='Physics')
+axes.bar(list(range(1, 5)), sensitivity[1:5], color='deepskyblue', label='Mesh')
+axes.bar(list(range(5, 17)), sensitivity[5:17], color='mediumturquoise', label='Forward')
+axes.bar(list(range(17, 29)), sensitivity[17:], color='mediumseagreen', label='Adjoint')
 axes.set_xticks([])
 axes.set_xlabel('Input parameters')
 axes.set_ylabel('Network sensitivity')

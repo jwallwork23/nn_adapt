@@ -42,7 +42,7 @@ plot_weights:
 
 plot_importance:
 	for model in turbine; do \
-		python3 plot_importance.py $$model 0; \
+		python3 plot_importance.py $$model; \
 	done
 
 # --- Snapshots
