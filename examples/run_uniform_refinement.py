@@ -3,7 +3,10 @@ import argparse
 import importlib
 import numpy as np
 import os
+from time import perf_counter
 
+
+start_time = perf_counter()
 
 # Parse for test case and number of refinements
 parser = argparse.ArgumentParser()
@@ -28,17 +31,22 @@ mh = MeshHierarchy(mesh, num_refinements)
 qois = []
 dofs = []
 elements = []
+setup_time = perf_counter() - start_time
 print(f'Test case {test_case}')
+print(f'Setup time: {setup_time:.2f} seconds')
 for i, mesh in enumerate(mh):
+    start_time = perf_counter()
     print(f'  Mesh {i}')
     print(f'    Element count        = {mesh.num_cells()}')
     fwd_sol = get_solutions(mesh, setup, solve_adjoint=False)
     fs = fwd_sol.function_space()
-    J = assemble(setup.get_qoi(mesh)(fwd_sol))
-    print(f'    Quantity of Interest = {J}')
+    qoi = assemble(setup.get_qoi(mesh)(fwd_sol))
+    print(f'    Quantity of Interest = {qoi}')
+    print(f'    Runtime: {perf_counter() - start_time:.2f} seconds')
     qois.append(qoi)
     dofs.append(sum(fs.dof_count))
     elements.append(mesh.num_cells())
     np.save(f'{model}/data/qois_uniform_{test_case}', qois)
     np.save(f'{model}/data/dofs_uniform_{test_case}', dofs)
     np.save(f'{model}/data/elements_uniform_{test_case}', elements)
+print(f'Setup time: {setup_time:.2f} seconds')
