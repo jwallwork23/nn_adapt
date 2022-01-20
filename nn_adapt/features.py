@@ -73,8 +73,6 @@ def extract_features(config, fwd_sol, adj_sol, preproc='none'):
     :kwarg preproc: preprocessor function
     """
     mesh = fwd_sol.function_space().mesh()
-    P0 = firedrake.FunctionSpace(mesh, 'DG', 0)
-    P0_ten = firedrake.TensorFunctionSpace(mesh, 'DG', 0)
 
     # Mesh Reynolds number
     with PETSc.Log.Event('Compute Re'):
@@ -83,13 +81,9 @@ def extract_features(config, fwd_sol, adj_sol, preproc='none'):
     # Features describing the mesh element
     with PETSc.Log.Event('Analyse element'):
         J = ufl.Jacobian(mesh)
+        P0_ten = firedrake.TensorFunctionSpace(mesh, 'DG', 0)
         JTJ = firedrake.interpolate(ufl.dot(ufl.transpose(J), J), P0_ten)
         d, h1, h2 = extract_components(JTJ)
-        bnd_nodes = firedrake.DirichletBC(P0, 0, 'on_boundary').nodes
-        bnd_tags = [
-            1 if node in bnd_nodes else 0
-            for node in range(mesh.num_cells())
-        ]
 
     # Features describing the forward and adjoint solutions
     with PETSc.Log.Event('Extract DoFs'):
@@ -101,7 +95,7 @@ def extract_features(config, fwd_sol, adj_sol, preproc='none'):
 
     # Combine the features together
     with PETSc.Log.Event('Combine features'):
-        features = np.hstack((np.vstack([Re, d, h1, h2, bnd_tags]).transpose(), np.hstack(vals)))
+        features = np.hstack((np.vstack([Re, d, h1, h2]).transpose(), np.hstack(vals)))
     assert not np.isnan(features).any()
     return preprocess_features(features, preproc=preproc)
 

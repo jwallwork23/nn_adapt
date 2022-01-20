@@ -18,7 +18,7 @@ def Loss():
 
 # Hard-coded parameters
 num_test_cases = 12
-num_inputs = 29
+num_inputs = 28
 num_runs = 7
 
 # Parse model
@@ -34,7 +34,7 @@ nn.load_state_dict(torch.load(f'{model}/model.pt'))
 nn.eval()
 loss_fn = Loss()
 
-sensitivity = torch.zeros(29)
+sensitivity = torch.zeros(num_inputs)
 for approach in ['isotropic', 'anisotropic']:
     for run in range(4):
         if run == 0 and approach == 'anisotropic':
@@ -56,11 +56,11 @@ sensitivity /= num_test_cases*num_runs
 
 # Plot increases as a bar chart
 fig, axes = plt.subplots()
-colours = ['C0'] + 4*['deepskyblue'] + 12*['mediumturquoise'] + 12*['mediumseagreen']
+colours = ['C0'] + 3*['deepskyblue'] + 12*['mediumturquoise'] + 12*['mediumseagreen']
 axes.bar(list(range(1)), sensitivity[:1], color='C0', label='Physics')
-axes.bar(list(range(1, 5)), sensitivity[1:5], color='deepskyblue', label='Mesh')
-axes.bar(list(range(5, 17)), sensitivity[5:17], color='mediumturquoise', label='Forward')
-axes.bar(list(range(17, 29)), sensitivity[17:], color='mediumseagreen', label='Adjoint')
+axes.bar(list(range(1, 4)), sensitivity[1:4], color='deepskyblue', label='Mesh')
+axes.bar(list(range(4, 16)), sensitivity[4:16], color='mediumturquoise', label='Forward')
+axes.bar(list(range(16, 28)), sensitivity[16:], color='mediumseagreen', label='Adjoint')
 axes.set_xticks([])
 axes.set_xlabel('Input parameters')
 axes.set_ylabel('Network sensitivity')

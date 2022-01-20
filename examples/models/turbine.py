@@ -3,7 +3,7 @@ import numpy as np
 
 
 class Parameters(object):
-    num_inputs = 29
+    num_inputs = 28
     num_outputs = 1
     dofs_per_element = 12
     h_min = 1.0e-05

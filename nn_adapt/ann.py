@@ -45,20 +45,19 @@ class SimpleNet(nn.Module):
           + [element size]
           + [element orientation]
           + [element shape]
-          + [boundary element?]
           + [12 forward DoFs per element]
           + [12 adjoint DoFs per element]
-          = 29
+          = 28
 
     Hidden layer:
     =============
-        58 neurons
+        56 neurons
 
     Output layer:
     =============
         [1 error indicator value]
     """
-    def __init__(self, num_inputs=29, num_outputs=1, num_hidden_neurons=58):
+    def __init__(self, num_inputs=28, num_outputs=1, num_hidden_neurons=56):
         super(SimpleNet, self).__init__()
         self.linear1 = nn.Linear(num_inputs, num_hidden_neurons)
         self.activate1 = nn.Sigmoid()

@@ -24,9 +24,9 @@ eps = 0.53
 w = 10
 y = 62
 axes[1].hlines(y, 0 - eps, 0 + eps, color='0', linewidth=w, label='Physics')
-axes[1].hlines(y, 1 - eps, 4 + eps, color='0.2', linewidth=w, label='Mesh')
-axes[1].hlines(y, 5 - eps, 16 + eps, color='0.4', linewidth=w, label='Forward solution')
-axes[1].hlines(y, 17 - eps, 28 + eps, color='0.6', linewidth=w, label='Adjoint solution')
+axes[1].hlines(y, 1 - eps, 3 + eps, color='0.2', linewidth=w, label='Mesh')
+axes[1].hlines(y, 4 - eps, 15 + eps, color='0.4', linewidth=w, label='Forward solution')
+axes[1].hlines(y, 16 - eps, 27 + eps, color='0.6', linewidth=w, label='Adjoint solution')
 axes[1].axis(False)
 axes[0].axis(False)
 cb = fig.colorbar(im, ax=axes[1], anchor=(0.0, 0.5), shrink=0.8)
