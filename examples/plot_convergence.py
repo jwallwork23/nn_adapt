@@ -26,6 +26,7 @@ xlim = [3.0e+03, 4.0e+06]
 for test_case in range(12):
     print(f'plot_convergence::{model}-{test_case}')
     fig, axes = plt.subplots()
+    start = max(np.load(f'{model}/data/qois_uniform_{test_case}.npy'))
     conv = np.load(f'{model}/data/qois_GOanisotropic_{test_case}.npy')[-1]
     axes.hlines(conv, *xlim, 'k', label='Converged QoI')
     for approach, metadata in approaches.items():
@@ -37,6 +38,7 @@ for test_case in range(12):
             continue
         axes.semilogx(dofs, qois, **metadata)
     axes.set_xlim(xlim)
+    axes.set_ylim([conv - 0.05*(start - conv), start + 0.05*(start - conv)])
     axes.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
     if test_case // 3 in [2, 3]:
         axes.set_xlabel('DoF count')
