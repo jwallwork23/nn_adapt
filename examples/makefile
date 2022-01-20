@@ -91,12 +91,16 @@ plot_convergence:
 
 profile: profile_turbine
 
-profile_turbine: profile_turbine_go profile_turbine_ml
+profile_turbine: profile_turbine_uni profile_turbine_go profile_turbine_ml
+
+profile_turbine_uni:
+	python3 run_fixed_mesh.py turbine 0 -optimise 1 -num_refinements 4 -log_view :logview.txt:ascii_flamegraph
+	flamegraph.pl --title "Uniform refinement (test case 0)" logview.txt > turbine/outputs/uni0.svg && rm logview.txt
 
 profile_turbine_go:
-	python3 run_adapt.py turbine 0 -optimise 1 -target_complexity 32000 -log_view :logview.txt:ascii_flamegraph
-	flamegraph.pl --title "Goal-Oriented (test case 0)" logview.txt > turbine/outputs/go0.svg && rm logview.txt
+	python3 run_adapt.py turbine 0 -anisotropic 1 -optimise 1 -target_complexity 64000 -log_view :logview.txt:ascii_flamegraph
+	flamegraph.pl --title "Goal-oriented adaptation (test case 0)" logview.txt > turbine/outputs/go0.svg && rm logview.txt
 
 profile_turbine_ml:
-	python3 run_adapt_ml.py turbine 0 -optimise 1 -target_complexity 32000 -log_view :logview.txt:ascii_flamegraph
-	flamegraph.pl --title "Data-driven (test case 0)" logview.txt > turbine/outputs/ml0.svg && rm logview.txt
+	python3 run_adapt_ml.py turbine 0 -anisotropic 1 -optimise 1 -target_complexity 64000 -log_view :logview.txt:ascii_flamegraph
+	flamegraph.pl --title "Data-driven adaptation (test case 0)" logview.txt > turbine/outputs/ml0.svg && rm logview.txt

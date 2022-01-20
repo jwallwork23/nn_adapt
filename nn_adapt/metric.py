@@ -2,7 +2,6 @@ from pyroteus import *
 from nn_adapt.solving import *
 
 
-@PETSc.Log.EventDecorator('nn_adapt.get_hessians')
 def get_hessians(f, **kwargs):
     """
     Compute Hessians for each component of
@@ -23,7 +22,6 @@ def get_hessians(f, **kwargs):
     ]
 
 
-@PETSc.Log.EventDecorator('nn_adapt.go_metric')
 def go_metric(mesh, config, enrichment_method='h', target_complexity=4000.0,
               average=True, interpolant='L2', anisotropic=False, retall=False):
     """
@@ -52,16 +50,17 @@ def go_metric(mesh, config, enrichment_method='h', target_complexity=4000.0,
     dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus = indicate_errors(
         mesh, config, enrichment_method=enrichment_method, retall=True
     )
-    if anisotropic:
-        hessian = combine_metrics(*get_hessians(fwd_sol), average=average)
-    else:
-        hessian = None
-    metric = anisotropic_metric(
-        dwr, hessian=hessian,
-        target_complexity=target_complexity,
-        target_space=TensorFunctionSpace(mesh, 'DG', 0),
-        interpolant=interpolant
-    )
+    with PETSc.Log.Event('Metric construction'):
+        if anisotropic:
+            hessian = combine_metrics(*get_hessians(fwd_sol), average=average)
+        else:
+            hessian = None
+        metric = anisotropic_metric(
+            dwr, hessian=hessian,
+            target_complexity=target_complexity,
+            target_space=TensorFunctionSpace(mesh, 'DG', 0),
+            interpolant=interpolant
+        )
     if retall:
         return metric, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus
     else:

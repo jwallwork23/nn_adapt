@@ -99,7 +99,7 @@ for fp_iteration in range(maxiter+1):
     features = extract_features(setup, fwd_sol, adj_sol, preproc=preproc)
 
     # Run model
-    with PETSc.Log.Event('nn_adapt.run_model'):
+    with PETSc.Log.Event('Network propagate'):
         test_targets = np.array([])
         with torch.no_grad():
             for i in range(features.shape[0]):
@@ -110,18 +110,19 @@ for fp_iteration in range(maxiter+1):
         dwr.dat.data[:] = np.abs(test_targets)
 
     # Check for error estimator convergence
-    estimator = dwr.vector().gather().sum()
-    print(f'    Error estimator      = {estimator}')
-    if estimator_old is not None and fp_iteration >= miniter:
-        if abs(estimator - estimator_old) < estimator_rtol*abs(estimator_old):
-            converged_reason = 'error estimator convergence'
-            break
-    estimator_old = estimator
+    with PETSc.Log.Event('Error estimation'):
+        estimator = dwr.vector().gather().sum()
+        print(f'    Error estimator      = {estimator}')
+        if estimator_old is not None and fp_iteration >= miniter:
+            if abs(estimator - estimator_old) < estimator_rtol*abs(estimator_old):
+                converged_reason = 'error estimator convergence'
+                break
+        estimator_old = estimator
     if not optimise:
         ee_file.write(dwr)
 
     # Construct metric
-    with PETSc.Log.Event('nn_adapt.construct_metric'):
+    with PETSc.Log.Event('Metric construction'):
         if approach == 'anisotropic':
             hessian = combine_metrics(*get_hessians(adj_sol), average=True)
         else:
@@ -130,21 +131,24 @@ for fp_iteration in range(maxiter+1):
             dwr, hessian, target_complexity=target_complexity,
             target_space=P0_ten, interpolant='L2'
         )
+
+        # Process metric
+        P1_ten = TensorFunctionSpace(mesh, 'CG', 1)
+        p1metric = hessian_metric(clement_interpolant(p0metric))
+        enforce_element_constraints(p1metric,
+                                    setup.parameters.h_min,
+                                    setup.parameters.h_max,
+                                    1.0e+05)
+
+        # Adapt the mesh and check for element count convergence
+        metric = RiemannianMetric(mesh)
+        metric.assign(p1metric)
     if not optimise:
         metric_file.write(p0metric)
 
-    # Process metric
-    P1_ten = TensorFunctionSpace(mesh, 'CG', 1)
-    p1metric = hessian_metric(clement_interpolant(p0metric))
-    enforce_element_constraints(p1metric,
-                                setup.parameters.h_min,
-                                setup.parameters.h_max,
-                                1.0e+05)
-
     # Adapt the mesh and check for element count convergence
-    metric = RiemannianMetric(mesh)
-    metric.assign(p1metric)
-    mesh = adapt(mesh, metric)
+    with PETSc.Log.Event('Mesh adaptation'):
+        mesh = adapt(mesh, metric)
     elements = mesh.num_cells()
     print(f'  Mesh {fp_iteration+1}')
     print(f'    Element count        = {elements}')

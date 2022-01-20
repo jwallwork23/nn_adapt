@@ -24,14 +24,15 @@ num_refinements = int(parsed_args.num_refinements or 0)
 assert num_refinements >= 0
 optimise = bool(parsed_args.optimise or False)
 
-# Run fixed mesh setup
+# Setup
 setup = importlib.import_module(f'{model}.config{test_case}')
 mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.msh')
 if num_refinements > 0:
     with PETSc.Log.Event('Hierarchy'):
         mesh = MeshHierarchy(mesh, num_refinements)[-1]
 
-fwd_sol, adj_sol = get_solutions(mesh, setup)
+# Solve and evaluate QoI
+fwd_sol = get_solutions(mesh, setup, solve_adjoint=False)
 J = assemble(setup.get_qoi(mesh)(fwd_sol))
 print(f'QoI for test case {test_case} = {J:.2f} MW')
 if not optimise:

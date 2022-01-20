@@ -6,7 +6,6 @@ from firedrake.mg.embedded import TransferManager
 tm = TransferManager()
 
 
-@PETSc.Log.EventDecorator('nn_adapt.get_solutions')
 def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None):
     """
     Solve forward and adjoint equations on a
@@ -51,7 +50,7 @@ def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None):
         return q, q_star
 
     # Solve adjoint problem in enriched space
-    with PETSc.Log.Event('Metric'):
+    with PETSc.Log.Event('Enrichment'):
         V = config.get_function_space(refined_mesh)
         q_plus = Function(V)
         solver_obj = config.setup_solver(refined_mesh, q_plus)
@@ -112,7 +111,6 @@ def split_into_components(f):
     return [f] if f.function_space().value_size == 1 else f.split()
 
 
-@PETSc.Log.EventDecorator('nn_adapt.indicate_error')
 def indicate_errors(mesh, config, enrichment_method='h', retall=False):
     """
     Indicate errors according to the ``dwr_indicator``
@@ -132,13 +130,13 @@ def indicate_errors(mesh, config, enrichment_method='h', retall=False):
     """
     if not enrichment_method == 'h':
         raise NotImplementedError  # TODO
-    with PETSc.Log.Event('Metric'):
+    with PETSc.Log.Event('Enrichment'):
         mesh, refined_mesh = MeshHierarchy(mesh, 1)
 
     # Solve the forward and adjoint problems
     fwd_sol, adj_sol, adj_sol_plus = get_solutions(mesh, config, refined_mesh=refined_mesh)
 
-    with PETSc.Log.Event('Metric'):
+    with PETSc.Log.Event('Enrichment'):
 
         # Prolong
         V_plus = adj_sol_plus.function_space()

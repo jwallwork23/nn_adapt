@@ -109,9 +109,8 @@ for fp_iteration in range(maxiter+1):
             break
     qoi_old = qoi
 
-    with PETSc.Log.Event('Metric'):
-
-        # Check for error estimator convergence
+    # Check for error estimator convergence
+    with PETSc.Log.Event('Error estimation'):
         P0 = dwr.function_space()
         estimator = dwr.vector().gather().sum()
         print(f'    Error estimator      = {estimator}')
@@ -121,7 +120,8 @@ for fp_iteration in range(maxiter+1):
                 break
         estimator_old = estimator
 
-        # Process metric
+    # Process metric
+    with PETSc.Log.Event('Metric construction'):
         P1_ten = TensorFunctionSpace(mesh, 'CG', 1)
         p1metric = hessian_metric(clement_interpolant(p0metric))
         enforce_element_constraints(p1metric,
@@ -132,7 +132,8 @@ for fp_iteration in range(maxiter+1):
         metric.assign(p1metric)
 
     # Adapt the mesh and check for element count convergence
-    mesh = adapt(mesh, metric)
+    with PETSc.Log.Event('Mesh adaptation'):
+        mesh = adapt(mesh, metric)
     elements = mesh.num_cells()
     print(f'  Mesh {fp_iteration+1}')
     print(f'    Element count        = {elements}')
