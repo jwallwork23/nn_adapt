@@ -12,9 +12,9 @@ model = args.model
 assert model in ['stokes', 'turbine']
 
 # Load data
-epochs = np.load(f'{model}/data/epochs.npy') + 1
 train_losses = np.load(f'{model}/data/train_losses.npy')
 validation_losses = np.load(f'{model}/data/validation_losses.npy')
+epochs = np.arange(len(train_losses)) + 1
 
 # Plot training losses
 fig, axes = plt.subplots()

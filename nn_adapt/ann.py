@@ -41,13 +41,13 @@ class SimpleNet(nn.Module):
 
     Input layer:
     ============
-        [12 forward DoFs per element]
-          + [12 adjoint DoFs per element]
+        [mesh Reynolds number]
+          + [element size]
           + [element orientation]
           + [element shape]
-          + [element size]
           + [boundary element?]
-          + [mesh Reynolds number]
+          + [12 forward DoFs per element]
+          + [12 adjoint DoFs per element]
           = 29
 
     Hidden layer:
@@ -71,9 +71,13 @@ class SimpleNet(nn.Module):
         return z2
 
 
-def train(data_loader, model, loss_fn, optimizer):
+def propagate(data_loader, model, loss_fn, optimizer=None):
     """
-    Train the neural network.
+    Propagate data from a :class:`DataLoader` object
+    through the neural network.
+
+    If ``optimizer`` is not ``None`` then training is
+    performed. Otherwise, validation is performed.
 
     :arg data_loader: PyTorch :class:`DataLoader` instance
     :arg model: PyTorch :class:`Module` instance
@@ -91,36 +95,9 @@ def train(data_loader, model, loss_fn, optimizer):
         cumulative_loss += loss.item()
 
         # Backpropagation
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        if optimizer is not None:
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-    out = cumulative_loss/num_batches
-    return out
-
-
-def validate(data_loader, model, loss_fn, epoch, num_epochs, timestamp):
-    """
-    Validate the neural network.
-
-    :arg data_loader: PyTorch :class:`DataLoader` instance
-    :arg model: PyTorch :class:`Module` instance
-    :arg loss_fn: PyTorch loss function instance
-    :arg epoch: the current epoch
-    :arg num_epochs: the total number of epochs
-    :arg timestamp: timestamp for the start of this epoch
-    """
-    num_batches = len(data_loader)
-    cumulative_loss = 0
-
-    with torch.no_grad():
-        for x, y in data_loader:
-            prediction = model(x.to(device))
-            loss = loss_fn(prediction, y.to(device))
-            cumulative_loss += loss.item()
-
-    out = cumulative_loss/num_batches
-    print(f"Epoch {epoch:4d}/{num_epochs:d}"
-          f"  avg loss: {out:.4e}"
-          f"  wallclock {perf_counter() - timestamp:.1f}s")
-    return out
+    return cumulative_loss/num_batches

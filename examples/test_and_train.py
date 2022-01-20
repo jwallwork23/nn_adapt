@@ -1,6 +1,7 @@
 import argparse
 from sklearn import model_selection
 from nn_adapt.ann import *
+from nn_adapt.features import preprocess_features
 
 
 # Configuration
@@ -12,17 +13,17 @@ parser.add_argument('-preproc', help='Function for preprocessing data (default "
 parser.add_argument('-batch_size', help='Number of data points per training iteration (default 1000)')
 parser.add_argument('-test_batch_size', help='Number of data points per validation iteration (default 1000)')
 parser.add_argument('-test_size', help='Proportion of data used for validation (default 0.3)')
-args = parser.parse_args()
-model = args.model
+parsed_args = parser.parse_args()
+model = parsed_args.model
 assert model in ['stokes', 'turbine']
-lr = float(args.learning_rate or 2.0e-03)
-num_epochs = int(args.num_epochs or 1000)
-preproc = args.preproc or 'arctan'
-batch_size = int(args.batch_size or 1000)
+lr = float(parsed_args.learning_rate or 2.0e-03)
+num_epochs = int(parsed_args.num_epochs or 1000)
+preproc = parsed_args.preproc or 'arctan'
+batch_size = int(parsed_args.batch_size or 1000)
 assert batch_size > 0
-test_batch_size = int(args.test_batch_size or 1000)
+test_batch_size = int(parsed_args.test_batch_size or 1000)
 assert test_batch_size > 0
-test_size = float(args.test_size or 0.3)
+test_size = float(parsed_args.test_size or 0.3)
 assert 0.0 < test_size < 1.0
 
 # Load data
@@ -39,19 +40,7 @@ for run in range(4):
             targets = concat(targets, np.load(f'{model}/data/targets{i}_GO{approach}_{run}.npy'))
 print(f'Total number of features: {len(features.flatten())}')
 print(f'Total number of targets: {len(targets)}')
-
-# Pre-process features
-shape = features.shape
-if preproc == 'arctan':
-    f = np.arctan
-elif preproc == 'tanh':
-    f = np.tanh
-elif preproc == 'logabs':
-    f = lambda x: np.log(np.abs(x))
-elif preproc != 'none':
-    raise ValueError(f'Preprocessor "{preproc}" not recognised.')
-if preproc != 'none':
-    features = f(features.reshape(1, shape[0]*shape[1])).reshape(*shape)
+features = preprocess_features(features, preproc=preproc)
 
 # Get train and validation datasets
 xtrain, xval, ytrain, yval = model_selection.train_test_split(features, targets, test_size=0.3, random_state=42)
@@ -84,13 +73,23 @@ train_losses = []
 validation_losses = []
 set_seed(42)
 for epoch in range(num_epochs):
-    timestamp = perf_counter()
-    epochs.append(epoch)
-    train_losses.append(train(train_loader, nn, criterion, optimizer))
-    validation_losses.append(validate(validate_loader, nn, criterion, epoch, num_epochs, timestamp))
+
+    # Training step
+    start_time = perf_counter()
+    train = propagate(train_loader, nn, criterion, optimizer)
+    mid_time = perf_counter()
+    train_time = mid_time - start_time
+
+    # Validation step
+    val = propagate(validate_loader, nn, criterion)
+    validation_time = perf_counter() - mid_time
 
     # Stash progreess
-    np.save(f'{model}/data/epochs', epochs)
+    print(f"Epoch {epoch:4d}/{num_epochs:d}"
+          f"  avg loss: {train:.4e}/{val:.4e}"
+          f"  wallclock: {train_time:.2f}s/{validation_time:.2f}s")
+    train_losses.append(train)
+    validation_losses.append(val)
     np.save(f'{model}/data/train_losses', train_losses)
     np.save(f'{model}/data/validation_losses', validation_losses)
     torch.save(nn.state_dict(), f'{model}/model.pt')
