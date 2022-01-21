@@ -1,4 +1,4 @@
-from nn_adapt import *
+from nn_adapt.solving import *
 from firedrake.petsc import PETSc
 
 import argparse

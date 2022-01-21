@@ -1,4 +1,7 @@
-from nn_adapt import *
+from nn_adapt.features import *
+from nn_adapt.metric import *
+from nn_adapt.solving import *
+
 import argparse
 import importlib
 import numpy as np

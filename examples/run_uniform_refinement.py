@@ -1,4 +1,5 @@
-from nn_adapt import *
+from nn_adapt.solving import *
+
 import argparse
 import importlib
 import numpy as np
