@@ -77,9 +77,9 @@ criterion = Loss()
 print(f"Model parameters are{'' if all(p.is_cuda for p in nn.parameters()) else ' not'} using GPU cores.")
 
 # Train
-epochs = []
 train_losses = []
 validation_losses = []
+adapt_steps = []
 set_seed(42)
 for epoch in range(num_epochs):
 
@@ -93,6 +93,12 @@ for epoch in range(num_epochs):
     val = propagate(validate_loader, nn, criterion)
     validation_time = perf_counter() - mid_time
 
+    # Adapt learning rate
+    scheduler.step()
+    if epoch % lr_adapt_num_steps == 0:
+        adapt_steps.append(epoch)
+        np.save(f'{model}/data/adapt_steps', adapt_steps)
+
     # Stash progreess
     print(f"Epoch {epoch:4d}/{num_epochs:d}"
           f"  avg loss: {train:.4e} / {val:.4e}"
@@ -102,6 +108,3 @@ for epoch in range(num_epochs):
     np.save(f'{model}/data/train_losses', train_losses)
     np.save(f'{model}/data/validation_losses', validation_losses)
     torch.save(nn.state_dict(), f'{model}/model.pt')
-
-    # Adapt learning rate
-    scheduler.step()
