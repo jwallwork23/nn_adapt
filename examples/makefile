@@ -50,6 +50,8 @@ plot_importance:
 snapshot:
 	for model in turbine; do \
 		for i in `seq 0 11`; do \
+			python3 run_adapt.py $$model $$i; \
+			python3 run_adapt.py $$model $$i -anisotropic 1; \
 			python3 run_adapt_ml.py $$model $$i; \
 			python3 run_adapt_ml.py $$model $$i -anisotropic 1; \
 		done; \
