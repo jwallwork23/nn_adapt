@@ -2,6 +2,7 @@ import firedrake
 from firedrake.petsc import PETSc
 from firedrake import op2
 import numpy as np
+from nn_adapt.ann import preprocess_features
 from nn_adapt.solving import split_into_scalars
 from pyroteus.metric import *
 import ufl
@@ -98,26 +99,3 @@ def extract_features(config, fwd_sol, adj_sol, preproc='none'):
         features = np.hstack((np.vstack([Re, d, h1, h2]).transpose(), np.hstack(vals)))
     assert not np.isnan(features).any()
     return preprocess_features(features, preproc=preproc)
-
-
-@PETSc.Log.EventDecorator('Preprocess features')
-def preprocess_features(features, preproc='none'):
-    """
-    Pre-process features so that they are
-    similarly scaled.
-
-    :arg features: the array of features
-    :kwarg preproc: preprocessor function
-    """
-    if preproc == 'none':
-        return features
-    if preproc == 'arctan':
-        f = np.arctan
-    elif preproc == 'tanh':
-        f = np.tanh
-    elif preproc == 'logabs':
-        f = lambda x: np.ln(np.abs(x))
-    else:
-        raise ValueError(f'Preprocessor "{preproc}" not recognised.')
-    shape = features.shape
-    return f(features.reshape(1, shape[0]*shape[1])).reshape(*shape)
