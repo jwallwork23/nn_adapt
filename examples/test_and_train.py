@@ -9,27 +9,27 @@ from torch.optim.lr_scheduler import StepLR
 parser = argparse.ArgumentParser(prog='test_and_train.py')
 parser.add_argument('model', help='The equation set being solved')
 parser.add_argument('-lr', help='Starting learning rate, i.e. step length (default 2.0e-03)')
-parser.add_argument('-lr_adapt_num_steps', help='Number of steps between learning rate adapts (default 100)')
+parser.add_argument('-lr_adapt_num_steps', help='Number of steps between learning rate adapts (default 200)')
 parser.add_argument('-lr_adapt_factor', help='Factor by which to reduce the learning rate (default 0.8)')
 parser.add_argument('-num_epochs', help='The number of iterations (default 1000)')
 parser.add_argument('-preproc', help='Function for preprocessing data (default "arctan")')
-parser.add_argument('-batch_size', help='Number of data points per training iteration (default 1000)')
-parser.add_argument('-test_batch_size', help='Number of data points per validation iteration (default 1000)')
+parser.add_argument('-batch_size', help='Number of data points per training iteration (default 100)')
+parser.add_argument('-test_batch_size', help='Number of data points per validation iteration (default 100)')
 parser.add_argument('-test_size', help='Proportion of data used for validation (default 0.3)')
 parsed_args = parser.parse_args()
 model = parsed_args.model
 assert model in ['stokes', 'turbine']
 lr = float(parsed_args.lr or 2.0e-03)
 assert lr > 0.0
-lr_adapt_num_steps = int(parsed_args.lr_adapt_num_steps or 100)
+lr_adapt_num_steps = int(parsed_args.lr_adapt_num_steps or 200)
 assert lr_adapt_num_steps > 0
 lr_adapt_factor = float(parsed_args.lr_adapt_factor or 0.8)
 assert 0.0 < lr_adapt_factor < 1.0
 num_epochs = int(parsed_args.num_epochs or 1000)
 preproc = parsed_args.preproc or 'arctan'
-batch_size = int(parsed_args.batch_size or 1000)
+batch_size = int(parsed_args.batch_size or 100)
 assert batch_size > 0
-test_batch_size = int(parsed_args.test_batch_size or 1000)
+test_batch_size = int(parsed_args.test_batch_size or 100)
 assert test_batch_size > 0
 test_size = float(parsed_args.test_size or 0.3)
 assert 0.0 < test_size < 1.0
