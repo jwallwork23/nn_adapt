@@ -11,6 +11,7 @@ if torch.cuda.device_count() > 0 and torch.cuda.is_available():
     print(f"Cuda installed. Running on GPU {dev}.")
     device = torch.device(f"cuda:{dev}")
     torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.enabled = True
 else:
     print("No GPU available.")
     device = torch.device("cpu")
@@ -26,11 +27,6 @@ def set_seed(seed):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-
-    # Use the inbuilt cudnn auto-tuner to find the fastest convolution algorithm
-    torch.backends.cudnn.benchmark = True
-    torch.backends.cudnn.enabled = True
-    return True
 
 
 class SimpleNet(nn.Module):

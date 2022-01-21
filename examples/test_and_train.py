@@ -48,7 +48,8 @@ for run in range(4):
             targets = concat(targets, np.load(f'{model}/data/targets{i}_GO{approach}_{run}.npy'))
 print(f'Total number of features: {len(features.flatten())}')
 print(f'Total number of targets: {len(targets)}')
-features = preprocess_features(features, preproc=preproc)
+features = torch.from_numpy(preprocess_features(features, preproc=preproc)).type(torch.float32)
+targets = torch.from_numpy(targets).type(torch.float32)
 
 # Get train and validation datasets
 xtrain, xval, ytrain, yval = model_selection.train_test_split(features, targets, test_size=0.3, random_state=42)
