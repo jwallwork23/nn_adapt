@@ -79,6 +79,9 @@ print('  Mesh 0')
 print(f'    Element count        = {elements_old}')
 for fp_iteration in range(maxiter+1):
 
+    # Ramp up the target complexity
+    target_ramp = ramp_complexity(250.0, target_complexity, fp_iteration)
+
     # Solve forward and adjoint and compute Hessians
     fwd_sol, adj_sol = get_solutions(mesh, setup)
     dof = sum(fwd_sol.function_space().dof_count)
@@ -131,7 +134,7 @@ for fp_iteration in range(maxiter+1):
         else:
             hessian = None
         p0metric = anisotropic_metric(
-            dwr, hessian, target_complexity=target_complexity,
+            dwr, hessian, target_complexity=target_ramp,
             target_space=P0_ten, interpolant='L2'
         )
 

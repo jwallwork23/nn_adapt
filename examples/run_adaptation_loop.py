@@ -55,7 +55,6 @@ for i in range(num_refinements+1):
     target_complexity = 250.0*4**i
     kwargs = {
         'enrichment_method': 'h',
-        'target_complexity': target_complexity,
         'average': True,
         'anisotropic': approach == 'anisotropic',
         'retall': True,
@@ -74,6 +73,9 @@ for i in range(num_refinements+1):
     print(f'      Element count        = {elements_old}')
     cpu_timestamp = perf_counter()
     for fp_iteration in range(maxiter+1):
+
+        # Ramp up the target complexity
+        kwargs['target_complexity'] = ramp_complexity(250.0, target_complexity, fp_iteration)
 
         # Compute goal-oriented metric
         p0metric, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus = go_metric(mesh, setup, **kwargs)

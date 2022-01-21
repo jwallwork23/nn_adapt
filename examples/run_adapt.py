@@ -62,7 +62,6 @@ Nd = dim**2
 # Run adaptation loop
 kwargs = {
     'enrichment_method': 'h',
-    'target_complexity': target_complexity,
     'average': True,
     'anisotropic': approach == 'anisotropic',
     'retall': True,
@@ -82,6 +81,9 @@ print(f'Test case {test_case}')
 print('  Mesh 0')
 print(f'    Element count        = {elements_old}')
 for fp_iteration in range(maxiter+1):
+
+    # Ramp up the target complexity
+    kwargs['target_complexity'] = ramp_complexity(250.0, target_complexity, fp_iteration)
 
     # Compute goal-oriented metric
     p0metric, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus = go_metric(mesh, setup, **kwargs)
