@@ -30,6 +30,17 @@ class Parameters(object):
     }
     adjoint_solver_parameters = solver_parameters
 
+    def randomise(self, seed):
+        np.random.seed(seed)
+
+        # Random depth from 10m to 100m
+        self.depth = 10.0 + 90.0*np.random.rand()
+
+        # Random viscosity from 0.001 to 10
+        significand = 1.0 + np.random.rand()
+        exponent = np.random.randint(-3, 1)
+        self.viscosity.assign(significand*10**exponent)
+
     @property
     def num_turbines(self):
         return len(self.turbine_coords)
@@ -53,6 +64,10 @@ class Parameters(object):
         D = self.turbine_diameter
         Ct = self.thrust_coefficient
         return 4.0/(1.0 + sqrt(1.0 - A/(depth*D)))**2*Ct
+
+    def bathymetry(self, mesh):
+        P0_2d = get_functionspace(mesh, 'DG', 0)
+        return Function(P0_2d).assign(parameters.depth)
 
     def u_inflow(self, mesh):
         return as_vector([5, 0])
@@ -104,10 +119,7 @@ def get_function_space(mesh):
 
 
 def setup_solver(mesh, ic):
-    P1_2d = get_functionspace(mesh, 'CG', 1)
-
-    # Extract test case specific parameters
-    bathymetry = Function(P1_2d).assign(parameters.depth)
+    bathymetry = parameters.bathymetry(mesh)
     Cd = parameters.drag_coefficient
 
     # Create solver object

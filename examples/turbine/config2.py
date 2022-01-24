@@ -1,5 +1,5 @@
 from models.turbine import *
 
 
-parameters.viscosity = Constant(0.5)
+parameters.randomise(2)
 parameters.turbine_coords = [(50, 250)]
