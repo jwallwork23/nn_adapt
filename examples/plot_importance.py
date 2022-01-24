@@ -7,7 +7,6 @@ import numpy as np
 
 # Hard-coded parameters
 num_test_cases = 12
-num_inputs = 29
 adaptation_steps = 4
 
 # Parse model
@@ -25,6 +24,16 @@ nn.load_state_dict(torch.load(f'{model}/model.pt'))
 nn.eval()
 loss_fn = Loss()
 
+# Category metadata
+categories = {
+    'Physics': {'num': 3, 'colour': 'C0'},
+    'Mesh': {'num': 3, 'colour': 'deepskyblue'},
+    'Forward': {'num': 12, 'colour': 'mediumturquoise'},
+    'Adjoint': {'num': 12, 'colour': 'mediumseagreen'},
+}
+num_inputs = sum([md['num'] for label, md in categories.items()])
+
+# Compute (averaged) sensitivities of the network to the inputs
 sensitivity = torch.zeros(num_inputs)
 count = 0
 for approach in ['isotropic', 'anisotropic']:
@@ -50,13 +59,18 @@ sensitivity /= num_test_cases*adaptation_steps
 
 # Plot increases as a bar chart
 fig, axes = plt.subplots()
-axes.bar(list(range(2)), sensitivity[:2], color='C0', label='Physics')
-axes.bar(list(range(2, 5)), sensitivity[2:5], color='deepskyblue', label='Mesh')
-axes.bar(list(range(5, 17)), sensitivity[5:17], color='mediumturquoise', label='Forward')
-axes.bar(list(range(17, 29)), sensitivity[17:], color='mediumseagreen', label='Adjoint')
+i = 0
+for label, md in categories.items():
+    k = md['num']
+    axes.bar(np.arange(i, i+k), sensitivity[i:i+k], color=md['colour'], label=label)
+    i += k
+xlim = axes.get_xlim()
+axes.set_xlim([xlim[0]+1.25, xlim[1]-1.25])
 axes.set_xticks([])
+axes.set_yticks([])
 axes.set_xlabel('Input parameters')
 axes.set_ylabel('Network sensitivity')
-axes.legend(loc='upper left')
+axes.legend(loc='best')
+axes.grid(True)
 plt.tight_layout()
 plt.savefig(f'{model}/plots/importance.pdf')
