@@ -5,17 +5,6 @@ import argparse
 import numpy as np
 
 
-def Loss():
-    """
-    Custom loss function.
-
-    Needed when there is only one output value.
-    """
-    def mse(tens1, tens2):
-        return torch.nn.MSELoss(reduction='mean')(tens1, tens2.reshape(*tens1.shape))
-    return mse
-
-
 # Hard-coded parameters
 num_test_cases = 12
 num_inputs = 28

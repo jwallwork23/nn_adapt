@@ -117,3 +117,14 @@ def preprocess_features(features, preproc='none'):
         raise ValueError(f'Preprocessor "{preproc}" not recognised.')
     shape = features.shape
     return f(features.reshape(1, shape[0]*shape[1])).reshape(*shape)
+
+
+def Loss():
+    """
+    Custom loss function.
+
+    Needed when there is only one output value.
+    """
+    def mse(tens1, tens2):
+        return torch.nn.MSELoss(reduction='mean')(tens1, tens2.reshape(*tens1.shape))
+    return mse

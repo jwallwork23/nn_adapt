@@ -59,18 +59,6 @@ train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, sh
 validate_data = torch.utils.data.TensorDataset(torch.Tensor(xval), torch.Tensor(yval))
 validate_loader = torch.utils.data.DataLoader(validate_data, batch_size=test_batch_size, shuffle=False, num_workers=0)
 
-
-def Loss():
-    """
-    Custom loss function.
-
-    Needed when there is only one output value.
-    """
-    def mse(tens1, tens2):
-        return torch.nn.MSELoss(reduction='mean')(tens1, tens2.reshape(*tens1.shape))
-    return mse
-
-
 # Setup model
 nn = SimpleNet().to(device)
 optimizer = torch.optim.Adam(nn.parameters(), lr=lr)
