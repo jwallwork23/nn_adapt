@@ -32,10 +32,11 @@ if num_refinements > 0:
         mesh = MeshHierarchy(mesh, num_refinements)[-1]
 
 # Solve and evaluate QoI
-fwd_sol = get_solutions(mesh, setup, solve_adjoint=False)
-J = assemble(setup.get_qoi(mesh)(fwd_sol))
-print(f'QoI for test case {test_case} = {J:.2f} MW')
-if not optimise:
-    File(f'{model}/outputs/fixed/forward{test_case}.pvd').write(*fwd_sol.split())
-    File(f'{model}/outputs/fixed/adjoint{test_case}.pvd').write(*adj_sol.split())
+sols = get_solutions(mesh, setup, solve_adjoint=not optimise)
+if optimise:
+    print(f'QoI for test case {test_case} = {assemble(setup.get_qoi(mesh)(sols)):.2f} MW')
+else:
+    print(f'QoI for test case {test_case} = {assemble(setup.get_qoi(mesh)(sols[0])):.2f} MW')
+    File(f'{model}/outputs/fixed/forward{test_case}.pvd').write(*sols[0].split())
+    File(f'{model}/outputs/fixed/adjoint{test_case}.pvd').write(*sols[1].split())
 print(f'  Total time taken: {perf_counter() - start_time:.2f} seconds')
