@@ -2,6 +2,7 @@ from nn_adapt.ann import *
 
 import argparse
 from sklearn import model_selection
+from time import perf_counter
 from torch.optim.lr_scheduler import StepLR
 
 

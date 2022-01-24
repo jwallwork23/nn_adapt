@@ -2,7 +2,6 @@ import random
 import numpy as np
 import torch
 from torch import nn
-from time import perf_counter
 
 
 # Set device
