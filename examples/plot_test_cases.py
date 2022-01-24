@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser(prog='plot_progress.py')
 parser.add_argument('model', help='The equation set being solved')
 args = parser.parse_args()
 model = args.model
-assert model in ['stokes', 'turbine']
+assert model in ['turbine']
 
 # Bounding box
 xmin = 0

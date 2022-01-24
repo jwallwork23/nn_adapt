@@ -23,7 +23,7 @@ parser.add_argument('-element_rtol', help='Relative tolerance for element count 
 parser.add_argument('-estimator_rtol', help='Relative tolerance for error estimator (default 0.005)')
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
-assert model in ['stokes', 'turbine']
+assert model in ['turbine']
 test_case = int(parsed_args.test_case)
 assert test_case in list(range(16))
 approach = 'isotropic' if parsed_args.anisotropic in [None, '0'] else 'anisotropic'
@@ -59,12 +59,7 @@ for i in range(num_refinements+1):
         'anisotropic': approach == 'anisotropic',
         'retall': True,
     }
-    if model == 'stokes':
-        plex = PETSc.DMPlex().create()
-        plex.createFromFile(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.h5')
-        mesh = Mesh(plex)
-    else:
-        mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.msh')
+    mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.msh')
     qoi_old = None
     elements_old = mesh.num_cells()
     estimator_old = None

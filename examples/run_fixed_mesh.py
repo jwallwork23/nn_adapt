@@ -17,7 +17,7 @@ parser.add_argument('-num_refinements', help='Number of mesh refinements')
 parser.add_argument('-optimise', help='Turn off plotting and debugging (default False)')
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
-assert model in ['stokes', 'turbine']
+assert model in ['turbine']
 test_case = int(parsed_args.test_case)
 assert test_case in list(range(16))
 num_refinements = int(parsed_args.num_refinements or 0)

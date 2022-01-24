@@ -25,7 +25,7 @@ parser.add_argument('-preproc', help='Function for preprocessing data (default "
 parser.add_argument('-optimise', help='Turn off plotting and debugging (default False)')
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
-assert model in ['stokes', 'turbine']
+assert model in ['turbine']
 test_case = int(parsed_args.test_case)
 assert test_case in list(range(16))
 approach = 'isotropic' if parsed_args.anisotropic in [None, '0'] else 'anisotropic'
@@ -49,12 +49,7 @@ if not optimise:
 # Setup
 setup = importlib.import_module(f'{model}.config{test_case}')
 field = setup.fields[0]
-if model == 'stokes':
-    plex = PETSc.DMPlex().create()
-    plex.createFromFile(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.h5')
-    mesh = Mesh(plex)
-else:
-    mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.msh')
+mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.msh')
 dim = mesh.topological_dimension()
 Nd = dim**2
 num_inputs = setup.parameters.num_inputs

@@ -15,7 +15,7 @@ parser.add_argument('model', help='The equation set being solved')
 parser.add_argument('-preproc', help='Function for preprocessing data (default "arctan")')
 parsed_args = parser.parse_args()
 model = parsed_args.model
-assert model in ['stokes', 'turbine']
+assert model in ['turbine']
 preproc = parsed_args.preproc or 'arctan'
 
 # Load the model
