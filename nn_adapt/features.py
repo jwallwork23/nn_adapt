@@ -79,6 +79,7 @@ def extract_features(config, fwd_sol, adj_sol, preproc='none'):
     with PETSc.Log.Event('Compute Re'):
         Re = config.parameters.Re(fwd_sol).dat.data
         drag = config.parameters.drag(mesh).dat.data
+        b = config.parameters.bathymetry(mesh).dat.data
 
     # Features describing the mesh element
     with PETSc.Log.Event('Analyse element'):
@@ -97,6 +98,6 @@ def extract_features(config, fwd_sol, adj_sol, preproc='none'):
 
     # Combine the features together
     with PETSc.Log.Event('Combine features'):
-        features = np.hstack((np.vstack([Re, drag, d, h1, h2]).transpose(), np.hstack(vals)))
+        features = np.hstack((np.vstack([Re, drag, b, d, h1, h2]).transpose(), np.hstack(vals)))
     assert not np.isnan(features).any()
     return preprocess_features(features, preproc=preproc)
