@@ -1,6 +1,7 @@
 all: setup network snapshot convergence
 
-MODELS=turbine
+MODELS			= turbine
+TEST_CASES		= 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
 
 .PHONY: plot_test_cases, plot_progress, plot_weights, plot_importance, plot_convergence
 
@@ -25,9 +26,9 @@ network: features train plot_progress plot_weights plot_importance
 
 features:
 	for model in $(MODELS); do \
-		for i in `seq 0 11`; do \
-			python3 run_adapt.py $$model $$i; \
-			python3 run_adapt.py $$model $$i -anisotropic 1; \
+		for test_case in $(TEST_CASES); do \
+			python3 run_adapt.py $$model $$test_case; \
+			python3 run_adapt.py $$model $$test_case -anisotropic 1; \
 		done; \
 	done
 
@@ -55,11 +56,11 @@ plot_importance:
 
 snapshot:
 	for model in $(MODELS); do \
-		for i in `seq 0 11`; do \
-			python3 run_adapt.py $$model $$i; \
-			python3 run_adapt.py $$model $$i -anisotropic 1; \
-			python3 run_adapt_ml.py $$model $$i; \
-			python3 run_adapt_ml.py $$model $$i -anisotropic 1; \
+		for test_case in $(TEST_CASES); do \
+			python3 run_adapt.py $$model $$test_case; \
+			python3 run_adapt.py $$model $$test_case -anisotropic 1; \
+			python3 run_adapt_ml.py $$model $$test_case; \
+			python3 run_adapt_ml.py $$model $$test_case -anisotropic 1; \
 		done; \
 	done
 
@@ -69,24 +70,24 @@ convergence: uniform go ml plot_convergence
 
 uniform:
 	for model in $(MODELS); do \
-		for i in `seq 0 11`; do \
-			python3 run_uniform_refinement.py $$model $$i; \
+		for test_case in $(TEST_CASES); do \
+			python3 run_uniform_refinement.py $$model $$test_case; \
 		done; \
 	done
 
 go:
 	for model in $(MODELS); do \
-		for i in `seq 0 11`; do \
-			python3 run_adaptation_loop.py $$model $$i; \
-			python3 run_adaptation_loop.py $$model $$i -anisotropic 1; \
+		for test_case in $(TEST_CASES); do \
+			python3 run_adaptation_loop.py $$model $$test_case; \
+			python3 run_adaptation_loop.py $$model $$test_case -anisotropic 1; \
 		done; \
 	done
 
 ml:
 	for model in $(MODELS); do \
-		for i in `seq 0 11`; do \
-			python3 run_adaptation_loop_ml.py $$model $$i; \
-			python3 run_adaptation_loop_ml.py $$model $$i -anisotropic 1; \
+		for test_case in $(TEST_CASES); do \
+			python3 run_adaptation_loop_ml.py $$model $$test_case; \
+			python3 run_adaptation_loop_ml.py $$model $$test_case -anisotropic 1; \
 		done; \
 	done
 

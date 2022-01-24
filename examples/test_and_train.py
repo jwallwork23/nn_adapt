@@ -6,6 +6,10 @@ from time import perf_counter
 from torch.optim.lr_scheduler import StepLR
 
 
+# Hard-coded parameters
+adaptation_steps = 4
+test_cases = 14
+
 # Configuration
 parser = argparse.ArgumentParser(prog='test_and_train.py')
 parser.add_argument('model', help='The equation set being solved')
@@ -40,13 +44,13 @@ concat = lambda a, b: b if a is None else np.concatenate((a, b), axis=0)
 features = None
 targets = None
 errors = None
-for run in range(4):
+for step in range(adaptation_steps):
     for approach in ('isotropic', 'anisotropic'):
-        if run == 0 and approach == 'anisotropic':
+        if step == 0 and approach == 'anisotropic':
             continue
-        for i in range(9):
-            features = concat(features, np.load(f'{model}/data/features{i}_GO{approach}_{run}.npy'))
-            targets = concat(targets, np.load(f'{model}/data/targets{i}_GO{approach}_{run}.npy'))
+        for test_case in range(test_cases):
+            features = concat(features, np.load(f'{model}/data/features{test_case}_GO{approach}_{step}.npy'))
+            targets = concat(targets, np.load(f'{model}/data/targets{test_case}_GO{approach}_{step}.npy'))
 print(f'Total number of features: {len(features.flatten())}')
 print(f'Total number of targets: {len(targets)}')
 features = torch.from_numpy(preprocess_features(features, preproc=preproc)).type(torch.float32)

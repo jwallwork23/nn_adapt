@@ -1,6 +1,5 @@
 from models.turbine import *
 
 
-parameters.depth = 40.0
-parameters.viscosity = Constant(0.5)
-parameters.turbine_coords = [(456, 250), (744, 250)]
+parameters.randomise(9)
+parameters.turbine_coords = [(420, 250), (600, 232), (780, 250)]

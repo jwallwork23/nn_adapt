@@ -6,7 +6,7 @@ import numpy as np
 
 
 # Hard-coded parameters
-num_test_cases = 12
+num_test_cases = 16
 adaptation_steps = 4
 
 # Parse model

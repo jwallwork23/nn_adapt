@@ -18,7 +18,7 @@ parsed_args = parser.parse_args()
 model = parsed_args.model
 assert model in ['stokes', 'turbine']
 test_case = int(parsed_args.test_case)
-assert test_case in list(range(12))
+assert test_case in list(range(16))
 num_refinements = int(parsed_args.num_refinements or 5)
 assert num_refinements >= 0
 

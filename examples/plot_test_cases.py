@@ -22,9 +22,9 @@ ymin = 0
 ymax = 500
 eps = 5
 
-fig, axes = plt.subplots(ncols=3, nrows=4, figsize=(10, 7))
-for test_case in range(12):
-    ax = axes[test_case // 3, test_case % 3]
+fig, axes = plt.subplots(ncols=4, nrows=4, figsize=(12, 7))
+for test_case in range(16):
+    ax = axes[test_case // 4, test_case % 4]
 
     # Plot setup
     setup = importlib.import_module(f'{model}.config{test_case}')
@@ -48,6 +48,7 @@ for test_case in range(12):
     # Annotate with viscosity coefficient and bathymetry
     nu = setup.parameters.viscosity.values()[0]
     b = setup.parameters.depth
-    ax.annotate(r'$\nu$' + f' = {nu:.3f}', xy=(0.65*L, 0.85*W), color='darkgrey')
-    ax.annotate(r'$b$' + f' = {b:.2f}', xy=(0.65*L, 0.7*W), color='darkgrey')
+    ax.annotate(r'$\nu$' + f' = {nu:.3f}', xy=(0.7*L, 0.85*W), color='darkgrey')
+    ax.annotate(r'$b$' + f' = {b:.2f}', xy=(0.7*L, 0.7*W), color='darkgrey')
+plt.tight_layout()
 plt.savefig(f'{model}/plots/test_cases.pdf')

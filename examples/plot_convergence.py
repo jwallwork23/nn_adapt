@@ -23,7 +23,7 @@ approaches = {
 xlim = [3.0e+03, 4.0e+06]
 
 # Plot convergence curves
-for test_case in range(12):
+for test_case in range(16):
     print(f'plot_convergence::{model}-{test_case}')
     fig, axes = plt.subplots()
     start = max(np.load(f'{model}/data/qois_uniform_{test_case}.npy'))
