@@ -37,6 +37,7 @@ class SimpleNet(nn.Module):
     Input layer:
     ============
         [mesh Reynolds number]
+          + [drag coefficient]
           + [element size]
           + [element orientation]
           + [element shape]
@@ -46,13 +47,13 @@ class SimpleNet(nn.Module):
 
     Hidden layer:
     =============
-        56 neurons
+        58 neurons
 
     Output layer:
     =============
         [1 error indicator value]
     """
-    def __init__(self, num_inputs=28, num_outputs=1, num_hidden_neurons=56):
+    def __init__(self, num_inputs=29, num_outputs=1, num_hidden_neurons=58):
         super(SimpleNet, self).__init__()
         self.linear1 = nn.Linear(num_inputs, num_hidden_neurons)
         self.activate1 = nn.Sigmoid()
