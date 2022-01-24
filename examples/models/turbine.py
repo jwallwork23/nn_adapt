@@ -65,6 +65,13 @@ class Parameters(object):
         h = CellSize(mesh)
         return interpolate(0.5*h*unorm/self.viscosity, P0)
 
+    def farm(self, mesh):
+        farm_options = TidalTurbineFarmOptions()
+        farm_options.turbine_density = Constant(1.0/self.turbine_area, domain=mesh)
+        farm_options.turbine_options.diameter = self.turbine_diameter
+        farm_options.turbine_options.thrust_coefficient = self.corrected_thrust_coefficient
+        return {farm_id: farm_options for farm_id in self.turbine_ids}
+
 
 PETSc.Sys.popErrorHandler()
 parameters = Parameters()
@@ -110,16 +117,7 @@ def setup_solver(mesh, ic):
     }
 
     # Create tidal farm
-    thrust_coefficient = parameters.corrected_thrust_coefficient
-    farm_options = TidalTurbineFarmOptions()
-    area = parameters.turbine_area
-    farm_options.turbine_density = Constant(1.0/area, domain=mesh)
-    farm_options.turbine_options.diameter = parameters.turbine_diameter
-    farm_options.turbine_options.thrust_coefficient = thrust_coefficient
-    solver_obj.options.tidal_turbine_farms = {
-        farm_id: farm_options
-        for farm_id in parameters.turbine_ids
-    }
+    options.tidal_turbine_farms = parameters.farm(mesh)
 
     # Apply initial guess
     u_init, eta_init = ic.split()
