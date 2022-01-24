@@ -3,7 +3,7 @@ import numpy as np
 
 
 class Parameters(object):
-    num_inputs = 28
+    num_inputs = 29
     num_outputs = 1
     dofs_per_element = 12
     h_min = 1.0e-05
@@ -65,12 +65,33 @@ class Parameters(object):
         h = CellSize(mesh)
         return interpolate(0.5*h*unorm/self.viscosity, P0)
 
+    def turbine_density(self, mesh):
+        return Constant(1.0/self.turbine_area, domain=mesh)
+
     def farm(self, mesh):
         farm_options = TidalTurbineFarmOptions()
-        farm_options.turbine_density = Constant(1.0/self.turbine_area, domain=mesh)
+        farm_options.turbine_density = self.turbine_density(mesh)
         farm_options.turbine_options.diameter = self.turbine_diameter
         farm_options.turbine_options.thrust_coefficient = self.corrected_thrust_coefficient
         return {farm_id: farm_options for farm_id in self.turbine_ids}
+
+    def drag(self, mesh):
+        P0 = FunctionSpace(mesh, 'DG', 0)
+        p0test = TestFunction(P0)
+        ret = Function(P0)
+
+        # Background drag
+        Cb = self.drag_coefficient
+        expr = p0test*Cb*dx(domain=mesh)
+
+        # Turbine drag
+        Ct = self.corrected_thrust_coefficient
+        Cd = 0.5*Ct*self.turbine_area*self.turbine_density(mesh)
+        for tag in self.turbine_ids:
+            expr += p0test*Cd*dx(tag, domain=mesh)
+
+        assemble(expr, tensor=ret)
+        return ret
 
 
 PETSc.Sys.popErrorHandler()
