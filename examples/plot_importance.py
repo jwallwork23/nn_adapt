@@ -13,9 +13,11 @@ num_runs = 7
 # Parse model
 parser = argparse.ArgumentParser(prog='test_importance.py')
 parser.add_argument('model', help='The equation set being solved')
+parser.add_argument('-preproc', help='Function for preprocessing data (default "arctan")')
 parsed_args = parser.parse_args()
 model = parsed_args.model
 assert model in ['stokes', 'turbine']
+preproc = parsed_args.preproc or 'arctan'
 
 # Load the model
 nn = SimpleNet().to(device)
@@ -31,7 +33,8 @@ for approach in ['isotropic', 'anisotropic']:
         for test_case in range(num_test_cases):
 
             # Load some data and mark inputs as independent
-            features = torch.from_numpy(np.load(f'{model}/data/features{test_case}_GO{approach}_{run}.npy')).type(torch.float32)
+            features = preprocess_features(np.load(f'{model}/data/features{test_case}_GO{approach}_{run}.npy'), preproc=preproc)
+            features = torch.from_numpy(features).type(torch.float32)
             expected = torch.from_numpy(np.load(f'{model}/data/targets{test_case}_GO{approach}_{run}.npy')).type(torch.float32)
             features.requires_grad_(True)
 
