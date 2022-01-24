@@ -40,10 +40,8 @@ for test_case in range(16):
     axes.set_xlim(xlim)
     axes.set_ylim([conv - 0.05*(start - conv), start + 0.05*(start - conv)])
     axes.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-    if test_case // 3 in [2, 3]:
-        axes.set_xlabel('DoF count')
-    if test_case % 3 == 0:
-        axes.set_ylabel(r'Power output ($\mathrm{MW}$)')
+    axes.set_xlabel('DoF count')
+    axes.set_ylabel(r'Power output ($\mathrm{MW}$)')
     axes.grid(True)
     plt.tight_layout()
     plt.savefig(f'{model}/plots/qoi_convergence{test_case}.pdf')

@@ -33,8 +33,8 @@ class Parameters(object):
     def randomise(self, seed):
         np.random.seed(seed)
 
-        # Random depth from 10m to 100m
-        self.depth = 10.0 + 90.0*np.random.rand()
+        # Random depth from 20m to 100m
+        self.depth = 20.0 + 80.0*np.random.rand()
 
         # Random viscosity from 0.001 to 10
         significand = 1.0 + np.random.rand()
