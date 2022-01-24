@@ -3,7 +3,7 @@ all: setup network snapshot convergence
 MODELS			= turbine
 TEST_CASES		= 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
 
-.PHONY: plot_test_cases, plot_progress, plot_weights, plot_importance, plot_convergence
+.PHONY: plot_test_cases, plot_progress, plot_importance, plot_convergence
 
 # --- Setup directories and meshes
 
@@ -22,7 +22,7 @@ plot_test_cases:
 
 # --- Train the neural network
 
-network: features train plot_progress plot_weights plot_importance
+network: features train plot_progress plot_importance
 
 features:
 	for model in $(MODELS); do \
@@ -40,11 +40,6 @@ train:
 plot_progress:
 	for model in $(MODELS); do \
 		python3 plot_progress.py $$model; \
-	done
-
-plot_weights:
-	for model in $(MODELS); do \
-		python3 plot_weights.py $$model; \
 	done
 
 plot_importance:
