@@ -2,4 +2,4 @@ from models.turbine import *
 
 
 parameters.viscosity = Constant(0.25)
-parameters.num_turbines = 2
+parameters.turbine_coords = [(256, 250), (544, 250)]

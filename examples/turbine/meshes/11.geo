@@ -4,16 +4,16 @@ W = 500.0;
 D = 18.0;
 dx_outer = 40.0;
 dx_inner = 8.0;
-xt0=500.0;      // x-location of turbine 1
-yt0=250.0+2*D;  // y-location of turbine 1
-xt1=600.0;      // x-location of turbine 2
-yt1=250.0;      // y-location of turbine 2
-xt2=700.0;      // x-location of turbine 3
-yt2=250.0-2*D;  // y-location of turbine 3
-xt3=500.0;      // x-location of turbine 4
-yt3=250.0-2*D;  // y-location of turbine 4
-xt4=700.0;      // x-location of turbine 5
-yt4=250.0+2*D;  // y-location of turbine 5
+xt0=500.0;  // x-location of turbine 1
+yt0=286.0;  // y-location of turbine 1
+xt1=600.0;  // x-location of turbine 2
+yt1=250.0;  // y-location of turbine 2
+xt2=700.0;  // x-location of turbine 3
+yt2=214.0;  // y-location of turbine 3
+xt3=500.0;  // x-location of turbine 4
+yt3=214.0;  // y-location of turbine 4
+xt4=700.0;  // x-location of turbine 5
+yt4=286.0;  // y-location of turbine 5
 
 // Domain and turbine footprints
 Point(1) = {0, 0, 0, dx_outer};

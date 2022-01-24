@@ -14,7 +14,7 @@ class Parameters(object):
     drag_coefficient = Constant(0.0025)
 
     turbine_diameter = 18.0
-    num_turbines = 1
+    turbine_coords = []
     thrust_coefficient = 0.8
     density = Constant(1030.0*1.0e-06)
 
@@ -31,8 +31,12 @@ class Parameters(object):
     adjoint_solver_parameters = solver_parameters
 
     @property
+    def num_turbines(self):
+        return len(self.turbine_coords)
+
+    @property
     def turbine_ids(self):
-        return list(2 + np.array(range(self.num_turbines)))
+        return list(2 + np.arange(self.num_turbines, dtype=np.int32))
 
     @property
     def turbine_area(self):
