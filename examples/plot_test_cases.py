@@ -45,9 +45,9 @@ for test_case in range(12):
     ax.set_xlim([xmin - dL - eps, xmax - dL + eps])
     ax.set_ylim([ymin - dW - eps, ymax - dW + eps])
 
-    # Annotate with viscosity coefficient
+    # Annotate with viscosity coefficient and bathymetry
     nu = setup.parameters.viscosity.values()[0]
-    x = 0.65*L
-    y = 0.8*W
-    ax.annotate(r'$\nu$' + f' = {nu}', xy=(x, y), color='darkgrey')
+    b = setup.parameters.depth
+    ax.annotate(r'$\nu$' + f' = {nu:.3f}', xy=(0.65*L, 0.85*W), color='darkgrey')
+    ax.annotate(r'$b$' + f' = {b:.2f}', xy=(0.65*L, 0.7*W), color='darkgrey')
 plt.savefig(f'{model}/plots/test_cases.pdf')
