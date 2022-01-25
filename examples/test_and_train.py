@@ -14,7 +14,7 @@ test_cases = 14
 parser = argparse.ArgumentParser(prog='test_and_train.py')
 parser.add_argument('model', help='The equation set being solved')
 parser.add_argument('-lr', help='Starting learning rate, i.e. step length (default 2.0e-03)')
-parser.add_argument('-lr_adapt_num_steps', help='Number of steps between learning rate adapts (default 200)')
+parser.add_argument('-lr_adapt_num_steps', help='Number of steps between learning rate adapts (default 1000)')
 parser.add_argument('-lr_adapt_factor', help='Factor by which to reduce the learning rate (default 0.8)')
 parser.add_argument('-num_epochs', help='The number of iterations (default 1000)')
 parser.add_argument('-preproc', help='Function for preprocessing data (default "arctan")')
