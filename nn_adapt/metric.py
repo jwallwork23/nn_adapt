@@ -23,7 +23,7 @@ def get_hessians(f, **kwargs):
 
 
 def go_metric(mesh, config, enrichment_method='h', target_complexity=4000.0,
-              average=True, interpolant='L2', anisotropic=False, retall=False):
+              average=False, interpolant='L2', anisotropic=False, retall=False):
     """
     Compute an anisotropic goal-oriented
     metric field, based on a mesh and
