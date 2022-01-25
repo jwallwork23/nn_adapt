@@ -5,9 +5,9 @@ D = 18.0;
 dx_outer = 40.0;
 dx_inner = 8.0;
 xt0=456.0;  // x-location of turbine 1
-yt0=232.0;  // y-location of turbine 1
+yt0=250.0;  // y-location of turbine 1
 xt1=744.0;  // x-location of turbine 2
-yt1=268.0;  // y-location of turbine 2
+yt1=250.0;  // y-location of turbine 2
 
 // Domain and turbine footprints
 Point(1) = {0, 0, 0, dx_outer};
