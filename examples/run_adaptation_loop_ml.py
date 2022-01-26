@@ -59,7 +59,7 @@ elements = []
 times = []
 print(f'Test case {test_case}')
 for i in range(num_refinements+1):
-    target_complexity = 250.0*4**i
+    target_complexity = 200.0*4**i
     mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.msh')
     dim = mesh.topological_dimension()
     Nd = dim**2

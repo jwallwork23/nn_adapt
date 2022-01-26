@@ -27,7 +27,7 @@ assert model in ['turbine']
 test_case = int(parsed_args.test_case)
 assert test_case in list(range(16))
 approach = 'isotropic' if parsed_args.anisotropic in [None, '0'] else 'anisotropic'
-num_refinements = int(parsed_args.num_refinements or 4)
+num_refinements = int(parsed_args.num_refinements or 5)
 assert num_refinements > 0
 miniter = int(parsed_args.miniter or 3)
 assert miniter >= 0
@@ -52,7 +52,7 @@ estimators = []
 times = []
 print(f'Test case {test_case}')
 for i in range(num_refinements+1):
-    target_complexity = 250.0*4**i
+    target_complexity = 200.0*4**i
     kwargs = {
         'enrichment_method': 'h',
         'average': True,
