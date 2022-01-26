@@ -151,9 +151,9 @@ def indicate_errors(mesh, config, enrichment_method='h', retall=False):
             err += adj_sols_plus[i] - adj_sols_plg[i]
 
         # Evaluate errors
-        dwr, dwr_plus = config.dwr_indicator(mesh, fwd_sol_plg, adj_error)
+        dwr = config.dwr_indicator(mesh, fwd_sol_plg, adj_error)
 
     if retall:
-        return dwr, fwd_sol, adj_sol, dwr_plus, adj_error
+        return dwr, fwd_sol, adj_sol
     else:
         return dwr

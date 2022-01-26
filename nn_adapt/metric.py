@@ -47,7 +47,7 @@ def go_metric(mesh, config, enrichment_method='h', target_complexity=4000.0,
         adjoint solution and :class:`GoalOrientedMeshSeq`
         are returned, in addition to the metric
     """
-    dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus = indicate_errors(
+    dwr, fwd_sol, adj_sol = indicate_errors(
         mesh, config, enrichment_method=enrichment_method, retall=True
     )
     with PETSc.Log.Event('Metric construction'):
@@ -62,6 +62,6 @@ def go_metric(mesh, config, enrichment_method='h', target_complexity=4000.0,
             interpolant=interpolant
         )
     if retall:
-        return metric, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus
+        return metric, dwr, fwd_sol, adj_sol
     else:
         return metric

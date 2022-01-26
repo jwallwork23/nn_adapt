@@ -364,4 +364,4 @@ def dwr_indicator(mesh, q, q_star):
     P0 = get_functionspace(mesh, 'DG', 0)
     dwr = project(dwr_plus, P0)
     dwr.interpolate(abs(dwr))
-    return dwr, dwr_plus
+    return dwr

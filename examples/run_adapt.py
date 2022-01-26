@@ -67,9 +67,7 @@ converged_reason = None
 if not optimise:
     fwd_file = File(f'{model}/outputs/GO/{approach}/forward{test_case}.pvd')
     adj_file = File(f'{model}/outputs/GO/{approach}/adjoint{test_case}.pvd')
-    adj_plus_file = File(f'{model}/outputs/GO/{approach}/enriched_adjoint{test_case}.pvd')
     ee_file = File(f'{model}/outputs/GO/{approach}/estimator{test_case}.pvd')
-    ee_plus_file = File(f'{model}/outputs/GO/{approach}/enriched_estimator{test_case}.pvd')
     metric_file = File(f'{model}/outputs/GO/{approach}/metric{test_case}.pvd')
 print(f'Test case {test_case}')
 print('  Mesh 0')
@@ -80,15 +78,13 @@ for fp_iteration in range(maxiter+1):
     kwargs['target_complexity'] = ramp_complexity(250.0, target_complexity, fp_iteration)
 
     # Compute goal-oriented metric
-    p0metric, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus = go_metric(mesh, setup, **kwargs)
+    p0metric, dwr, fwd_sol, adj_sol = go_metric(mesh, setup, **kwargs)
     dof = sum(fwd_sol.function_space().dof_count)
     print(f'    DoF count            = {dof}')
     if not optimise:
         fwd_file.write(*fwd_sol.split())
         adj_file.write(*adj_sol.split())
-        adj_plus_file.write(*adj_sol_plus.split())
         ee_file.write(dwr)
-        ee_plus_file.write(dwr_plus)
         metric_file.write(p0metric)
 
     # Extract features

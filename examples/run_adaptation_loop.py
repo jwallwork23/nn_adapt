@@ -73,7 +73,7 @@ for i in range(num_refinements+1):
         kwargs['target_complexity'] = ramp_complexity(250.0, target_complexity, fp_iteration)
 
         # Compute goal-oriented metric
-        p0metric, dwr, fwd_sol, adj_sol, dwr_plus, adj_sol_plus = go_metric(mesh, setup, **kwargs)
+        p0metric, dwr, fwd_sol, adj_sol = go_metric(mesh, setup, **kwargs)
         dof = sum(fwd_sol.function_space().dof_count)
         print(f'      DoF count            = {dof}')
 
