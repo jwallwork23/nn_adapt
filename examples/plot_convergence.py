@@ -1,4 +1,4 @@
-from plotting import *
+from nn_adapt.plotting import *
 
 import argparse
 from matplotlib.ticker import FormatStrFormatter

@@ -1,5 +1,5 @@
 from firedrake import *
-from plotting import *
+from nn_adapt.plotting import *
 
 import argparse
 import importlib
