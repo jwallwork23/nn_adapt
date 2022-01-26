@@ -25,8 +25,9 @@ assert num_refinements >= 0
 optimise = bool(parsed_args.optimise or False)
 
 # Setup
-setup = importlib.import_module(f'{model}.config{test_case}')
-mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.msh')
+setup = importlib.import_module(f'{model}.config')
+setup.initialise(test_case)
+mesh = Mesh(f'{model}/meshes/{test_case}.msh')
 if num_refinements > 0:
     with PETSc.Log.Event('Hierarchy'):
         mesh = MeshHierarchy(mesh, num_refinements)[-1]

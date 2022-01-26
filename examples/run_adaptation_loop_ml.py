@@ -44,8 +44,8 @@ assert estimator_rtol > 0.0
 preproc = parsed_args.preproc or 'arctan'
 
 # Setup
-setup = importlib.import_module(f'{model}.config{test_case}')
-field = setup.fields[0]
+setup = importlib.import_module(f'{model}.config')
+setup.initialise(test_case)
 
 # Load the model
 nn = SimpleNet().to(device)
@@ -60,7 +60,7 @@ times = []
 print(f'Test case {test_case}')
 for i in range(num_refinements+1):
     target_complexity = 200.0*4**i
-    mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.msh')
+    mesh = Mesh(f'{model}/meshes/{test_case}.msh')
     dim = mesh.topological_dimension()
     Nd = dim**2
     qoi_old = None

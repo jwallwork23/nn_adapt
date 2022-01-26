@@ -3,9 +3,6 @@ import numpy as np
 
 
 class Parameters(object):
-    num_inputs = 29
-    num_outputs = 1
-    dofs_per_element = 12
     h_min = 1.0e-05
     h_max = 500.0
 
@@ -111,7 +108,6 @@ class Parameters(object):
 
 PETSc.Sys.popErrorHandler()
 parameters = Parameters()
-fields = ['q']
 
 
 def get_function_space(mesh):

@@ -23,8 +23,6 @@ def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None):
     :return: forward solution, adjoint solution
         and enriched adjoint solution (if requested)
     """
-    fields = config.fields
-    assert len(fields) == 1, "Multiple fields not supported"
 
     # Solve forward problem in base space
     V = config.get_function_space(mesh)

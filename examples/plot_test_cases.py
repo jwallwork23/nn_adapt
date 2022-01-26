@@ -27,8 +27,9 @@ for test_case in range(16):
     ax = axes[test_case // 4, test_case % 4]
 
     # Plot setup
-    setup = importlib.import_module(f'{model}.config{test_case}')
-    mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.msh')
+    setup = importlib.import_module(f'{model}.config')
+    setup.initialise(test_case)
+    mesh = Mesh(f'{model}/meshes/{test_case}.msh')
     tags = setup.parameters.turbine_ids
     P0 = FunctionSpace(mesh, 'DG', 0)
     footprints = assemble(sum(TestFunction(P0)*dx(tag) for tag in tags))

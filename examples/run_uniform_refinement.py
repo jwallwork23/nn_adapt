@@ -23,9 +23,9 @@ num_refinements = int(parsed_args.num_refinements or 5)
 assert num_refinements >= 0
 
 # Setup
-setup = importlib.import_module(f'{model}.config{test_case}')
-field = setup.fields[0]
-mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.msh')
+setup = importlib.import_module(f'{model}.config')
+setup.initialise(test_case)
+mesh = Mesh(f'{model}/meshes/{test_case}.msh')
 mh = MeshHierarchy(mesh, num_refinements)
 
 # Run uniform refinement

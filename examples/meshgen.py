@@ -13,7 +13,8 @@ test_case = int(parsed_args.test_case)
 assert test_case in list(range(16))
 
 # Load setup
-setup = importlib.import_module(f'{model}.config{test_case}')
+setup = importlib.import_module(f'{model}.config')
+setup.initialise(test_case)
 meshgen = importlib.import_module(f'{model}.meshgen')
 
 # Write geometry file

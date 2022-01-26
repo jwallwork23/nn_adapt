@@ -41,8 +41,8 @@ estimator_rtol = float(parsed_args.estimator_rtol or 0.005)
 assert estimator_rtol > 0.0
 
 # Setup
-setup = importlib.import_module(f'{model}.config{test_case}')
-field = setup.fields[0]
+setup = importlib.import_module(f'{model}.config')
+setup.initialise(test_case)
 
 # Run adaptation loop
 qois = []
@@ -59,7 +59,7 @@ for i in range(num_refinements+1):
         'anisotropic': approach == 'anisotropic',
         'retall': True,
     }
-    mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.msh')
+    mesh = Mesh(f'{model}/meshes/{test_case}.msh')
     qoi_old = None
     elements_old = mesh.num_cells()
     estimator_old = None

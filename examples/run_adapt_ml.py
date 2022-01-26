@@ -47,9 +47,9 @@ if not optimise:
     from pyroteus.utility import File
 
 # Setup
-setup = importlib.import_module(f'{model}.config{test_case}')
-field = setup.fields[0]
-mesh = Mesh(f'{os.path.abspath(os.path.dirname(__file__))}/{model}/meshes/{test_case}.msh')
+setup = importlib.import_module(f'{model}.config')
+setup.initialise(test_case)
+mesh = Mesh(f'{model}/meshes/{test_case}.msh')
 dim = mesh.topological_dimension()
 Nd = dim**2
 num_inputs = setup.parameters.num_inputs
