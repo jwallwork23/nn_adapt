@@ -5,6 +5,7 @@ __pycache__/
 nn_adapt.egg-info/
 .ipynb_checkpoints/
 
+*.geo
 *.h5
 *.jpeg
 *.jpg

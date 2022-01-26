@@ -13,7 +13,12 @@ dir:
 	cd turbine && make dir
 
 mesh:
-	cd turbine && make mesh
+	for model in $(MODELS); do \
+		for test_case in $(TEST_CASES); do \
+			python3 meshgen.py $$model $$test_case; \
+		done; \
+		cd $$model && make mesh; \
+	done
 
 plot_test_cases:
 	for model in $(MODELS); do \
