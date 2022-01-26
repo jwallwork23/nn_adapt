@@ -27,6 +27,11 @@ plot_test_cases:
 		python3 plot_test_cases.py $$model; \
 	done
 
+clean:
+	for model in $(MODELS); do \
+		cd $$model && rm -rf data outputs plots; \
+	done
+
 # --- Train the neural network
 
 network: features train plot_progress plot_importance
