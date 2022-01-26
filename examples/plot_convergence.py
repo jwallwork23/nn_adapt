@@ -22,9 +22,8 @@ approaches = {
 }
 xlim = [3.0e+03, 4.0e+06]
 
-# Plot convergence curves
+# Plot QoI curves
 for test_case in range(16):
-    print(f'plot_convergence::{model}-{test_case}')
     fig, axes = plt.subplots()
     start = max(np.load(f'{model}/data/qois_uniform_{test_case}.npy'))
     conv = np.load(f'{model}/data/qois_GOanisotropic_{test_case}.npy')[-1]
@@ -45,6 +44,8 @@ for test_case in range(16):
     axes.grid(True)
     plt.tight_layout()
     plt.savefig(f'{model}/plots/qoi_convergence{test_case}.pdf')
+    if test_case < 15:
+        plt.close()
 
 # Plot legend
 fig2, axes2 = plt.subplots()
@@ -54,3 +55,26 @@ fig2.canvas.draw()
 axes2.set_axis_off()
 bbox = legend.get_window_extent().transformed(fig2.dpi_scale_trans.inverted())
 plt.savefig(f'{model}/plots/legend.pdf', bbox_inches=bbox)
+
+# Plot QoI error curves
+for test_case in range(16):
+    fig, axes = plt.subplots()
+    conv = np.load(f'{model}/data/qois_GOanisotropic_{test_case}.npy')[-1]
+    for approach, metadata in approaches.items():
+        try:
+            dofs = np.load(f'{model}/data/dofs_{approach}_{test_case}.npy')
+            errors = np.abs(np.load(f'{model}/data/qois_{approach}_{test_case}.npy') - conv)
+        except IOError:
+            print(f'Cannot load {approach} data for test case {test_case}')
+            continue
+        if approach == 'GOanisotropic':
+            dofs = dofs[:-1]
+            errors = errors[:-1]
+        axes.loglog(dofs, errors, **metadata)
+    axes.set_xlim(xlim)
+    axes.set_xlabel('DoF count')
+    axes.set_ylabel(r'QoI error ($\%$)')
+    axes.grid(True)
+    plt.tight_layout()
+    plt.savefig(f'{model}/plots/qoi_error_convergence{test_case}.pdf')
+    plt.close()
