@@ -3,7 +3,6 @@ from firedrake.petsc import PETSc
 
 import argparse
 import importlib
-import os
 from time import perf_counter
 
 

@@ -3,7 +3,6 @@ from plotting import *
 
 import argparse
 import importlib
-import os
 
 
 matplotlib.rcParams['font.size'] = 12

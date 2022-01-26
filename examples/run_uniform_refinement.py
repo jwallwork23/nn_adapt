@@ -3,7 +3,6 @@ from nn_adapt.solving import *
 import argparse
 import importlib
 import numpy as np
-import os
 from time import perf_counter
 
 
