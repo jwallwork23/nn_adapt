@@ -5,6 +5,14 @@ from matplotlib.ticker import FormatStrFormatter
 import numpy as np
 
 
+def plot_slope(x0, x1, y0, g, axes):
+    """
+    Plot a slope marker for the gradient of a curve.
+    """
+    y1 = y0*(x1/x0)**g
+    axes.plot([x0, x1], [y0, y1], '-', color='darkgray')
+
+
 matplotlib.rcParams['font.size'] = 20
 
 # Parse for test case
@@ -21,9 +29,10 @@ approaches = {
     'MLanisotropic': {'label': 'Anisotropic data-driven adaptation', 'color': 'g', 'marker': 'o', 'linestyle': '--'},
 }
 xlim = [3.0e+03, 4.0e+06]
+num_test_cases = 16
 
-# Plot QoI curves
-for test_case in range(16):
+# Plot QoI curves against DoF count
+for test_case in range(num_test_cases):
     fig, axes = plt.subplots()
     start = max(np.load(f'{model}/data/qois_uniform_{test_case}.npy'))
     conv = np.load(f'{model}/data/qois_GOanisotropic_{test_case}.npy')[-1]
@@ -43,8 +52,8 @@ for test_case in range(16):
     axes.set_ylabel(r'Power output ($\mathrm{MW}$)')
     axes.grid(True)
     plt.tight_layout()
-    plt.savefig(f'{model}/plots/qoi_convergence{test_case}.pdf')
-    if test_case < 15:
+    plt.savefig(f'{model}/plots/qoi_vs_dofs_{test_case}.pdf')
+    if test_case < num_test_cases - 1:
         plt.close()
 
 # Plot legend
@@ -56,8 +65,31 @@ axes2.set_axis_off()
 bbox = legend.get_window_extent().transformed(fig2.dpi_scale_trans.inverted())
 plt.savefig(f'{model}/plots/legend.pdf', bbox_inches=bbox)
 
-# Plot QoI error curves
-for test_case in range(16):
+# Plot QoI curves against element count
+for test_case in range(num_test_cases):
+    fig, axes = plt.subplots()
+    start = max(np.load(f'{model}/data/qois_uniform_{test_case}.npy'))
+    conv = np.load(f'{model}/data/qois_GOanisotropic_{test_case}.npy')[-1]
+    axes.hlines(conv, *xlim, 'k', label='Converged QoI')
+    for approach, metadata in approaches.items():
+        try:
+            elements = np.load(f'{model}/data/elements_{approach}_{test_case}.npy')
+            qois = np.load(f'{model}/data/qois_{approach}_{test_case}.npy')
+        except IOError:
+            print(f'Cannot load {approach} data for test case {test_case}')
+            continue
+        axes.semilogx(elements, qois, **metadata)
+    axes.set_ylim([conv - 0.05*(start - conv), start + 0.05*(start - conv)])
+    axes.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+    axes.set_xlabel('Element count')
+    axes.set_ylabel(r'Power output ($\mathrm{MW}$)')
+    axes.grid(True)
+    plt.tight_layout()
+    plt.savefig(f'{model}/plots/qoi_vs_elements_{test_case}.pdf')
+    plt.close()
+
+# Plot QoI error curves against DoF count
+for test_case in range(num_test_cases):
     fig, axes = plt.subplots()
     conv = np.load(f'{model}/data/qois_GOanisotropic_{test_case}.npy')[-1]
     for approach, metadata in approaches.items():
@@ -74,7 +106,29 @@ for test_case in range(16):
     axes.set_xlim(xlim)
     axes.set_xlabel('DoF count')
     axes.set_ylabel(r'QoI error ($\%$)')
-    axes.grid(True)
+    axes.grid(True, which='both')
     plt.tight_layout()
-    plt.savefig(f'{model}/plots/qoi_error_convergence{test_case}.pdf')
+    plt.savefig(f'{model}/plots/qoi_error_vs_dofs_{test_case}.pdf')
+    plt.close()
+
+# Plot QoI error curves against element count
+for test_case in range(num_test_cases):
+    fig, axes = plt.subplots()
+    conv = np.load(f'{model}/data/qois_GOanisotropic_{test_case}.npy')[-1]
+    for approach, metadata in approaches.items():
+        try:
+            elements = np.load(f'{model}/data/elements_{approach}_{test_case}.npy')
+            errors = np.abs(np.load(f'{model}/data/qois_{approach}_{test_case}.npy') - conv)
+        except IOError:
+            print(f'Cannot load {approach} data for test case {test_case}')
+            continue
+        if approach == 'GOanisotropic':
+            elements = elements[:-1]
+            errors = errors[:-1]
+        axes.loglog(elements, errors, **metadata)
+    axes.set_xlabel('Element count')
+    axes.set_ylabel(r'QoI error ($\%$)')
+    axes.grid(True, which='both')
+    plt.tight_layout()
+    plt.savefig(f'{model}/plots/qoi_error_vs_elements_{test_case}.pdf')
     plt.close()
