@@ -27,17 +27,6 @@ class Parameters(object):
     }
     adjoint_solver_parameters = solver_parameters
 
-    def randomise(self, seed):
-        np.random.seed(seed)
-
-        # Random depth from 20m to 100m
-        self.depth = 20.0 + 80.0*np.random.rand()
-
-        # Random viscosity from 0.001 to 10
-        significand = 1.0 + np.random.rand()
-        exponent = np.random.randint(-3, 1)
-        self.viscosity.assign(significand*10**exponent)
-
     @property
     def num_turbines(self):
         return len(self.turbine_coords)
