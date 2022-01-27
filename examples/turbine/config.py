@@ -14,6 +14,9 @@ def initialise(i):
         # Random depth from 20m to 100m
         parameters.depth = 20.0 + 80.0*np.random.rand()
 
+        # Random inflow speed from 0.5 m/s to 5 m/s
+        parameters.inflow_speed = 0.5 + 4.5*np.random.rand()
+
         # Random viscosity from 0.001 to 10
         significand = 1.0 + np.random.rand()
         exponent = np.random.randint(-3, 1)
@@ -37,6 +40,7 @@ def initialise(i):
     elif i in [14, 15]:
         parameters.viscosity.assign(0.5)
         parameters.depth = 40.0
+        parameters.inflow_speed = 5.0
         if i == 14:
             parameters.turbine_coords = [(456, 250), (744, 250)]  # aligned
         else:

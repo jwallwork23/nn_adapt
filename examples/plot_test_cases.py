@@ -48,7 +48,9 @@ for test_case in range(16):
     # Annotate with viscosity coefficient and bathymetry
     nu = setup.parameters.viscosity.values()[0]
     b = setup.parameters.depth
+    u_in = setup.parameters.inflow_speed
     ax.annotate(r'$\nu$' + f' = {nu:.3f}', xy=(0.7*L, 0.85*W), color='darkgrey')
     ax.annotate(r'$b$' + f' = {b:.2f}', xy=(0.7*L, 0.7*W), color='darkgrey')
+    ax.annotate(r'$u_{\mathrm{in}}$' + f' = {u_in:.2f}', xy=(0.7*L, 0.55*W), color='darkgrey')
 plt.tight_layout()
 plt.savefig(f'{model}/plots/test_cases.pdf')

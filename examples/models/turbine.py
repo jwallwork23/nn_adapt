@@ -9,6 +9,7 @@ class Parameters(object):
     viscosity = Constant(0.5)
     depth = 40.0
     drag_coefficient = Constant(0.0025)
+    inflow_speed = 5.0
 
     turbine_diameter = 18.0
     turbine_coords = []
@@ -56,7 +57,7 @@ class Parameters(object):
         return Function(P0_2d).assign(parameters.depth)
 
     def u_inflow(self, mesh):
-        return as_vector([5, 0])
+        return as_vector([self.inflow_speed, 0])
 
     def Re(self, fwd_sol):
         u = fwd_sol.split()[0]
