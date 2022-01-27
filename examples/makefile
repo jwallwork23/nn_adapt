@@ -11,7 +11,8 @@ setup: dir mesh plot_test_cases
 
 dir:
 	for model in $(MODELS); do \
-		cd $$model && make dir && cd ..; \
+		mkdir -p $$model; \
+		cd $$model && touch __init__.py && make dir && cd ..; \
 	done
 
 mesh:
