@@ -29,7 +29,7 @@ def extract_components(matrix):
     theta = firedrake.interpolate(ufl.atan(evecs[1, 1]/evecs[1, 0]), fs)
     h1 = firedrake.interpolate(ufl.cos(theta)**2/ar + ufl.sin(theta)**2*ar, fs)
     h2 = firedrake.interpolate((1/ar - ar)*ufl.sin(theta)*ufl.cos(theta), fs)
-    return density.dat.data, h1.dat.data, h2.dat.data
+    return density, h1, h2
 
 
 @PETSc.Log.EventDecorator("Extract elementwise")
@@ -76,18 +76,18 @@ def extract_features(config, fwd_sol, adj_sol, preproc='none'):
     mesh = fwd_sol.function_space().mesh()
 
     # Features related to flow physics
-    with PETSc.Log.Event('Compute Re'):
+    with PETSc.Log.Event('Extract physics'):
         drag = config.parameters.drag(mesh).dat.data
         ones = np.ones(len(drag))
-        nu = config.parameters.viscosity.values()[0]*ones
-        b = config.parameters.depth*ones
+        nu = config.parameters.viscosity.values()[0]*ones  # NOTE: assumes constant
+        b = config.parameters.depth*ones  # NOTE: assumes constant
 
     # Features describing the mesh element
     with PETSc.Log.Event('Analyse element'):
         J = ufl.Jacobian(mesh)
         P0_ten = firedrake.TensorFunctionSpace(mesh, 'DG', 0)
         JTJ = firedrake.interpolate(ufl.dot(ufl.transpose(J), J), P0_ten)
-        d, h1, h2 = extract_components(JTJ)
+        d, h1, h2 = [p.dat.data for p in extract_components(JTJ)]
 
     # Features describing the forward and adjoint solutions
     with PETSc.Log.Event('Extract DoFs'):
