@@ -120,11 +120,8 @@ def indicate_errors(mesh, config, enrichment_method='h', retall=False):
     :kwarg enrichment_method: how to enrich the
         finite element space?
     :kwarg retall: if ``True``, return the forward
-        solution, adjoint solution, dual-weighted
-        residual in enriched space, enriched
-        adjoint solution and :class:`GoalOrientedMeshSeq`,
-        in addition to the dual-weighted residual
-        error indicator
+        solution and adjoint solution in addition
+        to the dual-weighted residual error indicator
     """
     if not enrichment_method == 'h':
         raise NotImplementedError  # TODO
