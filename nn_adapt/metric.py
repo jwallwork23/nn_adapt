@@ -43,8 +43,7 @@ def go_metric(mesh, config, enrichment_method='h', target_complexity=4000.0,
     :kwarg anisotropic: toggle isotropic vs.
         anisotropic metric
     :kwarg retall: if ``True``, the error indicator,
-        forward solution, adjoint solution, enriched
-        adjoint solution and :class:`GoalOrientedMeshSeq`
+        forward solution and adjoint solution
         are returned, in addition to the metric
     """
     dwr, fwd_sol, adj_sol = indicate_errors(
