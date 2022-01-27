@@ -50,12 +50,10 @@ if not optimise:
 setup = importlib.import_module(f'{model}.config')
 setup.initialise(test_case)
 mesh = Mesh(f'{model}/meshes/{test_case}.msh')
-dim = mesh.topological_dimension()
-Nd = dim**2
-num_inputs = setup.parameters.num_inputs
 
 # Load the model
-nn = SimpleNet().to(device)
+layout = importlib.import_module(f'{model}.network').NetLayout()
+nn = SimpleNet(layout).to(device)
 nn.load_state_dict(torch.load(f'{model}/model.pt'))
 nn.eval()
 

@@ -1,6 +1,7 @@
 from nn_adapt.ann import *
 
 import argparse
+import importlib
 from sklearn import model_selection
 from time import perf_counter
 from torch.optim.lr_scheduler import StepLR
@@ -64,7 +65,8 @@ validate_data = torch.utils.data.TensorDataset(torch.Tensor(xval), torch.Tensor(
 validate_loader = torch.utils.data.DataLoader(validate_data, batch_size=test_batch_size, shuffle=False, num_workers=0)
 
 # Setup model
-nn = SimpleNet().to(device)
+layout = importlib.import_module(f'{model}.network').NetLayout()
+nn = SimpleNet(layout).to(device)
 optimizer = torch.optim.Adam(nn.parameters(), lr=lr)
 scheduler = StepLR(optimizer, lr_adapt_num_steps, gamma=lr_adapt_factor)
 criterion = Loss()

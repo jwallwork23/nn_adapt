@@ -48,7 +48,8 @@ setup = importlib.import_module(f'{model}.config')
 setup.initialise(test_case)
 
 # Load the model
-nn = SimpleNet().to(device)
+layout = importlib.import_module(f'{model}.network').NetLayout()
+nn = SimpleNet(layout).to(device)
 nn.load_state_dict(torch.load(f'{model}/model.pt'))
 nn.eval()
 
@@ -61,8 +62,6 @@ print(f'Test case {test_case}')
 for i in range(num_refinements+1):
     target_complexity = 200.0*4**i
     mesh = Mesh(f'{model}/meshes/{test_case}.msh')
-    dim = mesh.topological_dimension()
-    Nd = dim**2
     qoi_old = None
     elements_old = mesh.num_cells()
     estimator_old = None

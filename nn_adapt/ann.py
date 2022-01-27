@@ -33,32 +33,18 @@ class SimpleNet(nn.Module):
     Fully Connected Neural Network (FCNN)
     for goal-oriented metric-based mesh
     adaptation.
-
-    Input layer:
-    ============
-        [mesh Reynolds number]
-          + [drag coefficient]
-          + [bathymetry]
-          + [element size]
-          + [element orientation]
-          + [element shape]
-          + [12 forward DoFs per element]
-          + [12 adjoint DoFs per element]
-          = 28
-
-    Hidden layer:
-    =============
-        60 neurons
-
-    Output layer:
-    =============
-        [1 error indicator value]
     """
-    def __init__(self, num_inputs=30, num_outputs=1, num_hidden_neurons=60):
+    def __init__(self, layout):
+        """
+        :arg layout: class instance inherited from
+            :class:`NetLayoutBase`, with numbers of
+            inputs, hidden neurons and outputs
+            specified.
+        """
         super(SimpleNet, self).__init__()
-        self.linear1 = nn.Linear(num_inputs, num_hidden_neurons)
+        self.linear1 = nn.Linear(layout.num_inputs, layout.num_hidden_neurons)
         self.activate1 = nn.Sigmoid()
-        self.linear2 = nn.Linear(num_hidden_neurons, num_outputs)
+        self.linear2 = nn.Linear(layout.num_hidden_neurons, layout.num_outputs)
 
     def forward(self, x):
         z1 = self.linear1(x)

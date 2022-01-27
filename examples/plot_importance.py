@@ -2,6 +2,7 @@ from nn_adapt.ann import *
 from nn_adapt.plotting import *
 
 import argparse
+import importlib
 import numpy as np
 
 
@@ -19,7 +20,8 @@ assert model in ['turbine']
 preproc = parsed_args.preproc or 'arctan'
 
 # Load the model
-nn = SimpleNet().to(device)
+layout = importlib.import_module(f'{model}.network').NetLayout()
+nn = SimpleNet(layout).to(device)
 nn.load_state_dict(torch.load(f'{model}/model.pt'))
 nn.eval()
 loss_fn = Loss()
