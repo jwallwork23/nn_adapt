@@ -9,6 +9,7 @@ nn_adapt.egg-info/
 *.h5
 *.jpeg
 *.jpg
+*.log
 *.msh
 *.pdf
 *.png

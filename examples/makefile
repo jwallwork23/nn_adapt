@@ -27,6 +27,7 @@ dir:
 	done
 
 mesh:
+	touch timing.log
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(CASES); do \
@@ -34,7 +35,7 @@ mesh:
 			cd $$model/meshes && gmsh -2 $$test_case.geo && cd ../..; \
 		done; \
 	done && \
-	echo "Meshes built in $$(($$(date +%s)-d)) seconds"
+	echo "Meshes built in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 plot_config:
 	for model in $(MODELS); do \
@@ -51,6 +52,7 @@ clean:
 network: features train plot_progress plot_importance
 
 features:
+	touch timing.log
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TRAINING_CASES); do \
@@ -58,14 +60,15 @@ features:
 			python3 run_adapt.py $$model $$test_case -anisotropic 1; \
 		done; \
 	done && \
-	echo "Features generated in $$(($$(date +%s)-d)) seconds"
+	echo "Features generated in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 train:
+	touch timing.log
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		python3 test_and_train.py $$model $(NUM_TRAINING_CASES); \
 	done && \
-	echo "Training completed in $$(($$(date +%s)-d)) seconds"
+	echo "Training completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 plot_progress:
 	for model in $(MODELS); do \
@@ -80,6 +83,7 @@ plot_importance:
 # --- Snapshots
 
 snapshot:
+	touch timing.log
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(CASES); do \
@@ -89,22 +93,24 @@ snapshot:
 			python3 run_adapt_ml.py $$model $$test_case -anisotropic 1; \
 		done; \
 	done && \
-	echo "Snapshots generated in $$(($$(date +%s)-d)) seconds"
+	echo "Snapshots generated in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 # --- Perform convergence analysis
 
 convergence: uniform go ml plot_convergence
 
 uniform:
+	touch timing.log
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
 			python3 run_uniform_refinement.py $$model $$test_case; \
 		done; \
 	done && \
-	echo "Uniform refinement completed in $$(($$(date +%s)-d)) seconds"
+	echo "Uniform refinement completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 go:
+	touch timing.log
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
@@ -112,9 +118,10 @@ go:
 			python3 run_adaptation_loop.py $$model $$test_case -anisotropic 1; \
 		done; \
 	done && \
-	echo "Goal-oriented adaptation completed in $$(($$(date +%s)-d)) seconds"
+	echo "Goal-oriented adaptation completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 ml:
+	touch timing.log
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
@@ -122,7 +129,7 @@ ml:
 			python3 run_adaptation_loop_ml.py $$model $$test_case -anisotropic 1; \
 		done; \
 	done && \
-	echo "Data-driven adaptation completed in $$(($$(date +%s)-d)) seconds"
+	echo "Data-driven adaptation completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 plot_convergence:
 	for model in $(MODELS); do \
