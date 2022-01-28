@@ -39,7 +39,8 @@ mesh:
 
 plot_config:
 	for model in $(MODELS); do \
-		python3 plot_config.py $$model; \
+		python3 plot_config.py $$model 'train'; \
+		python3 plot_config.py $$model 'test'; \
 	done
 
 clean:

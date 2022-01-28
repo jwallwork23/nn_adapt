@@ -1,6 +1,9 @@
 from models.turbine import *
 
 
+testing_cases = ['aligned', 'offset']
+
+
 def l2dist(xy, xyt):
     r"""
     Usual :math:`\ell_2` distance between
