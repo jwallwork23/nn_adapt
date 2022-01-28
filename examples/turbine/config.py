@@ -2,27 +2,41 @@ from models.turbine import *
 
 
 def l2dist(xy, xyt):
+    r"""
+    Usual :math:`\ell_2` distance between
+    two points in Euclidean space.
+    """
     diff = np.array(xy) - np.array(xyt)
     return np.sqrt(np.dot(diff, diff))
 
 
-def initialise(test_case):
-    if test_case == 'aligned':
+def initialise(case):
+    """
+    Given some training case (for which ``case``
+    is an integer) or testing case (for which
+    ``case`` is a string), set up the physical
+    problems and turbine locations defining the
+    tidal farm modelling problem.
+
+    For training data, these values are chosen
+    randomly.
+    """
+    if case == 'aligned':
         parameters.viscosity.assign(0.5)
         parameters.depth = 40.0
         parameters.inflow_speed = 5.0
-        parameters.turbine_coords = [(456, 250), (744, 250)]  # aligned
+        parameters.turbine_coords = [(456, 250), (744, 250)]
         return
-    elif test_case == 'offset':
+    elif case == 'offset':
         parameters.viscosity.assign(0.5)
         parameters.depth = 40.0
         parameters.inflow_speed = 5.0
-        parameters.turbine_coords = [(456, 232), (744, 268)]  # offset
+        parameters.turbine_coords = [(456, 232), (744, 268)]
         return
     else:
-        assert isinstance(test_case, int)
+        assert isinstance(case, int)
         parameters.turbine_coords = []
-    np.random.seed(100*test_case)
+    np.random.seed(100*case)
 
     # Random depth from 20m to 100m
     parameters.depth = 20.0 + 80.0*np.random.rand()
@@ -35,7 +49,9 @@ def initialise(test_case):
     exponent = np.random.randint(-3, 1)
     parameters.viscosity.assign(significand*10**exponent)
 
-    # Randomise turbine configuration
+    # Randomise turbine configuration such that all
+    # turbines are at least 50m from the domain
+    # boundaries and each other
     num_turbines = np.random.randint(1, 8)
     tc = parameters.turbine_coords
     i = 0
