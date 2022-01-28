@@ -3,7 +3,7 @@ all: setup network convergence
 # --- Configurable parameters
 
 MODELS				= turbine
-NUM_TRAINING_CASES	= 16
+NUM_TRAINING_CASES	= 100
 TESTING_CASES		= aligned offset
 
 # --- Parameters that should not need modifying

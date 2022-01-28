@@ -15,7 +15,7 @@ from torch.optim.lr_scheduler import StepLR
 parser = argparse.ArgumentParser(prog='test_and_train.py')
 parser.add_argument('model', help='The equation set being solved')
 parser.add_argument('num_training_cases', help='The configuration file number')
-parser.add_argument('-adaptation_steps', help='Number of adaptation steps to learn from (default 4)')
+parser.add_argument('-adaptation_steps', help='Number of adaptation steps to learn from (default 3)')
 parser.add_argument('-lr', help='Starting learning rate, i.e. step length (default 2.0e-03)')
 parser.add_argument('-lr_adapt_num_steps', help='Number of steps between learning rate adapts (default 1000)')
 parser.add_argument('-lr_adapt_factor', help='Factor by which to reduce the learning rate (default 0.8)')
@@ -28,7 +28,7 @@ parser.add_argument('-seed', help='Seed for random number generator (default 42)
 parsed_args = parser.parse_args()
 model = parsed_args.model
 num_training_cases = int(parsed_args.num_training_cases)
-adaptation_steps = int(parsed_args.adaptation_steps or 4)
+adaptation_steps = int(parsed_args.adaptation_steps or 3)
 lr = float(parsed_args.lr or 2.0e-03)
 assert lr > 0.0
 lr_adapt_num_steps = int(parsed_args.lr_adapt_num_steps or 200)
