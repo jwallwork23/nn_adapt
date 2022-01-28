@@ -1,3 +1,7 @@
+"""
+Functions for extracting feature data from configuration
+files, meshes and solution fields.
+"""
 import firedrake
 from firedrake.petsc import PETSc
 from firedrake import op2

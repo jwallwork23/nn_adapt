@@ -1,3 +1,6 @@
+"""
+Configuration for plotting.
+"""
 import matplotlib
 import matplotlib.pyplot as plt  # noqa
 

@@ -1,3 +1,8 @@
+"""
+Classes for defining the layout of a neural network.
+"""
+
+
 class NetLayoutBase(object):
     """
     Base class for specifying the number

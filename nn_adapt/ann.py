@@ -1,3 +1,6 @@
+"""
+Classes and functions related to using neural networks.
+"""
 import random
 import numpy as np
 import torch

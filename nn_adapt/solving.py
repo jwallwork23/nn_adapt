@@ -1,3 +1,7 @@
+"""
+Functions for solving problems defined by configuration
+files and performing goal-oriented error estimation.
+"""
 from firedrake import *
 from firedrake.petsc import PETSc
 from firedrake.mg.embedded import TransferManager

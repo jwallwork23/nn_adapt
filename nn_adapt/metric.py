@@ -1,3 +1,7 @@
+"""
+Functions for generating Riemannian metrics from solution
+fields.
+"""
 from pyroteus import *
 from nn_adapt.solving import *
 
