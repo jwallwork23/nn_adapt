@@ -32,6 +32,7 @@ assert lr_adapt_num_steps > 0
 lr_adapt_factor = float(parsed_args.lr_adapt_factor or 0.8)
 assert 0.0 < lr_adapt_factor < 1.0
 num_epochs = int(parsed_args.num_epochs or 1000)
+assert num_epochs > 0
 preproc = parsed_args.preproc or 'arctan'
 batch_size = int(parsed_args.batch_size or 100)
 assert batch_size > 0
