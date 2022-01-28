@@ -27,12 +27,14 @@ dir:
 	done
 
 mesh:
+	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(CASES); do \
 			python3 meshgen.py $$model $$test_case; \
 			cd $$model/meshes && gmsh -2 $$test_case.geo && cd ../..; \
 		done; \
-	done
+	done && \
+	echo "Meshes built in $$(($$(date +%s)-d)) seconds"
 
 plot_config:
 	for model in $(MODELS); do \
@@ -49,17 +51,21 @@ clean:
 network: features train plot_progress plot_importance
 
 features:
+	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TRAINING_CASES); do \
 			python3 run_adapt.py $$model $$test_case; \
 			python3 run_adapt.py $$model $$test_case -anisotropic 1; \
 		done; \
-	done
+	done && \
+	echo "Features generated in $$(($$(date +%s)-d)) seconds"
 
 train:
+	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		python3 test_and_train.py $$model $(NUM_TRAINING_CASES); \
-	done
+	done && \
+	echo "Training completed in $$(($$(date +%s)-d)) seconds"
 
 plot_progress:
 	for model in $(MODELS); do \
@@ -74,6 +80,7 @@ plot_importance:
 # --- Snapshots
 
 snapshot:
+	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(CASES); do \
 			python3 run_adapt.py $$model $$test_case; \
@@ -81,34 +88,41 @@ snapshot:
 			python3 run_adapt_ml.py $$model $$test_case; \
 			python3 run_adapt_ml.py $$model $$test_case -anisotropic 1; \
 		done; \
-	done
+	done && \
+	echo "Snapshots generated in $$(($$(date +%s)-d)) seconds"
 
 # --- Perform convergence analysis
 
 convergence: uniform go ml plot_convergence
 
 uniform:
+	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
 			python3 run_uniform_refinement.py $$model $$test_case; \
 		done; \
-	done
+	done && \
+	echo "Uniform refinement completed in $$(($$(date +%s)-d)) seconds"
 
 go:
+	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
 			python3 run_adaptation_loop.py $$model $$test_case; \
 			python3 run_adaptation_loop.py $$model $$test_case -anisotropic 1; \
 		done; \
-	done
+	done && \
+	echo "Goal-oriented adaptation completed in $$(($$(date +%s)-d)) seconds"
 
 ml:
+	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
 			python3 run_adaptation_loop_ml.py $$model $$test_case; \
 			python3 run_adaptation_loop_ml.py $$model $$test_case -anisotropic 1; \
 		done; \
-	done
+	done && \
+	echo "Data-driven adaptation completed in $$(($$(date +%s)-d)) seconds"
 
 plot_convergence:
 	for model in $(MODELS); do \
