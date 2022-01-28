@@ -21,6 +21,9 @@ dir:
 	for model in $(MODELS); do \
 		mkdir -p $$model; \
 		cd $$model && touch __init__.py && mkdir -p data outputs plots && cd ..; \
+		for test_case in $(TESTING_CASES); do \
+			mkdir -p $$model/outputs/$$test_case; \
+		done; \
 	done
 
 mesh:
@@ -114,20 +117,33 @@ plot_convergence:
 			done; \
 	done
 
-# --- Do profiling experiments  # TODO: generalise
+# --- Do profiling experiments
 
-profile: profile_turbine
+profile: profile_uni profile_go profile_ml
 
-profile_turbine: profile_turbine_uni profile_turbine_go profile_turbine_ml
+profile_uni:
+	for model in $(MODELS); do \\
+		for test_case in $(TESTING_CASES); do \
+			python3 run_fixed_mesh.py $$model $$test_case -optimise 1 -num_refinements 4 -log_view :logview.txt:ascii_flamegraph; \
+			flamegraph.pl --title "Uniform refinement ($$test_case)" logview.txt > $$model/outputs/$$test_case/uni.svg; \
+			rm logview.txt; \
+		done; \
+	done
 
-profile_turbine_uni:
-	python3 run_fixed_mesh.py turbine 0 -optimise 1 -num_refinements 4 -log_view :logview.txt:ascii_flamegraph
-	flamegraph.pl --title "Uniform refinement (test case 0)" logview.txt > turbine/outputs/uni0.svg && rm logview.txt
+profile_go:
+	for model in $(MODELS); do \\
+		for test_case in $(TESTING_CASES); do \
+			python3 run_adapt.py $$model $$test_case -anisotropic 1 -optimise 1 -target_complexity 64000 -log_view :logview.txt:ascii_flamegraph; \
+			flamegraph.pl --title "Goal-oriented adaptation ($$test_case)" logview.txt > $$model/outputs/$$test_case/go.svg; \
+			rm logview.txt; \
+		done; \
+	done
 
-profile_turbine_go:
-	python3 run_adapt.py turbine 0 -anisotropic 1 -optimise 1 -target_complexity 64000 -log_view :logview.txt:ascii_flamegraph
-	flamegraph.pl --title "Goal-oriented adaptation (test case 0)" logview.txt > turbine/outputs/go0.svg && rm logview.txt
-
-profile_turbine_ml:
-	python3 run_adapt_ml.py turbine 0 -anisotropic 1 -optimise 1 -target_complexity 64000 -log_view :logview.txt:ascii_flamegraph
-	flamegraph.pl --title "Data-driven adaptation (test case 0)" logview.txt > turbine/outputs/ml0.svg && rm logview.txt
+profile_ml:
+	for model in $(MODELS); do \\
+		for test_case in $(TESTING_CASES); do \
+			python3 run_adapt_ml.py $$model $$test_case -anisotropic 1 -optimise 1 -target_complexity 64000 -log_view :logview.txt:ascii_flamegraph; \
+			flamegraph.pl --title "Data-driven adaptation ($$test_case)" logview.txt > $$model/outputs/$$test_case/ml.svg; \
+			rm logview.txt; \
+		done; \
+	done
