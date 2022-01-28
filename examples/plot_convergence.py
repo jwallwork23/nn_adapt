@@ -1,3 +1,8 @@
+"""
+Plot QoI convergence curves under uniform refinement,
+goal-oriented mesh adaptation and data-driven mesh
+adaptation, for a given ``test_case`` and ``model``.
+"""
 from nn_adapt.plotting import *
 
 import argparse
@@ -17,7 +22,7 @@ def plot_slope(x0, x1, y0, g, axes):
 matplotlib.rcParams['font.size'] = 20
 
 # Parse for test case
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(prog='plot_convergence.py')
 parser.add_argument('model', help='The model')
 parser.add_argument('test_case', help='The configuration file number')
 parsed_args = parser.parse_args()

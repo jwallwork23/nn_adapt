@@ -1,3 +1,8 @@
+"""
+Run a given ``test_case`` of a ``model`` using goal-oriented
+mesh adaptation in a fixed point iteration loop, for a sequence
+of increasing target metric complexities,
+"""
 from nn_adapt.features import *
 from nn_adapt.metric import *
 from nn_adapt.solving import *
@@ -11,7 +16,7 @@ from time import perf_counter
 set_log_level(ERROR)
 
 # Parse for test case and number of refinements
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(prog='run_adaptation_loop.py')
 parser.add_argument('model', help='The model')
 parser.add_argument('test_case', help='The configuration file number')
 parser.add_argument('-anisotropic', help='Toggle isotropic vs. anisotropic metric')

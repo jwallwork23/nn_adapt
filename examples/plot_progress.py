@@ -1,3 +1,7 @@
+"""
+Plot the training and validation loss curves for a network
+trained on a particular ``model``.
+"""
 from nn_adapt.plotting import *
 
 import argparse

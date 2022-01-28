@@ -1,3 +1,7 @@
+"""
+Compute and plot the sensitivities of a network
+trained on a particular ``model`` to its input parameters.
+"""
 from nn_adapt.ann import *
 from nn_adapt.plotting import *
 

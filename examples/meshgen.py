@@ -1,9 +1,13 @@
+"""
+Generate the mesh for configuration ``test_case``
+of a given ``model``.
+"""
 import argparse
 import importlib
 
 
 # Parse for test case
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(prog='meshgen.py')
 parser.add_argument('model', help='The model')
 parser.add_argument('test_case', help='The configuration file number')
 parsed_args, unknown_args = parser.parse_known_args()

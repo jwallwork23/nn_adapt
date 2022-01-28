@@ -1,3 +1,7 @@
+"""
+Train a network on ``num_training_cases`` problem
+specifications of a given ``model``.
+"""
 from nn_adapt.ann import *
 
 import argparse

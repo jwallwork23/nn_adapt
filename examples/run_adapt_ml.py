@@ -1,3 +1,7 @@
+"""
+Run a given ``test_case`` of a ``model`` using data-driven
+mesh adaptation in a fixed point iteration loop.
+"""
 from nn_adapt.ann import *
 from nn_adapt.features import *
 from nn_adapt.metric import *
@@ -11,7 +15,7 @@ from time import perf_counter
 start_time = perf_counter()
 
 # Parse for test case and number of refinements
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(prog='run_adapt_ml.py')
 parser.add_argument('model', help='The model')
 parser.add_argument('test_case', help='The configuration file number')
 parser.add_argument('-anisotropic', help='Toggle isotropic vs. anisotropic metric')

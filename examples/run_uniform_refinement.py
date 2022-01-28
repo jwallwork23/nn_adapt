@@ -1,3 +1,7 @@
+"""
+Run a given ``test_case`` of a ``model`` on a sequence of
+uniformly refined meshes generated from the initial mesh.
+"""
 from nn_adapt.solving import *
 
 import argparse
@@ -9,7 +13,7 @@ from time import perf_counter
 start_time = perf_counter()
 
 # Parse for test case and number of refinements
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(prog='run_uniform_refinement.py')
 parser.add_argument('model', help='The model')
 parser.add_argument('test_case', help='The configuration file number')
 parser.add_argument('-num_refinements', help='Number of mesh refinements')

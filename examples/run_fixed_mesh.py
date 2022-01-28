@@ -1,3 +1,6 @@
+"""
+Run a given ``test_case`` of a ``model`` on the initial mesh alone.
+"""
 from nn_adapt.solving import *
 from firedrake.petsc import PETSc
 
@@ -9,7 +12,7 @@ from time import perf_counter
 start_time = perf_counter()
 
 # Parse for test case
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(prog='run_fixed_mesh.py')
 parser.add_argument('model', help='The model')
 parser.add_argument('test_case', help='The configuration file number')
 parser.add_argument('-num_refinements', help='Number of mesh refinements')
