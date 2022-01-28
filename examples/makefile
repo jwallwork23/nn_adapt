@@ -57,8 +57,8 @@ features:
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TRAINING_CASES); do \
-			python3 run_adapt.py $$model $$test_case; \
-			python3 run_adapt.py $$model $$test_case -anisotropic 1; \
+			python3 run_adapt.py $$model $$test_case -no_outputs 1; \
+			python3 run_adapt.py $$model $$test_case -anisotropic 1 -no_outputs 1; \
 		done; \
 	done && \
 	echo "Features generated in $$(($$(date +%s)-d)) seconds" >> timing.log

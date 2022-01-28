@@ -43,6 +43,6 @@ if optimise:
     print(f'QoI for test case {test_case} = {assemble(setup.get_qoi(mesh)(sols)):.2f} {unit}')
 else:
     print(f'QoI for test case {test_case} = {assemble(setup.get_qoi(mesh)(sols[0])):.2f} {unit}')
-    File(f'{model}/outputs/fixed/forward{test_case}.pvd').write(*sols[0].split())
-    File(f'{model}/outputs/fixed/adjoint{test_case}.pvd').write(*sols[1].split())
+    File(f'{model}/outputs/{test_case}/fixed/forward.pvd').write(*sols[0].split())
+    File(f'{model}/outputs/{test_case}/fixed/adjoint.pvd').write(*sols[1].split())
 print(f'  Total time taken: {perf_counter() - start_time:.2f} seconds')

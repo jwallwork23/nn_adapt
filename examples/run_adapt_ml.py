@@ -70,10 +70,10 @@ elements_old = mesh.num_cells()
 estimator_old = None
 converged_reason = None
 if not optimise:
-    fwd_file = File(f'{model}/outputs/ML/{approach}/forward{test_case}.pvd')
-    adj_file = File(f'{model}/outputs/ML/{approach}/adjoint{test_case}.pvd')
-    ee_file = File(f'{model}/outputs/ML/{approach}/estimator{test_case}.pvd')
-    metric_file = File(f'{model}/outputs/ML/{approach}/metric{test_case}.pvd')
+    fwd_file = File(f'{model}/outputs/{test_case}/ML/{approach}/forward.pvd')
+    adj_file = File(f'{model}/outputs/{test_case}/ML/{approach}/adjoint.pvd')
+    ee_file = File(f'{model}/outputs/{test_case}/ML/{approach}/estimator.pvd')
+    metric_file = File(f'{model}/outputs/{test_case}/ML/{approach}/metric.pvd')
 print(f'Test case {test_case}')
 print('  Mesh 0')
 print(f'    Element count        = {elements_old}')

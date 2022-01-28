@@ -28,6 +28,7 @@ parser.add_argument('-element_rtol', help='Relative tolerance for element count 
 parser.add_argument('-estimator_rtol', help='Relative tolerance for error estimator (default 0.005)')
 parser.add_argument('-target_complexity', help='Target metric complexity (default 4000.0)')
 parser.add_argument('-optimise', help='Turn off plotting and debugging (default False)')
+parser.add_argument('-no_outputs', help='Turn off file outputs (default False)')
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 try:
@@ -49,7 +50,8 @@ assert estimator_rtol > 0.0
 target_complexity = float(parsed_args.target_complexity or 4000.0)
 assert target_complexity > 0.0
 optimise = bool(parsed_args.optimise or False)
-if not optimise:
+no_outputs = bool(parsed_args.no_outputs or optimise)
+if not no_outputs:
     from pyroteus.utility import File
 
 # Setup
@@ -71,11 +73,11 @@ qoi_old = None
 elements_old = mesh.num_cells()
 estimator_old = None
 converged_reason = None
-if not optimise:
-    fwd_file = File(f'{model}/outputs/GO/{approach}/forward{test_case}.pvd')
-    adj_file = File(f'{model}/outputs/GO/{approach}/adjoint{test_case}.pvd')
-    ee_file = File(f'{model}/outputs/GO/{approach}/estimator{test_case}.pvd')
-    metric_file = File(f'{model}/outputs/GO/{approach}/metric{test_case}.pvd')
+if not no_outputs:
+    fwd_file = File(f'{model}/outputs/{test_case}/GO/{approach}/forward.pvd')
+    adj_file = File(f'{model}/outputs/{test_case}/GO/{approach}/adjoint.pvd')
+    ee_file = File(f'{model}/outputs/{test_case}/GO/{approach}/estimator.pvd')
+    metric_file = File(f'{model}/outputs/{test_case}/GO/{approach}/metric.pvd')
 print(f'Test case {test_case}')
 print('  Mesh 0')
 print(f'    Element count        = {elements_old}')
@@ -88,7 +90,7 @@ for fp_iteration in range(maxiter+1):
     p0metric, dwr, fwd_sol, adj_sol = go_metric(mesh, setup, **kwargs)
     dof = sum(fwd_sol.function_space().dof_count)
     print(f'    DoF count            = {dof}')
-    if not optimise:
+    if not no_outputs:
         fwd_file.write(*fwd_sol.split())
         adj_file.write(*adj_sol.split())
         ee_file.write(dwr)
