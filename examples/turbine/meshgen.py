@@ -1,4 +1,10 @@
 def generate_geo(config):
+    """
+    Given a configuration object for a given training
+    or testing case, generate a gmsh geometry file
+    defining the initial mesh, with all turbines
+    meshed explicitly.
+    """
     tc = config.parameters.turbine_coords
     num_turbines = len(tc)
     f = """// Domain and turbine specification
