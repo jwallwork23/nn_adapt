@@ -1,7 +1,15 @@
 all: setup network snapshot convergence
 
-MODELS			= turbine
-TEST_CASES		= 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+# --- Configurable parameters
+
+MODELS				= turbine
+NUM_TRAINING_CASES	= 16
+TESTING_CASES		= aligned offset
+
+# --- Parameters that should not need modifying
+
+TRAINING_CASES	= $(shell seq 1 ${NUM_TRAINING_CASES})
+CASES			= ${TRAINING_CASES} ${TESTING_CASES}
 
 .PHONY: plot_test_cases, plot_progress, plot_importance, plot_convergence
 
@@ -12,15 +20,15 @@ setup: dir mesh plot_test_cases
 dir:
 	for model in $(MODELS); do \
 		mkdir -p $$model; \
-		cd $$model && touch __init__.py && make dir && cd ..; \
+		cd $$model && touch __init__.py && mkdir -p data outputs plots && cd ..; \
 	done
 
 mesh:
 	for model in $(MODELS); do \
-		for test_case in $(TEST_CASES); do \
+		for test_case in $(CASES); do \
 			python3 meshgen.py $$model $$test_case; \
+			cd $$model/meshes && gmsh -2 $$test_case.geo && cd ../..; \
 		done; \
-		cd $$model && make mesh; \
 	done
 
 plot_test_cases:
@@ -30,7 +38,7 @@ plot_test_cases:
 
 clean:
 	for model in $(MODELS); do \
-		cd $$model && rm -rf data outputs plots; \
+		cd $$model && rm -rf data outputs plots __pycache__ && cd ..; \
 	done
 
 # --- Train the neural network
@@ -39,7 +47,7 @@ network: features train plot_progress plot_importance
 
 features:
 	for model in $(MODELS); do \
-		for test_case in $(TEST_CASES); do \
+		for test_case in $(CASES); do \
 			python3 run_adapt.py $$model $$test_case; \
 			python3 run_adapt.py $$model $$test_case -anisotropic 1; \
 		done; \
@@ -64,7 +72,7 @@ plot_importance:
 
 snapshot:
 	for model in $(MODELS); do \
-		for test_case in $(TEST_CASES); do \
+		for test_case in $(CASES); do \
 			python3 run_adapt.py $$model $$test_case; \
 			python3 run_adapt.py $$model $$test_case -anisotropic 1; \
 			python3 run_adapt_ml.py $$model $$test_case; \
@@ -78,14 +86,14 @@ convergence: uniform go ml plot_convergence
 
 uniform:
 	for model in $(MODELS); do \
-		for test_case in $(TEST_CASES); do \
+		for test_case in $(TESTING_CASES); do \
 			python3 run_uniform_refinement.py $$model $$test_case; \
 		done; \
 	done
 
 go:
 	for model in $(MODELS); do \
-		for test_case in $(TEST_CASES); do \
+		for test_case in $(TESTING_CASES); do \
 			python3 run_adaptation_loop.py $$model $$test_case; \
 			python3 run_adaptation_loop.py $$model $$test_case -anisotropic 1; \
 		done; \
@@ -93,18 +101,19 @@ go:
 
 ml:
 	for model in $(MODELS); do \
-		for test_case in $(TEST_CASES); do \
+		for test_case in $(TESTING_CASES); do \
 			python3 run_adaptation_loop_ml.py $$model $$test_case; \
 			python3 run_adaptation_loop_ml.py $$model $$test_case -anisotropic 1; \
 		done; \
 	done
 
+# TODO: use TESTING_CASES
 plot_convergence:
 	for model in $(MODELS); do \
 		python3 plot_convergence.py $$model; \
 	done
 
-# --- Do profiling experiments
+# --- Do profiling experiments  # TODO: generalise
 
 profile: profile_turbine
 
