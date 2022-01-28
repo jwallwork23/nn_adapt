@@ -24,7 +24,7 @@ matplotlib.rcParams['font.size'] = 20
 # Parse for test case
 parser = argparse.ArgumentParser(prog='plot_convergence.py')
 parser.add_argument('model', help='The model')
-parser.add_argument('test_case', help='The configuration file number')
+parser.add_argument('test_case', help='The configuration name')
 parsed_args = parser.parse_args()
 model = parsed_args.model
 test_case = parsed_args.test_case

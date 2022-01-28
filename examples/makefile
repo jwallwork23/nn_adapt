@@ -1,4 +1,4 @@
-all: setup network snapshot convergence
+all: setup network convergence
 
 # --- Configurable parameters
 
@@ -11,11 +11,11 @@ TESTING_CASES		= aligned offset
 TRAINING_CASES	= $(shell seq 1 ${NUM_TRAINING_CASES})
 CASES			= ${TRAINING_CASES} ${TESTING_CASES}
 
-.PHONY: plot_test_cases, plot_progress, plot_importance, plot_convergence
+.PHONY: plot_config, plot_progress, plot_importance, plot_convergence
 
 # --- Setup directories and meshes
 
-setup: dir mesh plot_test_cases
+setup: dir mesh plot_config
 
 dir:
 	for model in $(MODELS); do \
@@ -34,9 +34,9 @@ mesh:
 		done; \
 	done
 
-plot_test_cases:
+plot_config:
 	for model in $(MODELS); do \
-		python3 plot_test_cases.py $$model; \
+		python3 plot_config.py $$model; \
 	done
 
 clean:
@@ -68,7 +68,7 @@ plot_progress:
 
 plot_importance:
 	for model in $(MODELS); do \
-		python3 plot_importance.py $$model; \
+		python3 plot_importance.py $$model $(NUM_TRAINING_CASES); \
 	done
 
 # --- Snapshots
@@ -114,7 +114,7 @@ plot_convergence:
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
 			python3 plot_convergence.py $$model $$test_case; \
-			done; \
+		done; \
 	done
 
 # --- Do profiling experiments
