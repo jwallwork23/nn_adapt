@@ -10,7 +10,8 @@ parser.add_argument('model', help='The equation set being solved')
 parser.add_argument('-num_epochs', help='The number of iterations (default 1000)')
 args = parser.parse_args()
 model = args.model
-assert model in ['turbine']
+test_case = int(parsed_args.test_case)
+assert test_case > 0
 num_epochs = int(parsed_args.num_epochs or 1000)
 assert num_epochs > 0
 

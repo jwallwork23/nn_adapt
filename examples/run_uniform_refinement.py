@@ -15,9 +15,11 @@ parser.add_argument('test_case', help='The configuration file number')
 parser.add_argument('-num_refinements', help='Number of mesh refinements')
 parsed_args = parser.parse_args()
 model = parsed_args.model
-assert model in ['turbine']
-test_case = int(parsed_args.test_case)
-assert test_case in list(range(16))
+try:
+    test_case = int(parsed_args.test_case)
+    assert test_case > 0
+except ValueError:
+    test_case = parsed_args.test_case
 num_refinements = int(parsed_args.num_refinements or 5)
 assert num_refinements >= 0
 

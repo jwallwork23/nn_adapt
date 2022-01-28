@@ -26,9 +26,11 @@ parser.add_argument('-target_complexity', help='Target metric complexity (defaul
 parser.add_argument('-optimise', help='Turn off plotting and debugging (default False)')
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
-assert model in ['turbine']
-test_case = int(parsed_args.test_case)
-assert test_case in list(range(16))
+try:
+    test_case = int(parsed_args.test_case)
+    assert test_case > 0
+except ValueError:
+    test_case = parsed_args.test_case
 approach = 'isotropic' if parsed_args.anisotropic in [None, '0'] else 'anisotropic'
 miniter = int(parsed_args.miniter or 3)
 assert miniter >= 0

@@ -12,9 +12,8 @@ parser = argparse.ArgumentParser(prog='plot_test_cases.py')
 parser.add_argument('model', help='The equation set being solved')
 args = parser.parse_args()
 model = args.model
-assert model in ['turbine']
 
-# Bounding box
+# Bounding box  # TODO: generalise
 xmin = 0
 xmax = 1200
 ymin = 0
@@ -22,14 +21,14 @@ ymax = 500
 eps = 5
 
 fig, axes = plt.subplots(ncols=4, nrows=4, figsize=(12, 7))
-for test_case in range(16):
+for test_case in range(16):  # TODO: generalise
     ax = axes[test_case // 4, test_case % 4]
 
     # Plot setup
     setup = importlib.import_module(f'{model}.config')
-    setup.initialise(test_case)
-    mesh = Mesh(f'{model}/meshes/{test_case}.msh')
-    tags = setup.parameters.turbine_ids
+    setup.initialise(test_case+1)
+    mesh = Mesh(f'{model}/meshes/{test_case+1}.msh')
+    tags = setup.parameters.turbine_ids  # TODO: generalise
     P0 = FunctionSpace(mesh, 'DG', 0)
     footprints = assemble(sum(TestFunction(P0)*dx(tag) for tag in tags))
     footprints.interpolate(conditional(footprints > 0, 0, 1))

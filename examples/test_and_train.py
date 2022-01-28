@@ -24,7 +24,6 @@ parser.add_argument('-test_batch_size', help='Number of data points per validati
 parser.add_argument('-test_size', help='Proportion of data used for validation (default 0.3)')
 parsed_args = parser.parse_args()
 model = parsed_args.model
-assert model in ['turbine']
 lr = float(parsed_args.lr or 2.0e-03)
 assert lr > 0.0
 lr_adapt_num_steps = int(parsed_args.lr_adapt_num_steps or 200)

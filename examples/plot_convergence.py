@@ -21,7 +21,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument('model', help='The model')
 parsed_args = parser.parse_args()
 model = parsed_args.model
-assert model in ['turbine']
 approaches = {
     'uniform': {'label': 'Uniform refinement', 'color': 'cornflowerblue', 'marker': 'x', 'linestyle': '-'},
     'GOisotropic': {'label': 'Isotropic goal-oriented adaptation', 'color': 'orange', 'marker': '^', 'linestyle': '-'},

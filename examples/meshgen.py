@@ -8,9 +8,9 @@ parser.add_argument('model', help='The model')
 parser.add_argument('test_case', help='The configuration file number')
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
-assert model in ['turbine']
 try:
     test_case = int(parsed_args.test_case)
+    assert test_case > 0
 except ValueError:
     test_case = parsed_args.test_case
 
