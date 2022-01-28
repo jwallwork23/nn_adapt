@@ -107,10 +107,11 @@ ml:
 		done; \
 	done
 
-# TODO: use TESTING_CASES
 plot_convergence:
 	for model in $(MODELS); do \
-		python3 plot_convergence.py $$model; \
+		for test_case in $(TESTING_CASES); do \
+			python3 plot_convergence.py $$model $$test_case; \
+			done; \
 	done
 
 # --- Do profiling experiments  # TODO: generalise

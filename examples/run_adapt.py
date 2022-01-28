@@ -15,7 +15,7 @@ set_log_level(ERROR)
 # Parse for test case and number of refinements
 parser = argparse.ArgumentParser()
 parser.add_argument('model', help='The model')
-parser.add_argument('test_case', help='The setupuration file number')
+parser.add_argument('test_case', help='The configuration file number')
 parser.add_argument('-anisotropic', help='Toggle isotropic vs. anisotropic metric')
 parser.add_argument('-miniter', help='Minimum number of iterations (default 3)')
 parser.add_argument('-maxiter', help='Maximum number of iterations (default 35)')
