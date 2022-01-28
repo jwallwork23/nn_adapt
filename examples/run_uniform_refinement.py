@@ -24,6 +24,7 @@ assert num_refinements >= 0
 # Setup
 setup = importlib.import_module(f'{model}.config')
 setup.initialise(test_case)
+unit = setup.parameters.qoi_unit
 mesh = Mesh(f'{model}/meshes/{test_case}.msh')
 mh = MeshHierarchy(mesh, num_refinements)
 
@@ -41,7 +42,7 @@ for i, mesh in enumerate(mh):
     fwd_sol = get_solutions(mesh, setup, solve_adjoint=False)
     fs = fwd_sol.function_space()
     qoi = assemble(setup.get_qoi(mesh)(fwd_sol))
-    print(f'    Quantity of Interest = {qoi}')
+    print(f'    Quantity of Interest = {qoi} {unit}')
     print(f'    Runtime: {perf_counter() - start_time:.2f} seconds')
     qois.append(qoi)
     dofs.append(sum(fs.dof_count))

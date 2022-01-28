@@ -26,6 +26,7 @@ optimise = bool(parsed_args.optimise or False)
 # Setup
 setup = importlib.import_module(f'{model}.config')
 setup.initialise(test_case)
+unit = setup.parameters.qoi_unit
 mesh = Mesh(f'{model}/meshes/{test_case}.msh')
 if num_refinements > 0:
     with PETSc.Log.Event('Hierarchy'):
@@ -34,9 +35,9 @@ if num_refinements > 0:
 # Solve and evaluate QoI
 sols = get_solutions(mesh, setup, solve_adjoint=not optimise)
 if optimise:
-    print(f'QoI for test case {test_case} = {assemble(setup.get_qoi(mesh)(sols)):.2f} MW')
+    print(f'QoI for test case {test_case} = {assemble(setup.get_qoi(mesh)(sols)):.2f} {unit}')
 else:
-    print(f'QoI for test case {test_case} = {assemble(setup.get_qoi(mesh)(sols[0])):.2f} MW')
+    print(f'QoI for test case {test_case} = {assemble(setup.get_qoi(mesh)(sols[0])):.2f} {unit}')
     File(f'{model}/outputs/fixed/forward{test_case}.pvd').write(*sols[0].split())
     File(f'{model}/outputs/fixed/adjoint{test_case}.pvd').write(*sols[1].split())
 print(f'  Total time taken: {perf_counter() - start_time:.2f} seconds')

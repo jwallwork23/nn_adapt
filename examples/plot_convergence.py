@@ -1,6 +1,7 @@
 from nn_adapt.plotting import *
 
 import argparse
+import importlib
 from matplotlib.ticker import FormatStrFormatter
 import numpy as np
 
@@ -31,6 +32,10 @@ approaches = {
 xlim = [3.0e+03, 4.0e+06]
 num_test_cases = 16
 
+# Load configuration
+setup = importlib.import_module(f'{model}.config')
+unit = setup.parameters.qoi_unit
+
 # Plot QoI curves against DoF count
 for test_case in range(num_test_cases):
     fig, axes = plt.subplots()
@@ -49,7 +54,7 @@ for test_case in range(num_test_cases):
     axes.set_ylim([conv - 0.05*(start - conv), start + 0.05*(start - conv)])
     axes.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
     axes.set_xlabel('DoF count')
-    axes.set_ylabel(r'Power output ($\mathrm{MW}$)')
+    axes.set_ylabel(r'Power output ($\mathrm{' + unit + '}$)')
     axes.grid(True)
     plt.tight_layout()
     plt.savefig(f'{model}/plots/qoi_vs_dofs_{test_case}.pdf')
@@ -82,7 +87,7 @@ for test_case in range(num_test_cases):
     axes.set_ylim([conv - 0.05*(start - conv), start + 0.05*(start - conv)])
     axes.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
     axes.set_xlabel('Element count')
-    axes.set_ylabel(r'Power output ($\mathrm{MW}$)')
+    axes.set_ylabel(r'Power output ($\mathrm{' + unit + '}$)')
     axes.grid(True)
     plt.tight_layout()
     plt.savefig(f'{model}/plots/qoi_vs_elements_{test_case}.pdf')

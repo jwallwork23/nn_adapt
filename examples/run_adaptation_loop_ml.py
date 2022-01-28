@@ -46,6 +46,7 @@ preproc = parsed_args.preproc or 'arctan'
 # Setup
 setup = importlib.import_module(f'{model}.config')
 setup.initialise(test_case)
+unit = setup.parameters.qoi_unit
 
 # Load the model
 layout = importlib.import_module(f'{model}.network').NetLayout()
@@ -81,7 +82,7 @@ for i in range(num_refinements+1):
 
         # Check for QoI convergence
         qoi = assemble(setup.get_qoi(mesh)(fwd_sol))
-        print(f'      Quantity of Interest = {qoi}')
+        print(f'      Quantity of Interest = {qoi} {unit}')
         if qoi_old is not None and fp_iteration >= miniter:
             if abs(qoi - qoi_old) < qoi_rtol*abs(qoi_old):
                 converged_reason = 'QoI convergence'

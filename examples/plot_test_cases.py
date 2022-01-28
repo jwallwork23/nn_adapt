@@ -8,7 +8,7 @@ import importlib
 matplotlib.rcParams['font.size'] = 12
 
 # Parse model
-parser = argparse.ArgumentParser(prog='plot_progress.py')
+parser = argparse.ArgumentParser(prog='plot_test_cases.py')
 parser.add_argument('model', help='The equation set being solved')
 args = parser.parse_args()
 model = args.model
