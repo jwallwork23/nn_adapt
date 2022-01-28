@@ -1,4 +1,4 @@
-all: setup network convergence
+all: setup network convergence profile snapshot
 
 # --- Configurable parameters
 
@@ -140,31 +140,52 @@ plot_convergence:
 
 # --- Do profiling experiments
 
-profile: profile_uni profile_go profile_ml
+profile:
+	for i in 1 2 3 4 5; do \
+		make profile_uni; \
+	done && \
+	for i in 1 2 3 4 5; do \
+		make profile_go; \
+	done && \
+	for i in 1 2 3 4 5; do \
+		make profile_ml; \
+	done
 
 profile_uni:
-	for model in $(MODELS); do \\
+	touch timing.log
+	d=$$(date +%s) && \
+	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
-			python3 run_fixed_mesh.py $$model $$test_case -optimise 1 -num_refinements 4 -log_view :logview.txt:ascii_flamegraph; \
-			flamegraph.pl --title "Uniform refinement ($$test_case)" logview.txt > $$model/outputs/$$test_case/uni.svg; \
-			rm logview.txt; \
+			python3 run_fixed_mesh.py $$model $$test_case -optimise 1 -num_refinements 4 -log_view :$$model/outputs/$$test_case/logview_uni.txt:ascii_flamegraph; \
 		done; \
-	done
+	done && \
+	echo "Uniform refinement profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \
+	cd $$model/outputs/$$test_case && \
+	flamegraph.pl --title "Uniform refinement ($$test_case)" logview.txt > uni.svg && \
+	rm logview.txt && cd ../../..
 
 profile_go:
-	for model in $(MODELS); do \\
+	touch timing.log
+	d=$$(date +%s) && \
+	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
-			python3 run_adapt.py $$model $$test_case -anisotropic 1 -optimise 1 -target_complexity 64000 -log_view :logview.txt:ascii_flamegraph; \
-			flamegraph.pl --title "Goal-oriented adaptation ($$test_case)" logview.txt > $$model/outputs/$$test_case/go.svg; \
-			rm logview.txt; \
+			python3 run_adapt.py $$model $$test_case -anisotropic 1 -optimise 1 -target_complexity 64000 -log_view :$$model/outputs/$$test_case/logview.txt:ascii_flamegraph; \
 		done; \
-	done
+	done && \
+	echo "Goal-oriented adaptation profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \
+	cd $$model/outputs/$$test_case && \
+	flamegraph.pl --title "Goal-oriented adaptation ($$test_case)" logview.txt > go.svg && \
+	rm logview.txt && ../../..
 
 profile_ml:
-	for model in $(MODELS); do \\
+	touch timing.log
+	d=$$(date +%s) && \
+	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
-			python3 run_adapt_ml.py $$model $$test_case -anisotropic 1 -optimise 1 -target_complexity 64000 -log_view :logview.txt:ascii_flamegraph; \
-			flamegraph.pl --title "Data-driven adaptation ($$test_case)" logview.txt > $$model/outputs/$$test_case/ml.svg; \
-			rm logview.txt; \
+			python3 run_adapt_ml.py $$model $$test_case -anisotropic 1 -optimise 1 -target_complexity 64000 -log_view :$$model/outputs/$$test_case/logview.txt:ascii_flamegraph; \
 		done; \
-	done
+	done && \
+	echo "Data-driven adaptation profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \
+	cd $$model/outputs/$$test_case && \
+	flamegraph.pl --title "Data-driven adaptation ($$test_case)" logview.txt > ml.svg && \
+	rm logview.txt && cd ../../..
