@@ -6,17 +6,18 @@ import importlib
 import numpy as np
 
 
-# Hard-coded parameters
-num_test_cases = 16
-adaptation_steps = 4
-
 # Parse model
 parser = argparse.ArgumentParser(prog='test_importance.py')
 parser.add_argument('model', help='The equation set being solved')
+parser.add_argument('num_training_cases', help='The number of training cases considered')
+parser.add_argument('-adaptation_steps', help='Number of adaptation steps to learn from (default 4)')
 parser.add_argument('-preproc', help='Function for preprocessing data (default "arctan")')
 parsed_args = parser.parse_args()
 model = parsed_args.model
 preproc = parsed_args.preproc or 'arctan'
+num_training_cases = int(parsed_args.num_training_cases)
+assert num_training_cases > 0
+adaptation_steps = int(parsed_args.adaptation_steps or 4)
 
 # Load the model
 layout = importlib.import_module(f'{model}.network').NetLayout()
@@ -41,7 +42,7 @@ for approach in ['isotropic', 'anisotropic']:
     for step in range(adaptation_steps):
         if step == 0 and approach == 'anisotropic':
             continue
-        for test_case in range(num_test_cases):
+        for test_case in range(num_training_cases):
 
             # Load some data and mark inputs as independent
             features = preprocess_features(np.load(f'{model}/data/features{test_case}_GO{approach}_{step}.npy'), preproc=preproc)
@@ -56,7 +57,7 @@ for approach in ['isotropic', 'anisotropic']:
             loss.backward()
             sensitivity += features.grad.abs().mean(axis=0)
         count += 1
-sensitivity /= num_test_cases*adaptation_steps
+sensitivity /= num_training_cases*adaptation_steps
 
 # Plot increases as a bar chart
 fig, axes = plt.subplots()

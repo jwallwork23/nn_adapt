@@ -7,13 +7,11 @@ from time import perf_counter
 from torch.optim.lr_scheduler import StepLR
 
 
-# Hard-coded parameters
-adaptation_steps = 4
-test_cases = 14
-
 # Configuration
 parser = argparse.ArgumentParser(prog='test_and_train.py')
 parser.add_argument('model', help='The equation set being solved')
+parser.add_argument('num_training_cases', help='The configuration file number')
+parser.add_argument('-adaptation_steps', help='Number of adaptation steps to learn from (default 4)')
 parser.add_argument('-lr', help='Starting learning rate, i.e. step length (default 2.0e-03)')
 parser.add_argument('-lr_adapt_num_steps', help='Number of steps between learning rate adapts (default 1000)')
 parser.add_argument('-lr_adapt_factor', help='Factor by which to reduce the learning rate (default 0.8)')
@@ -22,8 +20,11 @@ parser.add_argument('-preproc', help='Function for preprocessing data (default "
 parser.add_argument('-batch_size', help='Number of data points per training iteration (default 100)')
 parser.add_argument('-test_batch_size', help='Number of data points per validation iteration (default 100)')
 parser.add_argument('-test_size', help='Proportion of data used for validation (default 0.3)')
+parser.add_argument('-seed', help='Seed for random number generator (default 42)')
 parsed_args = parser.parse_args()
 model = parsed_args.model
+num_training_cases = int(parsed_args.num_training_cases)
+adaptation_steps = int(parsed_args.adaptation_steps or 4)
 lr = float(parsed_args.lr or 2.0e-03)
 assert lr > 0.0
 lr_adapt_num_steps = int(parsed_args.lr_adapt_num_steps or 200)
@@ -39,6 +40,8 @@ test_batch_size = int(parsed_args.test_batch_size or 100)
 assert test_batch_size > 0
 test_size = float(parsed_args.test_size or 0.3)
 assert 0.0 < test_size < 1.0
+seed = int(parsed_args.seed or 42)
+assert seed > 0
 
 # Load data
 concat = lambda a, b: b if a is None else np.concatenate((a, b), axis=0)
@@ -49,7 +52,7 @@ for step in range(adaptation_steps):
     for approach in ('isotropic', 'anisotropic'):
         if step == 0 and approach == 'anisotropic':
             continue
-        for test_case in range(test_cases):
+        for test_case in range(num_training_cases):
             features = concat(features, np.load(f'{model}/data/features{test_case}_GO{approach}_{step}.npy'))
             targets = concat(targets, np.load(f'{model}/data/targets{test_case}_GO{approach}_{step}.npy'))
 print(f'Total number of features: {len(features.flatten())}')
@@ -76,7 +79,7 @@ print(f"Model parameters are{'' if all(p.is_cuda for p in nn.parameters()) else 
 train_losses = []
 validation_losses = []
 adapt_steps = []
-set_seed(42)
+set_seed(seed)
 for epoch in range(num_epochs):
 
     # Training step

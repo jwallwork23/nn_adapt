@@ -47,7 +47,7 @@ network: features train plot_progress plot_importance
 
 features:
 	for model in $(MODELS); do \
-		for test_case in $(CASES); do \
+		for test_case in $(TRAINING_CASES); do \
 			python3 run_adapt.py $$model $$test_case; \
 			python3 run_adapt.py $$model $$test_case -anisotropic 1; \
 		done; \
@@ -55,7 +55,7 @@ features:
 
 train:
 	for model in $(MODELS); do \
-		python3 test_and_train.py $$model; \
+		python3 test_and_train.py $$model $(NUM_TRAINING_CASES); \
 	done
 
 plot_progress:
