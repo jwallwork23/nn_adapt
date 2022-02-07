@@ -8,6 +8,7 @@ from firedrake import op2
 import numpy as np
 from pyroteus.metric import *
 import ufl
+from nn_adapt.solving import dwr_indicator
 
 
 __all__ = ["extract_features", "get_values_at_elements", "collect_features"]
@@ -145,7 +146,7 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
 
     # Coarse-grained DWR estimator
     with PETSc.Log.Event("Extract estimator"):
-        dwr = config.dwr_indicator(mesh, fwd_sol, adj_sol)
+        dwr = dwr_indicator(config, mesh, fwd_sol, adj_sol)
 
     # Features describing the mesh element
     with PETSc.Log.Event("Analyse element"):
