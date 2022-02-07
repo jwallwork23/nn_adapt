@@ -6,13 +6,12 @@ import firedrake
 from firedrake.petsc import PETSc
 from firedrake import op2
 import numpy as np
-from nn_adapt.ann import preprocess_features
 from nn_adapt.solving import split_into_scalars
 from pyroteus.metric import *
 import ufl
 
 
-__all__ = ['extract_features', 'get_values_at_elements', 'preprocess_features']
+__all__ = ['extract_features', 'get_values_at_elements']
 
 
 @PETSc.Log.EventDecorator('Extract components')
@@ -105,4 +104,9 @@ def extract_features(config, fwd_sol, adj_sol, preproc='none'):
     with PETSc.Log.Event('Combine features'):
         features = np.hstack((np.vstack([nu, drag, b, d, h1, h2]).transpose(), np.hstack(vals)))
     assert not np.isnan(features).any()
-    return preprocess_features(features, preproc=preproc)
+
+    # Pre-process, if requested
+    if preproc != 'none':
+        from nn_adapt.ann import preprocess_features
+        features = preprocess_features(features, preproc=preproc)
+    return features
