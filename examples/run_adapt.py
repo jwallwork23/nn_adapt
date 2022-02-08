@@ -24,8 +24,8 @@ parser.add_argument("-anisotropic", help="Toggle isotropic vs. anisotropic metri
 parser.add_argument("-miniter", help="Minimum number of iterations (default 3)")
 parser.add_argument("-maxiter", help="Maximum number of iterations (default 35)")
 parser.add_argument("-qoi_rtol", help="QoI tolerance (default 0.001)")
-parser.add_argument("-element_rtol", help="Element count tolerance (default 0.005)")
-parser.add_argument("-estimator_rtol", help="Error estimator tolerance (default 0.005)")
+parser.add_argument("-element_rtol", help="Element count tolerance (default 0.001)")
+parser.add_argument("-estimator_rtol", help="Error estimator tolerance (default 0.001)")
 parser.add_argument("-target", help="Target metric complexity (default 4000.0)")
 parser.add_argument("-optimise", help="Turn off plotting and debugging (default False)")
 parser.add_argument("-no_outputs", help="Turn off file outputs (default False)")
@@ -43,9 +43,9 @@ maxiter = int(parsed_args.maxiter or 35)
 assert maxiter >= miniter
 qoi_rtol = float(parsed_args.qoi_rtol or 0.001)
 assert qoi_rtol > 0.0
-element_rtol = float(parsed_args.element_rtol or 0.005)
+element_rtol = float(parsed_args.element_rtol or 0.001)
 assert element_rtol > 0.0
-estimator_rtol = float(parsed_args.estimator_rtol or 0.005)
+estimator_rtol = float(parsed_args.estimator_rtol or 0.001)
 assert estimator_rtol > 0.0
 target_complexity = float(parsed_args.target_complexity or 4000.0)
 assert target_complexity > 0.0

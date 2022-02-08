@@ -24,8 +24,8 @@ parser.add_argument("-num_refinements", help="Number of refinements (default 4)"
 parser.add_argument("-miniter", help="Minimum number of iterations (default 3)")
 parser.add_argument("-maxiter", help="Maximum number of iterations (default 35)")
 parser.add_argument("-qoi_rtol", help="Relative tolerance for QoI (default 0.001)")
-parser.add_argument("-element_rtol", help="Element count tolerance (default 0.005)")
-parser.add_argument("-estimator_rtol", help="Error estimator tolerance (default 0.005)")
+parser.add_argument("-element_rtol", help="Element count tolerance (default 0.001)")
+parser.add_argument("-estimator_rtol", help="Error estimator tolerance (default 0.001)")
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 try:
@@ -42,9 +42,9 @@ maxiter = int(parsed_args.maxiter or 35)
 assert maxiter >= miniter
 qoi_rtol = float(parsed_args.qoi_rtol or 0.001)
 assert qoi_rtol > 0.0
-element_rtol = float(parsed_args.element_rtol or 0.005)
+element_rtol = float(parsed_args.element_rtol or 0.001)
 assert element_rtol > 0.0
-estimator_rtol = float(parsed_args.estimator_rtol or 0.005)
+estimator_rtol = float(parsed_args.estimator_rtol or 0.001)
 assert estimator_rtol > 0.0
 
 # Setup
