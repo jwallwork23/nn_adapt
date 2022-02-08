@@ -120,7 +120,7 @@ for i in range(num_refinements+1):
 
         # Construct metric
         if approach == 'anisotropic':
-            hessian = combine_metrics(*get_hessians(adj_sol), average=True)
+            hessian = combine_metrics(*get_hessians(adj_sol), average=False)
         else:
             hessian = None
         p0metric = anisotropic_metric(

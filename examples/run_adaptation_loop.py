@@ -63,7 +63,7 @@ for i in range(num_refinements+1):
     target_complexity = 200.0*4**i
     kwargs = {
         'enrichment_method': 'h',
-        'average': True,
+        'average': False,
         'anisotropic': approach == 'anisotropic',
         'retall': True,
     }

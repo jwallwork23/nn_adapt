@@ -65,7 +65,7 @@ Nd = dim**2
 # Run adaptation loop
 kwargs = {
     'enrichment_method': 'h',
-    'average': True,
+    'average': False,
     'anisotropic': approach == 'anisotropic',
     'retall': True,
 }
