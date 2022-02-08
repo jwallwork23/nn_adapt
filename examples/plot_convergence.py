@@ -65,6 +65,7 @@ xlim = [3.0e03, 4.0e06]
 # Load configuration
 setup = importlib.import_module(f"{model}.config")
 unit = setup.parameters.qoi_unit
+qoi_name = setup.parameters.qoi_name.capitalize()
 
 # Plot QoI curves against DoF count
 fig, axes = plt.subplots()
@@ -83,7 +84,7 @@ axes.set_xlim(xlim)
 axes.set_ylim([conv - 0.05 * (start - conv), start + 0.05 * (start - conv)])
 axes.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
 axes.set_xlabel("DoF count")
-axes.set_ylabel(r"Power output ($\mathrm{" + unit + "}$)")
+axes.set_ylabel(r"{" + qoi_name + "} ($\mathrm{" + unit + "}$)")
 axes.grid(True)
 plt.tight_layout()
 plt.savefig(f"{model}/plots/qoi_vs_dofs_{test_case}.pdf")
@@ -113,7 +114,7 @@ for approach, metadata in approaches.items():
 axes.set_ylim([conv - 0.05 * (start - conv), start + 0.05 * (start - conv)])
 axes.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
 axes.set_xlabel("Element count")
-axes.set_ylabel(r"Power output ($\mathrm{" + unit + "}$)")
+axes.set_ylabel(qoi_name + r" output ($\mathrm{" + unit + "}$)")
 axes.grid(True)
 plt.tight_layout()
 plt.savefig(f"{model}/plots/qoi_vs_elements_{test_case}.pdf")

@@ -4,6 +4,7 @@ import numpy as np
 
 class Parameters(object):
     qoi_unit = "MW"
+    qoi_name = "power output"
 
     h_min = 1.0e-05
     h_max = 500.0
