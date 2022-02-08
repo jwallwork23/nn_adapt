@@ -87,7 +87,7 @@ snapshot:
 	touch timing.log
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
-		for test_case in $(CASES); do \
+		for test_case in $(TESTING_CASES); do \
 			python3 run_adapt.py $$model $$test_case; \
 			python3 run_adapt.py $$model $$test_case -anisotropic 1; \
 			python3 run_adapt_ml.py $$model $$test_case; \
