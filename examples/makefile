@@ -170,7 +170,7 @@ profile_go:
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
-			python3 run_adapt.py $$model $$test_case -anisotropic 1 -optimise 1 -target_complexity 64000 -log_view :$$model/outputs/$$test_case/logview.txt:ascii_flamegraph; \
+			python3 run_adapt.py $$model $$test_case -anisotropic 1 -optimise 1 -target 64000 -log_view :$$model/outputs/$$test_case/logview.txt:ascii_flamegraph; \
 		done; \
 	done && \
 	echo "Goal-oriented adaptation profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \
@@ -183,7 +183,7 @@ profile_ml:
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
-			python3 run_adapt_ml.py $$model $$test_case -anisotropic 1 -optimise 1 -target_complexity 64000 -log_view :$$model/outputs/$$test_case/logview.txt:ascii_flamegraph; \
+			python3 run_adapt_ml.py $$model $$test_case -anisotropic 1 -optimise 1 -target 64000 -log_view :$$model/outputs/$$test_case/logview.txt:ascii_flamegraph; \
 		done; \
 	done && \
 	echo "Data-driven adaptation profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \

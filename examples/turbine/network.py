@@ -23,6 +23,7 @@ class NetLayout(NetLayoutBase):
     =============
         [1 error indicator value]
     """
+
     num_inputs = 30
     num_hidden_neurons = 60
     num_outputs = 1

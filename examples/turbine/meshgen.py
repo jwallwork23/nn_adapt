@@ -45,15 +45,47 @@ Line(%d) = {%d, %d};
 Line(%d) = {%d, %d};
 Line(%d) = {%d, %d};
 Line Loop(%d) = {%d, %d, %d, %d};
-""" % (i, k, k, i+1, k, k, i+2, k, k, i+3, k, k, i, i, i+1, i+1, i+1, i+2, i+2, i+2, i+3, i+3, i+3, i, j, i, i+1, i+2, i+3)
+""" % (
+            i,
+            k,
+            k,
+            i + 1,
+            k,
+            k,
+            i + 2,
+            k,
+            k,
+            i + 3,
+            k,
+            k,
+            i,
+            i,
+            i + 1,
+            i + 1,
+            i + 1,
+            i + 2,
+            i + 2,
+            i + 2,
+            i + 3,
+            i + 3,
+            i + 3,
+            i,
+            j,
+            i,
+            i + 1,
+            i + 2,
+            i + 3,
+        )
         i += 4
         j += 1
     f += """
 // Surfaces
 Plane Surface(1) = %s;
 Physical Surface(1) = {1};  // outside turbines
-""" % set(range(1, num_turbines+2))
-    for i in range(1, num_turbines+1):
-        f += "Plane Surface(%d) = {%d};\n" % (i+1, i+1)
-        f += "Physical Surface(%d) = {%d};  // inside turbine %d\n" % (i+1, i+1, i)
+""" % set(
+        range(1, num_turbines + 2)
+    )
+    for i in range(1, num_turbines + 1):
+        f += "Plane Surface(%d) = {%d};\n" % (i + 1, i + 1)
+        f += "Physical Surface(%d) = {%d};  // inside turbine %d\n" % (i + 1, i + 1, i)
     return f[:-1]

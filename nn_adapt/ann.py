@@ -37,6 +37,7 @@ class SimpleNet(nn.Module):
     for goal-oriented metric-based mesh
     adaptation.
     """
+
     def __init__(self, layout):
         """
         :arg layout: class instance inherited from
@@ -85,10 +86,10 @@ def propagate(data_loader, model, loss_fn, optimizer=None):
             loss.backward()
             optimizer.step()
 
-    return cumulative_loss/num_batches
+    return cumulative_loss / num_batches
 
 
-def preprocess_features(features, preproc='none'):
+def preprocess_features(features, preproc="none"):
     """
     Pre-process features so that they are
     similarly scaled.
@@ -96,18 +97,18 @@ def preprocess_features(features, preproc='none'):
     :arg features: the array of features
     :kwarg preproc: preprocessor function
     """
-    if preproc == 'none':
+    if preproc == "none":
         return features
-    if preproc == 'arctan':
+    if preproc == "arctan":
         f = np.arctan
-    elif preproc == 'tanh':
+    elif preproc == "tanh":
         f = np.tanh
-    elif preproc == 'logabs':
+    elif preproc == "logabs":
         f = lambda x: np.ln(np.abs(x))
     else:
         raise ValueError(f'Preprocessor "{preproc}" not recognised.')
     shape = features.shape
-    return f(features.reshape(1, shape[0]*shape[1])).reshape(*shape)
+    return f(features.reshape(1, shape[0] * shape[1])).reshape(*shape)
 
 
 def Loss():
@@ -116,6 +117,8 @@ def Loss():
 
     Needed when there is only one output value.
     """
+
     def mse(tens1, tens2):
-        return torch.nn.MSELoss(reduction='mean')(tens1, tens2.reshape(*tens1.shape))
+        return torch.nn.MSELoss(reduction="mean")(tens1, tens2.reshape(*tens1.shape))
+
     return mse

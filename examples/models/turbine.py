@@ -3,7 +3,7 @@ import numpy as np
 
 
 class Parameters(object):
-    qoi_unit = 'MW'
+    qoi_unit = "MW"
 
     h_min = 1.0e-05
     h_max = 500.0
@@ -16,17 +16,17 @@ class Parameters(object):
     turbine_diameter = 18.0
     turbine_coords = []
     thrust_coefficient = 0.8
-    density = Constant(1030.0*1.0e-06)
+    density = Constant(1030.0 * 1.0e-06)
 
     solver_parameters = {
-        'mat_type': 'aij',
-        'snes_type': 'newtonls',
-        'snes_linesearch_type': 'bt',
-        'snes_rtol': 1.0e-08,
-        'snes_max_it': 100,
-        'ksp_type': 'preonly',
-        'pc_type': 'lu',
-        'pc_factor_mat_solver_type': 'mumps',
+        "mat_type": "aij",
+        "snes_type": "newtonls",
+        "snes_linesearch_type": "bt",
+        "snes_rtol": 1.0e-08,
+        "snes_max_it": 100,
+        "ksp_type": "preonly",
+        "pc_type": "lu",
+        "pc_factor_mat_solver_type": "mumps",
     }
     adjoint_solver_parameters = solver_parameters
 
@@ -40,11 +40,11 @@ class Parameters(object):
 
     @property
     def turbine_area(self):
-        return pi*(0.5*self.turbine_diameter)**2
+        return pi * (0.5 * self.turbine_diameter) ** 2
 
     @property
     def swept_area(self):
-        return self.depth*self.turbine_diameter
+        return self.depth * self.turbine_diameter
 
     @property
     def corrected_thrust_coefficient(self):
@@ -52,10 +52,10 @@ class Parameters(object):
         depth = self.depth
         D = self.turbine_diameter
         Ct = self.thrust_coefficient
-        return 4.0/(1.0 + sqrt(1.0 - A/(depth*D)))**2*Ct
+        return 4.0 / (1.0 + sqrt(1.0 - A / (depth * D))) ** 2 * Ct
 
     def bathymetry(self, mesh):
-        P0_2d = get_functionspace(mesh, 'DG', 0)
+        P0_2d = get_functionspace(mesh, "DG", 0)
         return Function(P0_2d).assign(parameters.depth)
 
     def u_inflow(self, mesh):
@@ -65,34 +65,36 @@ class Parameters(object):
         u = fwd_sol.split()[0]
         unorm = sqrt(dot(u, u))
         mesh = u.function_space().mesh()
-        P0 = get_functionspace(mesh, 'DG', 0)
+        P0 = get_functionspace(mesh, "DG", 0)
         h = CellSize(mesh)
-        return interpolate(0.5*h*unorm/self.viscosity, P0)
+        return interpolate(0.5 * h * unorm / self.viscosity, P0)
 
     def turbine_density(self, mesh):
-        return Constant(1.0/self.turbine_area, domain=mesh)
+        return Constant(1.0 / self.turbine_area, domain=mesh)
 
     def farm(self, mesh):
         farm_options = TidalTurbineFarmOptions()
         farm_options.turbine_density = self.turbine_density(mesh)
         farm_options.turbine_options.diameter = self.turbine_diameter
-        farm_options.turbine_options.thrust_coefficient = self.corrected_thrust_coefficient
+        farm_options.turbine_options.thrust_coefficient = (
+            self.corrected_thrust_coefficient
+        )
         return {farm_id: farm_options for farm_id in self.turbine_ids}
 
     def drag(self, mesh):
-        P0 = FunctionSpace(mesh, 'DG', 0)
+        P0 = FunctionSpace(mesh, "DG", 0)
         p0test = TestFunction(P0)
         ret = Function(P0)
 
         # Background drag
         Cb = self.drag_coefficient
-        expr = p0test*Cb*dx(domain=mesh)
+        expr = p0test * Cb * dx(domain=mesh)
 
         # Turbine drag
         Ct = self.corrected_thrust_coefficient
-        Cd = 0.5*Ct*self.turbine_area*self.turbine_density(mesh)
+        Cd = 0.5 * Ct * self.turbine_area * self.turbine_density(mesh)
         for tag in self.turbine_ids:
-            expr += p0test*Cd*dx(tag, domain=mesh)
+            expr += p0test * Cd * dx(tag, domain=mesh)
 
         assemble(expr, tensor=ret)
         return ret
@@ -103,7 +105,9 @@ parameters = Parameters()
 
 
 def get_function_space(mesh):
-    return get_functionspace(mesh, 'DG', 1, vector=True)*get_functionspace(mesh, 'CG', 2)
+    return get_functionspace(mesh, "DG", 1, vector=True) * get_functionspace(
+        mesh, "CG", 2
+    )
 
 
 def setup_solver(mesh, ic):
@@ -113,11 +117,11 @@ def setup_solver(mesh, ic):
     # Create solver object
     solver_obj = solver2d.FlowSolver2d(mesh, bathymetry)
     options = solver_obj.options
-    options.element_family = 'dg-cg'
+    options.element_family = "dg-cg"
     options.timestep = 20.0
     options.simulation_export_time = 20.0
     options.simulation_end_time = 18.0
-    options.swe_timestepper_type = 'SteadyState'
+    options.swe_timestepper_type = "SteadyState"
     options.swe_timestepper_options.solver_parameters = parameters.solver_parameters
     options.use_grad_div_viscosity_term = False
     options.horizontal_viscosity = parameters.viscosity
@@ -131,10 +135,10 @@ def setup_solver(mesh, ic):
     # Apply boundary conditions
     P1v_2d = solver_obj.function_spaces.P1v_2d
     u_inflow = interpolate(parameters.u_inflow(mesh), P1v_2d)
-    solver_obj.bnd_functions['shallow_water'] = {
-        1: {'uv': u_inflow},
-        2: {'elev': Constant(0.0)},
-        3: {'un': Constant(0.0)},
+    solver_obj.bnd_functions["shallow_water"] = {
+        1: {"uv": u_inflow},
+        2: {"elev": Constant(0.0)},
+        3: {"un": Constant(0.0)},
     }
 
     # Create tidal farm
@@ -158,14 +162,15 @@ def get_qoi(mesh):
     At = parameters.turbine_area
     Aswept = parameters.swept_area
     Ct = parameters.thrust_coefficient
-    ct = Constant(0.5*Aswept*Ct/At)
+    ct = Constant(0.5 * Aswept * Ct / At)
 
     def qoi(sol):
         u, eta = split(sol)
-        J = rho*ct*sum([
-            pow(dot(u, u), 1.5)*dx(tag)
-            for tag in parameters.turbine_ids
-        ])
+        J = (
+            rho
+            * ct
+            * sum([pow(dot(u, u), 1.5) * dx(tag) for tag in parameters.turbine_ids])
+        )
         return J
 
     return qoi
@@ -174,21 +179,21 @@ def get_qoi(mesh):
 def get_bnd_functions(n, eta_in, u_in, bnd_marker, bnd_conditions):
     funcs = bnd_conditions[bnd_marker]
     eta_ext = u_ext = None
-    if 'elev' in funcs and 'uv' in funcs:
-        eta_ext = funcs['elev']
-        u_ext = funcs['uv']
-    elif 'elev' in funcs and 'un' in funcs:
-        eta_ext = funcs['elev']
-        u_ext = funcs['un']*n
-    elif 'elev' in funcs:
-        eta_ext = funcs['elev']
+    if "elev" in funcs and "uv" in funcs:
+        eta_ext = funcs["elev"]
+        u_ext = funcs["uv"]
+    elif "elev" in funcs and "un" in funcs:
+        eta_ext = funcs["elev"]
+        u_ext = funcs["un"] * n
+    elif "elev" in funcs:
+        eta_ext = funcs["elev"]
         u_ext = u_in
-    elif 'uv' in funcs:
+    elif "uv" in funcs:
         eta_ext = eta_in
-        u_ext = funcs['uv']
-    elif 'un' in funcs:
+        u_ext = funcs["uv"]
+    elif "un" in funcs:
         eta_ext = eta_in
-        u_ext = funcs['un']*n
+        u_ext = funcs["un"] * n
     return eta_ext, u_ext
 
 
@@ -199,9 +204,9 @@ def dwr_indicator(mesh, q, q_star):
     solver_obj = setup_solver(mesh_plus, q)
     options = solver_obj.options
     b = solver_obj.fields.bathymetry_2d
-    g = physical_constants['g_grav']
+    g = physical_constants["g_grav"]
     nu = options.horizontal_viscosity
-    eta_is_dg = options.element_family == 'dg-dg'
+    eta_is_dg = options.element_family == "dg-dg"
     u, eta = split(q)
     u_old, eta_old = u, eta  # NOTE: hard-coded for steady-state case
     z, zeta = split(q_star)
@@ -209,16 +214,16 @@ def dwr_indicator(mesh, q, q_star):
     alpha = options.sipg_factor
     cell = mesh_plus.ufl_cell()
     p = options.polynomial_degree
-    cp = (p + 1)*(p + 2)/2 if cell == triangle else (p + 1)**2
-    l_normal = CellVolume(mesh_plus)/FacetArea(mesh_plus)
-    sigma = alpha*cp/l_normal
-    sp = sigma('+')
-    sm = sigma('-')
+    cp = (p + 1) * (p + 2) / 2 if cell == triangle else (p + 1) ** 2
+    l_normal = CellVolume(mesh_plus) / FacetArea(mesh_plus)
+    sigma = alpha * cp / l_normal
+    sp = sigma("+")
+    sm = sigma("-")
     sigma = conditional(sp > sm, sp, sm)
     f = options.coriolis_frequency
     C_D = options.quadratic_drag_coefficient
 
-    P0_plus = get_functionspace(mesh_plus, 'DG', 0)
+    P0_plus = get_functionspace(mesh_plus, "DG", 0)
     p0test = TestFunction(P0_plus)
     p0trial = TrialFunction(P0_plus)
     n = FacetNormal(mesh_plus)
@@ -227,144 +232,154 @@ def dwr_indicator(mesh, q, q_star):
         try:
             return jump(v, p0test)
         except Exception:
-            return v('+')*p0test('+') + v('-')*p0test('-')
+            return v("+") * p0test("+") + v("-") * p0test("-")
 
     # --- Element residual
 
     R = 0
     if eta_is_dg:
-        R += p0test*g*nabla_div(z)*eta*dx
+        R += p0test * g * nabla_div(z) * eta * dx
     else:
-        R += -p0test*g*inner(z, grad(eta))*dx
-    R += -p0test*zeta*div(H*u)*dx
-    R += -p0test*inner(z, dot(u_old, nabla_grad(u)))*dx
+        R += -p0test * g * inner(z, grad(eta)) * dx
+    R += -p0test * zeta * div(H * u) * dx
+    R += -p0test * inner(z, dot(u_old, nabla_grad(u))) * dx
     if options.use_grad_div_viscosity_term:
-        stress = 2.0*nu*sym(grad(u))
+        stress = 2.0 * nu * sym(grad(u))
     else:
-        stress = nu*grad(u)
-    R += p0test*inner(z, div(stress))*dx
+        stress = nu * grad(u)
+    R += p0test * inner(z, div(stress)) * dx
     if options.use_grad_depth_viscosity_term:
-        R += p0test*inner(z, dot(grad(H)/H))*dx
+        R += p0test * inner(z, dot(grad(H) / H)) * dx
     if f is not None:
-        R += -p0test*f*(-u[1]*z[0] + u[0]*z[1])*dx
+        R += -p0test * f * (-u[1] * z[0] + u[0] * z[1]) * dx
     unorm = sqrt(dot(u, u))
     if C_D is not None:
-        R += -p0test*C_D*unorm*inner(z, u)/H*dx
+        R += -p0test * C_D * unorm * inner(z, u) / H * dx
     unorm = sqrt(dot(u_old, u_old))
     for subdomain_id, farm_options in options.tidal_turbine_farms.items():
         density = farm_options.turbine_density
         C_T = farm_options.turbine_options.thrust_coefficient
-        A_T = pi*(0.5*farm_options.turbine_options.diameter)**2
-        C_D = 0.5*C_T*A_T*density
-        R += -p0test*C_D*unorm*inner(z, u)/H*dx(subdomain_id)
+        A_T = pi * (0.5 * farm_options.turbine_options.diameter) ** 2
+        C_D = 0.5 * C_T * A_T * density
+        R += -p0test * C_D * unorm * inner(z, u) / H * dx(subdomain_id)
 
     # --- Inter-element flux
 
     r = 0
-    r += restrict(inner(dot(H*u, n), zeta))*dS
+    r += restrict(inner(dot(H * u, n), zeta)) * dS
     if eta_is_dg:
         h = avg(H)
-        head_star = avg(eta) + sqrt(h/g)*jump(u, n)
-        r += -head_star*restrict(g*dot(z, n))*dS
-        r += restrict(g*eta*dot(z, n))*dS
+        head_star = avg(eta) + sqrt(h / g) * jump(u, n)
+        r += -head_star * restrict(g * dot(z, n)) * dS
+        r += restrict(g * eta * dot(z, n)) * dS
 
-        u_rie = avg(u) + sqrt(g/h)*jump(eta, n)
-        r += -inner(h*u_rie, restrict(zeta*n))*dS
+        u_rie = avg(u) + sqrt(g / h) * jump(eta, n)
+        r += -inner(h * u_rie, restrict(zeta * n)) * dS
 
-    r += -inner(jump(u, n)*avg(u), restrict(z))*dS
+    r += -inner(jump(u, n) * avg(u), restrict(z)) * dS
     u_lax_friedrichs = options.lax_friedrichs_velocity_scaling_factor
     if options.use_lax_friedrichs_velocity:
-        gamma = 0.5*abs(dot(avg(u_old), n('-')))*u_lax_friedrichs
-        r += -inner(gamma*jump(u), restrict(z))*dS
+        gamma = 0.5 * abs(dot(avg(u_old), n("-"))) * u_lax_friedrichs
+        r += -inner(gamma * jump(u), restrict(z)) * dS
 
     if options.use_grad_div_viscosity_term:
-        stress_jump = 2.0*avg(nu)*jump(sym(outer(u, n)))
+        stress_jump = 2.0 * avg(nu) * jump(sym(outer(u, n)))
     else:
-        stress_jump = avg(nu)*jump(outer(u, n))
-    r += -inner(avg(dot(stress, n)), restrict(z))*dS
+        stress_jump = avg(nu) * jump(outer(u, n))
+    r += -inner(avg(dot(stress, n)), restrict(z)) * dS
 
-    r += -inner(sigma*avg(nu)*jump(outer(u, n)), restrict(outer(z, n)))*dS
-    r += 0.5*inner(stress_jump, restrict(grad(z)))*dS
+    r += -inner(sigma * avg(nu) * jump(outer(u, n)), restrict(outer(z, n))) * dS
+    r += 0.5 * inner(stress_jump, restrict(grad(z))) * dS
 
     # --- Boundary flux
 
     bnd_markers = [1, 2, 3]  # NOTE: hard-coded
-    bnd_conditions = solver_obj.bnd_functions['shallow_water']
-    r += p0test*inner(H*dot(u, n), zeta)*ds  # NOTE: assumes freeslip on whole boundary
-    r += p0test*dot(u, n)*inner(u, z)*ds
+    bnd_conditions = solver_obj.bnd_functions["shallow_water"]
+    r += (
+        p0test * inner(H * dot(u, n), zeta) * ds
+    )  # NOTE: assumes freeslip on whole boundary
+    r += p0test * dot(u, n) * inner(u, z) * ds
     for bnd_marker in bnd_markers:
         funcs = bnd_conditions.get(bnd_marker)
         ds_bnd = ds(int(bnd_marker))
 
         if eta_is_dg:
-            r += p0test*inner(g*eta*n, z)*ds
+            r += p0test * inner(g * eta * n, z) * ds
             if funcs is not None:
-                eta_ext, u_ext = get_bnd_functions(n, eta, u, bnd_marker, bnd_conditions)
+                eta_ext, u_ext = get_bnd_functions(
+                    n, eta, u, bnd_marker, bnd_conditions
+                )
                 un_jump = inner(u - u_ext, n)
-                eta_rie = 0.5*(eta + eta_ext) + sqrt(H/g)*un_jump
-                r += -p0test*inner(g*eta_rie*n, z)*ds_bnd
-            if funcs is None or 'symm' in funcs:
-                head_rie = eta + sqrt(H/g)*inner(u, n)
-                r += -p0test*inner(g*head_rie*n, z)*ds_bnd
+                eta_rie = 0.5 * (eta + eta_ext) + sqrt(H / g) * un_jump
+                r += -p0test * inner(g * eta_rie * n, z) * ds_bnd
+            if funcs is None or "symm" in funcs:
+                head_rie = eta + sqrt(H / g) * inner(u, n)
+                r += -p0test * inner(g * head_rie * n, z) * ds_bnd
         else:
             if funcs is not None:
-                eta_ext, u_ext = get_bnd_functions(n, eta, u, bnd_marker, bnd_conditions)
+                eta_ext, u_ext = get_bnd_functions(
+                    n, eta, u, bnd_marker, bnd_conditions
+                )
                 un_jump = inner(u - u_ext, n)
-                eta_rie = 0.5*(eta + eta_ext) + sqrt(H/g)*un_jump
-                r += -p0test*inner(g*(eta_rie-eta)*n, z)*ds_bnd
+                eta_rie = 0.5 * (eta + eta_ext) + sqrt(H / g) * un_jump
+                r += -p0test * inner(g * (eta_rie - eta) * n, z) * ds_bnd
 
         if funcs is None:
             eta_ext, u_ext = get_bnd_functions(n, eta, u, bnd_marker, bnd_conditions)
-            eta_ext_old, u_ext_old = get_bnd_functions(n, eta_old, u_old, bnd_marker, bnd_conditions)
+            eta_ext_old, u_ext_old = get_bnd_functions(
+                n, eta_old, u_old, bnd_marker, bnd_conditions
+            )
             H_ext = eta_ext_old + b
-            h_av = 0.5*(H + H_ext)
+            h_av = 0.5 * (H + H_ext)
             eta_jump = eta - eta_ext
-            un_rie = 0.5*inner(u + u_ext, n) + sqrt(g/h_av)*eta_jump
+            un_rie = 0.5 * inner(u + u_ext, n) + sqrt(g / h_av) * eta_jump
             un_jump = inner(u_old - u_ext_old, n)
-            eta_rie = 0.5*(eta_old + eta_ext_old) + sqrt(h_av/g)*un_jump
+            eta_rie = 0.5 * (eta_old + eta_ext_old) + sqrt(h_av / g) * un_jump
             h_rie = b + eta_rie
-            r += -p0test*inner(h_rie*un_rie, zeta)*ds_bnd
+            r += -p0test * inner(h_rie * un_rie, zeta) * ds_bnd
 
-            un_av = dot(avg(u_old), n('-'))
+            un_av = dot(avg(u_old), n("-"))
             eta_jump = eta_old - eta_ext_old
-            un_rie = 0.5*inner(u_old + u_ext_old, n) + sqrt(g/H)*eta_jump
-            r += -p0test*un_rie*dot(0.5*(u_ext + u), z)*ds_bnd
+            un_rie = 0.5 * inner(u_old + u_ext_old, n) + sqrt(g / H) * eta_jump
+            r += -p0test * un_rie * dot(0.5 * (u_ext + u), z) * ds_bnd
             if options.use_lax_friedrichs_velocity:
-                gamma = 0.5*abs(un_av)*u_lax_friedrichs
-                u_ext = u - 2*dot(u, n)*n
-                gamma = 0.5*abs(dot(u_old, n))*u_lax_friedrichs
-                r += -p0test*gamma*dot(u - u_ext, z)*ds_bnd
+                gamma = 0.5 * abs(un_av) * u_lax_friedrichs
+                u_ext = u - 2 * dot(u, n) * n
+                gamma = 0.5 * abs(dot(u_old, n)) * u_lax_friedrichs
+                r += -p0test * gamma * dot(u - u_ext, z) * ds_bnd
 
-            if 'un' in funcs:
-                delta_u = (dot(u, n) - funcs['un'])*n
+            if "un" in funcs:
+                delta_u = (dot(u, n) - funcs["un"]) * n
             else:
-                eta_ext, u_ext = get_bnd_functions(n, eta, u, bnd_marker, bnd_conditions)
+                eta_ext, u_ext = get_bnd_functions(
+                    n, eta, u, bnd_marker, bnd_conditions
+                )
                 if u_ext is u:
                     continue
                 delta_u = u - u_ext
 
             if options.use_grad_div_viscosity_term:
-                stress_jump = 2.0*nu*sym(outer(delta_u, n))
+                stress_jump = 2.0 * nu * sym(outer(delta_u, n))
             else:
-                stress_jump = nu*outer(delta_u, n)
+                stress_jump = nu * outer(delta_u, n)
 
-            r += -p0test*sigma*inner(nu*delta_u, z)*ds_bnd
-            r += p0test*inner(stress_jump, grad(z))*ds_bnd
+            r += -p0test * sigma * inner(nu * delta_u, z) * ds_bnd
+            r += p0test * inner(stress_jump, grad(z)) * ds_bnd
 
     # Process R and r
     residual = Function(P0_plus).assign(assemble(R))
     sp = {
-        'mat_type': 'matfree',
-        'snes_type': 'ksponly',
-        'ksp_type': 'preonly',
-        'pc_type': 'jacobi',
+        "mat_type": "matfree",
+        "snes_type": "ksponly",
+        "ksp_type": "preonly",
+        "pc_type": "jacobi",
     }
     flux = Function(P0_plus)
-    solve(p0test*p0trial*dx == r, flux, solver_parameters=sp)
+    solve(p0test * p0trial * dx == r, flux, solver_parameters=sp)
     dwr_plus = Function(P0_plus).assign(residual + flux)
 
     # Project down to base space
-    P0 = get_functionspace(mesh, 'DG', 0)
+    P0 = get_functionspace(mesh, "DG", 0)
     dwr = project(dwr_plus, P0)
     dwr.interpolate(abs(dwr))
     return dwr

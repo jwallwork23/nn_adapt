@@ -32,7 +32,7 @@ def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None):
     V = config.get_function_space(mesh)
     ic = config.get_initial_condition(V)
     solver_obj = config.setup_solver(mesh, ic)
-    with PETSc.Log.Event('Forward solve'):
+    with PETSc.Log.Event("Forward solve"):
         solver_obj.iterate()
     q = solver_obj.fields.solution_2d
     if not solve_adjoint:
@@ -46,13 +46,13 @@ def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None):
     dFdq = derivative(F, q, TrialFunction(V))
     dFdq_transpose = adjoint(dFdq)
     dJdq = derivative(J, q, TestFunction(V))
-    with PETSc.Log.Event('Adjoint solve'):
+    with PETSc.Log.Event("Adjoint solve"):
         solve(dFdq_transpose == dJdq, q_star, solver_parameters=sp)
     if refined_mesh is None:
         return q, q_star
 
     # Solve adjoint problem in enriched space
-    with PETSc.Log.Event('Enrichment'):
+    with PETSc.Log.Event("Enrichment"):
         V = config.get_function_space(refined_mesh)
         q_plus = Function(V)
         solver_obj = config.setup_solver(refined_mesh, q_plus)
@@ -113,7 +113,7 @@ def split_into_components(f):
     return [f] if f.function_space().value_size == 1 else f.split()
 
 
-def indicate_errors(mesh, config, enrichment_method='h', retall=False):
+def indicate_errors(mesh, config, enrichment_method="h", retall=False):
     """
     Indicate errors according to the ``dwr_indicator``
     given in the configuration file.
@@ -127,15 +127,17 @@ def indicate_errors(mesh, config, enrichment_method='h', retall=False):
         solution and adjoint solution in addition
         to the dual-weighted residual error indicator
     """
-    if not enrichment_method == 'h':
+    if not enrichment_method == "h":
         raise NotImplementedError  # TODO
-    with PETSc.Log.Event('Enrichment'):
+    with PETSc.Log.Event("Enrichment"):
         mesh, refined_mesh = MeshHierarchy(mesh, 1)
 
     # Solve the forward and adjoint problems
-    fwd_sol, adj_sol, adj_sol_plus = get_solutions(mesh, config, refined_mesh=refined_mesh)
+    fwd_sol, adj_sol, adj_sol_plus = get_solutions(
+        mesh, config, refined_mesh=refined_mesh
+    )
 
-    with PETSc.Log.Event('Enrichment'):
+    with PETSc.Log.Event("Enrichment"):
 
         # Prolong
         V_plus = adj_sol_plus.function_space()

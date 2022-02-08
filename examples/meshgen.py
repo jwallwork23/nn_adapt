@@ -7,9 +7,9 @@ import importlib
 
 
 # Parse for test case
-parser = argparse.ArgumentParser(prog='meshgen.py')
-parser.add_argument('model', help='The model')
-parser.add_argument('test_case', help='The configuration file number')
+parser = argparse.ArgumentParser(prog="meshgen.py")
+parser.add_argument("model", help="The model")
+parser.add_argument("test_case", help="The configuration file number")
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 try:
@@ -19,10 +19,10 @@ except ValueError:
     test_case = parsed_args.test_case
 
 # Load setup
-setup = importlib.import_module(f'{model}.config')
+setup = importlib.import_module(f"{model}.config")
 setup.initialise(test_case)
-meshgen = importlib.import_module(f'{model}.meshgen')
+meshgen = importlib.import_module(f"{model}.meshgen")
 
 # Write geometry file
-with open(f'{model}/meshes/{test_case}.geo', 'w+') as meshfile:
+with open(f"{model}/meshes/{test_case}.geo", "w+") as meshfile:
     meshfile.write(meshgen.generate_geo(setup))

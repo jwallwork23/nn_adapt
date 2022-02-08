@@ -18,16 +18,24 @@ def get_hessians(f, **kwargs):
     :return: list of Hessians of each
         component
     """
-    kwargs.setdefault('method', 'Clement')
+    kwargs.setdefault("method", "Clement")
     return [
-        space_normalise(hessian_metric(recover_hessian(fij, **kwargs)), 4000.0, 'inf')
+        space_normalise(hessian_metric(recover_hessian(fij, **kwargs)), 4000.0, "inf")
         for i, fi in split_into_scalars(f).items()
         for fij in fi
     ]
 
 
-def go_metric(mesh, config, enrichment_method='h', target_complexity=4000.0,
-              average=False, interpolant='L2', anisotropic=False, retall=False):
+def go_metric(
+    mesh,
+    config,
+    enrichment_method="h",
+    target_complexity=4000.0,
+    average=False,
+    interpolant="L2",
+    anisotropic=False,
+    retall=False,
+):
     """
     Compute an anisotropic goal-oriented
     metric field, based on a mesh and
@@ -53,16 +61,17 @@ def go_metric(mesh, config, enrichment_method='h', target_complexity=4000.0,
     dwr, fwd_sol, adj_sol = indicate_errors(
         mesh, config, enrichment_method=enrichment_method, retall=True
     )
-    with PETSc.Log.Event('Metric construction'):
+    with PETSc.Log.Event("Metric construction"):
         if anisotropic:
             hessian = combine_metrics(*get_hessians(fwd_sol), average=average)
         else:
             hessian = None
         metric = anisotropic_metric(
-            dwr, hessian=hessian,
+            dwr,
+            hessian=hessian,
             target_complexity=target_complexity,
-            target_space=TensorFunctionSpace(mesh, 'DG', 0),
-            interpolant=interpolant
+            target_space=TensorFunctionSpace(mesh, "DG", 0),
+            interpolant=interpolant,
         )
     if retall:
         return metric, dwr, fwd_sol, adj_sol
