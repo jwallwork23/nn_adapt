@@ -12,14 +12,20 @@ import numpy as np
 parser = argparse.ArgumentParser(prog="plot_progress.py")
 parser.add_argument("model", help="The equation set being solved")
 parser.add_argument("-num_epochs", help="The number of iterations (default 1000)")
+parser.add_argument("-git_sha", help="Git commit sha (defaults to current)")
 parsed_args = parser.parse_args()
 model = parsed_args.model
 num_epochs = int(parsed_args.num_epochs or 1000)
 assert num_epochs > 0
+sha = parsed_args.git_sha
+if sha is None:
+    import git
+
+    sha = git.Repo(search_parent_directories=True).head.object.hexsha
 
 # Load data
-train_losses = np.load(f"{model}/data/train_losses.npy")
-validation_losses = np.load(f"{model}/data/validation_losses.npy")
+train_losses = np.load(f"{model}/data/train_losses_{sha}.npy")
+validation_losses = np.load(f"{model}/data/validation_losses_{sha}.npy")
 epochs = np.arange(len(train_losses)) + 1
 
 # Plot training losses

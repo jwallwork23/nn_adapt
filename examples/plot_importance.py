@@ -16,17 +16,23 @@ parser.add_argument("model", help="The equation set being solved")
 parser.add_argument("num_training_cases", help="The number of training cases")
 parser.add_argument("-adaptation_steps", help="Steps to learn from (default 4)")
 parser.add_argument("-preproc", help="Data preprocess function (default 'arctan')")
+parser.add_argument("-git_sha", help="Git commit sha (defaults to current)")
 parsed_args = parser.parse_args()
 model = parsed_args.model
 preproc = parsed_args.preproc or "arctan"
 num_training_cases = int(parsed_args.num_training_cases)
 assert num_training_cases > 0
 adaptation_steps = int(parsed_args.adaptation_steps or 4)
+sha = parsed_args.git_sha
+if sha is None:
+    import git
+
+    sha = git.Repo(search_parent_directories=True).head.object.hexsha
 
 # Load the model
 layout = importlib.import_module(f"{model}.network").NetLayout()
 nn = SimpleNet(layout).to(device)
-nn.load_state_dict(torch.load(f"{model}/model.pt"))
+nn.load_state_dict(torch.load(f"{model}/model_{sha}.pt"))
 nn.eval()
 loss_fn = Loss()
 
@@ -72,11 +78,9 @@ sensitivity /= num_training_cases * adaptation_steps
 fig, axes = plt.subplots()
 i = 0
 for label, md in categories.items():
-    k = md["num"]
-    axes.bar(
-        np.arange(i, i + k), sensitivity[i : i + k], color=md["colour"], label=label
-    )
-    i += k
+    j = i + md["num"]
+    axes.bar(np.arange(i, j), sensitivity[i:j], color=md["colour"], label=label)
+    i = j
 xlim = axes.get_xlim()
 axes.set_xlim([xlim[0] + 1.25, xlim[1] - 1.25])
 axes.set_xticks([])

@@ -27,6 +27,7 @@ parser.add_argument("-estimator_rtol", help="Error estimator tolerance (default 
 parser.add_argument("-target", help="Target metric complexity (default 4000.0)")
 parser.add_argument("-preproc", help="Data preprocess function (default 'arctan')")
 parser.add_argument("-optimise", help="Turn off plotting and debugging (default False)")
+parser.add_argument("-git_sha", help="Git commit sha (defaults to current)")
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 try:
@@ -51,6 +52,11 @@ preproc = parsed_args.preproc or "arctan"
 optimise = bool(parsed_args.optimise or False)
 if not optimise:
     from pyroteus.utility import File
+sha = parsed_args.git_sha
+if sha is None:
+    import git
+
+    sha = git.Repo(search_parent_directories=True).head.object.hexsha
 
 # Setup
 setup = importlib.import_module(f"{model}.config")
@@ -61,7 +67,7 @@ mesh = Mesh(f"{model}/meshes/{test_case}.msh")
 # Load the model
 layout = importlib.import_module(f"{model}.network").NetLayout()
 nn = SimpleNet(layout).to(device)
-nn.load_state_dict(torch.load(f"{model}/model.pt"))
+nn.load_state_dict(torch.load(f"{model}/model_{sha}.pt"))
 nn.eval()
 
 # Run adaptation loop

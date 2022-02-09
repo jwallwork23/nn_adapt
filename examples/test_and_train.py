@@ -5,6 +5,7 @@ specifications of a given ``model``.
 from nn_adapt.ann import *
 
 import argparse
+import git
 import importlib
 from sklearn import model_selection
 from time import perf_counter
@@ -106,6 +107,7 @@ train_losses = []
 validation_losses = []
 adapt_steps = []
 set_seed(seed)
+sha = git.Repo(search_parent_directories=True).head.object.hexsha
 for epoch in range(num_epochs):
 
     # Training step
@@ -132,6 +134,6 @@ for epoch in range(num_epochs):
     )
     train_losses.append(train)
     validation_losses.append(val)
-    np.save(f"{model}/data/train_losses", train_losses)
-    np.save(f"{model}/data/validation_losses", validation_losses)
-    torch.save(nn.state_dict(), f"{model}/model.pt")
+    np.save(f"{model}/data/train_losses_{sha}", train_losses)
+    np.save(f"{model}/data/validation_losses_{sha}", validation_losses)
+    torch.save(nn.state_dict(), f"{model}/model_{sha}.pt")
