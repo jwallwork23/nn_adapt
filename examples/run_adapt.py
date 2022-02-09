@@ -47,7 +47,7 @@ element_rtol = float(parsed_args.element_rtol or 0.001)
 assert element_rtol > 0.0
 estimator_rtol = float(parsed_args.estimator_rtol or 0.001)
 assert estimator_rtol > 0.0
-target_complexity = float(parsed_args.target_complexity or 4000.0)
+target_complexity = float(parsed_args.target or 4000.0)
 assert target_complexity > 0.0
 optimise = bool(parsed_args.optimise or False)
 no_outputs = bool(parsed_args.no_outputs or optimise)
