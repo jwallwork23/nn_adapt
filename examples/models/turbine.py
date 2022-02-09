@@ -82,13 +82,15 @@ class Parameters(object):
         )
         return {farm_id: farm_options for farm_id in self.turbine_ids}
 
-    def drag(self, mesh):
+    def drag(self, mesh, background=True):
         P0 = FunctionSpace(mesh, "DG", 0)
-        p0test = TestFunction(P0)
         ret = Function(P0)
 
         # Background drag
         Cb = self.drag_coefficient
+        if background:
+            return ret.assign(Cb)
+        p0test = TestFunction(P0)
         expr = p0test * Cb * dx(domain=mesh)
 
         # Turbine drag
