@@ -79,7 +79,7 @@ for i in range(num_refinements + 1):
 
         # Ramp up the target complexity
         kwargs["target_complexity"] = ramp_complexity(
-            250.0, target_complexity, fp_iteration
+            200.0, target_complexity, fp_iteration
         )
 
         # Compute goal-oriented metric

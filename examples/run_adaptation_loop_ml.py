@@ -86,7 +86,7 @@ for i in range(num_refinements + 1):
     for fp_iteration in range(maxiter + 1):
 
         # Ramp up the target complexity
-        target_ramp = ramp_complexity(250.0, target_complexity, fp_iteration)
+        target_ramp = ramp_complexity(200.0, target_complexity, fp_iteration)
 
         # Solve forward and adjoint and compute Hessians
         fwd_sol, adj_sol = get_solutions(mesh, setup)
