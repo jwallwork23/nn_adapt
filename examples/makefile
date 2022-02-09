@@ -35,6 +35,7 @@ mesh:
 			cd $$model/meshes && gmsh -2 $$test_case.geo && cd ../..; \
 		done; \
 	done && \
+	date >> timing.log && \
 	echo "Meshes built in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 plot_config:
@@ -61,6 +62,7 @@ features:
 			python3 run_adapt.py $$model $$test_case -anisotropic 1 -no_outputs 1; \
 		done; \
 	done && \
+	date >> timing.log && \
 	echo "Features generated in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 train:
@@ -69,6 +71,7 @@ train:
 	for model in $(MODELS); do \
 		python3 test_and_train.py $$model $(NUM_TRAINING_CASES); \
 	done && \
+	date >> timing.log && \
 	echo "Training completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 plot_progress:
@@ -94,6 +97,7 @@ snapshot:
 			python3 run_adapt_ml.py $$model $$test_case -anisotropic 1; \
 		done; \
 	done && \
+	date >> timing.log && \
 	echo "Snapshots generated in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 # --- Perform convergence analysis
@@ -108,6 +112,7 @@ uniform:
 			python3 run_uniform_refinement.py $$model $$test_case; \
 		done; \
 	done && \
+	date >> timing.log && \
 	echo "Uniform refinement completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 go:
@@ -119,6 +124,7 @@ go:
 			python3 run_adaptation_loop.py $$model $$test_case -anisotropic 1; \
 		done; \
 	done && \
+	date >> timing.log && \
 	echo "Goal-oriented adaptation completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 ml:
@@ -130,6 +136,7 @@ ml:
 			python3 run_adaptation_loop_ml.py $$model $$test_case -anisotropic 1; \
 		done; \
 	done && \
+	date >> timing.log && \
 	echo "Data-driven adaptation completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 plot_convergence:
@@ -160,6 +167,7 @@ profile_uni:
 			python3 run_fixed_mesh.py $$model $$test_case -optimise 1 -num_refinements 4 -log_view :$$model/outputs/$$test_case/logview_uni.txt:ascii_flamegraph; \
 		done; \
 	done && \
+	date >> timing.log && \
 	echo "Uniform refinement profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \
 	cd $$model/outputs/$$test_case && \
 	flamegraph.pl --title "Uniform refinement ($$test_case)" logview.txt > uni.svg && \
@@ -173,6 +181,7 @@ profile_go:
 			python3 run_adapt.py $$model $$test_case -anisotropic 1 -optimise 1 -target 64000 -log_view :$$model/outputs/$$test_case/logview.txt:ascii_flamegraph; \
 		done; \
 	done && \
+	date >> timing.log && \
 	echo "Goal-oriented adaptation profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \
 	cd $$model/outputs/$$test_case && \
 	flamegraph.pl --title "Goal-oriented adaptation ($$test_case)" logview.txt > go.svg && \
@@ -186,6 +195,7 @@ profile_ml:
 			python3 run_adapt_ml.py $$model $$test_case -anisotropic 1 -optimise 1 -target 64000 -log_view :$$model/outputs/$$test_case/logview.txt:ascii_flamegraph; \
 		done; \
 	done && \
+	date >> timing.log && \
 	echo "Data-driven adaptation profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \
 	cd $$model/outputs/$$test_case && \
 	flamegraph.pl --title "Data-driven adaptation ($$test_case)" logview.txt > ml.svg && \
