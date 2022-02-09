@@ -36,6 +36,7 @@ mesh:
 		done; \
 	done && \
 	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Meshes built in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 plot_config:
@@ -63,6 +64,7 @@ features:
 		done; \
 	done && \
 	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Features generated in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 train:
@@ -72,6 +74,7 @@ train:
 		python3 test_and_train.py $$model $(NUM_TRAINING_CASES); \
 	done && \
 	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Training completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 plot_progress:
@@ -98,6 +101,7 @@ snapshot:
 		done; \
 	done && \
 	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Snapshots generated in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 # --- Perform convergence analysis
@@ -113,6 +117,7 @@ uniform:
 		done; \
 	done && \
 	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Uniform refinement completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 go:
@@ -125,6 +130,7 @@ go:
 		done; \
 	done && \
 	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Goal-oriented adaptation completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 ml:
@@ -137,6 +143,7 @@ ml:
 		done; \
 	done && \
 	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Data-driven adaptation completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 plot_convergence:
@@ -168,6 +175,7 @@ profile_uni:
 		done; \
 	done && \
 	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Uniform refinement profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \
 	cd $$model/outputs/$$test_case && \
 	flamegraph.pl --title "Uniform refinement ($$test_case)" logview.txt > uni.svg && \
@@ -182,6 +190,7 @@ profile_go:
 		done; \
 	done && \
 	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Goal-oriented adaptation profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \
 	cd $$model/outputs/$$test_case && \
 	flamegraph.pl --title "Goal-oriented adaptation ($$test_case)" logview.txt > go.svg && \
@@ -196,6 +205,7 @@ profile_ml:
 		done; \
 	done && \
 	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Data-driven adaptation profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \
 	cd $$model/outputs/$$test_case && \
 	flamegraph.pl --title "Data-driven adaptation ($$test_case)" logview.txt > ml.svg && \
