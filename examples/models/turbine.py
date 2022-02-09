@@ -3,22 +3,31 @@ import numpy as np
 
 
 class Parameters(object):
+    """
+    Class encapsulating all parameters required for the tidal
+    farm modelling test case.
+    """
+
     qoi_unit = "MW"
     qoi_name = "power output"
 
+    # Adaptation parameters
     h_min = 1.0e-05
     h_max = 500.0
 
+    # Physical parameters
     viscosity = Constant(0.5)
     depth = 40.0
     drag_coefficient = Constant(0.0025)
     inflow_speed = 5.0
+    density = Constant(1030.0 * 1.0e-06)
 
+    # Turbine parameters
     turbine_diameter = 18.0
     turbine_coords = []
     thrust_coefficient = 0.8
-    density = Constant(1030.0 * 1.0e-06)
 
+    # Solver parameters
     solver_parameters = {
         "mat_type": "aij",
         "snes_type": "newtonls",
@@ -33,36 +42,76 @@ class Parameters(object):
 
     @property
     def num_turbines(self):
+        """
+        Count the number of turbines based on the number
+        of coordinates.
+        """
         return len(self.turbine_coords)
 
     @property
     def turbine_ids(self):
+        """
+        Generate the list of turbine IDs, i.e. cell tags used
+        in the gmsh geometry file.
+        """
         return list(2 + np.arange(self.num_turbines, dtype=np.int32))
 
     @property
-    def turbine_area(self):
-        return pi * (0.5 * self.turbine_diameter) ** 2
+    def footprint_area(self):
+        """
+        Calculate the area of the turbine footprint in the horizontal.
+        """
+        return self.turbine_diameter**2
 
     @property
     def swept_area(self):
+        """
+        Calculate the area swept by the turbine in the vertical.
+        """
+        return pi * (0.5 * self.turbine_diameter) ** 2
+
+    @property
+    def cross_sectional_area(self):
+        """
+        Calculate the cross-sectional area of the turbine footprint
+        in the vertical.
+        """
         return self.depth * self.turbine_diameter
 
     @property
     def corrected_thrust_coefficient(self):
-        A = self.turbine_area
-        depth = self.depth
-        D = self.turbine_diameter
+        """
+        Correct the thrust coefficient to account for the
+        fact that we use the velocity at the turbine, rather
+        than an upstream veloicity.
+
+        See [Kramer and Piggott 2016] for details.
+        """
+        At = self.swept_area
         Ct = self.thrust_coefficient
-        return 4.0 / (1.0 + sqrt(1.0 - A / (depth * D))) ** 2 * Ct
+        corr = 4.0 / (1.0 + sqrt(1.0 - Ct * At / self.cross_sectional_area)) ** 2
+        return Ct * corr
 
     def bathymetry(self, mesh):
+        """
+        Compute the bathymetry field on the current mesh.
+        """
+        # NOTE: We assume a constant bathymetry field
         P0_2d = get_functionspace(mesh, "DG", 0)
         return Function(P0_2d).assign(parameters.depth)
 
     def u_inflow(self, mesh):
+        """
+        Compute the inflow velocity based on the current mesh.
+        """
+        # NOTE: We assume a constant inflow
         return as_vector([self.inflow_speed, 0])
 
     def Re(self, fwd_sol):
+        """
+        Compute the mesh Reynolds number based on the current
+        forward solution.
+        """
         u = fwd_sol.split()[0]
         unorm = sqrt(dot(u, u))
         mesh = u.function_space().mesh()
@@ -71,18 +120,32 @@ class Parameters(object):
         return interpolate(0.5 * h * unorm / self.viscosity, P0)
 
     def turbine_density(self, mesh):
-        return Constant(1.0 / self.turbine_area, domain=mesh)
+        """
+        Compute the turbine density function on the current mesh.
+        """
+        return Constant(1.0 / self.footprint_area, domain=mesh)
 
     def farm(self, mesh):
+        """
+        Construct a dictionary of :class:`TidalTurbineFarmOptions`
+        objects based on the current mesh.
+        """
+        Ct = self.corrected_thrust_coefficient
         farm_options = TidalTurbineFarmOptions()
         farm_options.turbine_density = self.turbine_density(mesh)
         farm_options.turbine_options.diameter = self.turbine_diameter
-        farm_options.turbine_options.thrust_coefficient = (
-            self.corrected_thrust_coefficient
-        )
+        farm_options.turbine_options.thrust_coefficient = Ct
         return {farm_id: farm_options for farm_id in self.turbine_ids}
 
     def drag(self, mesh, background=True):
+        r"""
+        Create a :math:`\mathbb P0` field for the drag on the current
+        mesh.
+
+        :arg mesh: the current mesh
+        :kwarg background: should we consider the background drag
+            alone, or should the turbine drag be included?
+        """
         P0 = FunctionSpace(mesh, "DG", 0)
         ret = Function(P0)
 
@@ -95,10 +158,10 @@ class Parameters(object):
 
         # Turbine drag
         Ct = self.corrected_thrust_coefficient
-        Cd = 0.5 * Ct * self.turbine_area * self.turbine_density(mesh)
+        At = self.swept_area
+        Cd = 0.5 * Ct * At * self.turbine_density(mesh)
         for tag in self.turbine_ids:
             expr += p0test * Cd * dx(tag, domain=mesh)
-
         assemble(expr, tensor=ret)
         return ret
 
@@ -108,12 +171,20 @@ parameters = Parameters()
 
 
 def get_function_space(mesh):
+    """
+    Construct the (mixed) finite element space used for the
+    prognostic solution.
+    """
     return get_functionspace(mesh, "DG", 1, vector=True) * get_functionspace(
         mesh, "CG", 2
     )
 
 
 def setup_solver(mesh, ic):
+    """
+    Set up the Thetis :class:`FlowSolver2d` object, based on
+    the current mesh and initial condition.
+    """
     bathymetry = parameters.bathymetry(mesh)
     Cd = parameters.drag_coefficient
 
@@ -154,6 +225,10 @@ def setup_solver(mesh, ic):
 
 
 def get_initial_condition(function_space):
+    """
+    Compute an initial condition based on the inflow velocity
+    and zero free surface elevation.
+    """
     q = Function(function_space)
     u, eta = q.split()
     u.interpolate(parameters.u_inflow(function_space.mesh()))
@@ -161,51 +236,40 @@ def get_initial_condition(function_space):
 
 
 def get_qoi(mesh):
+    """
+    Extract the quantity of interest function from the :class:`Parameters`
+    object.
+
+    It should have one argument - the prognostic solution.
+    """
     rho = parameters.density
-    At = parameters.turbine_area
-    Aswept = parameters.swept_area
+    At = parameters.swept_area
+    A = parameters.footprint_area
     Ct = parameters.thrust_coefficient
-    ct = Constant(0.5 * Aswept * Ct / At)
+    ct = Constant(0.5 * Ct * At / A)
+    tags = parameters.turbine_ids
 
     def qoi(sol):
         u, eta = split(sol)
-        J = (
-            rho
-            * ct
-            * sum([pow(dot(u, u), 1.5) * dx(tag) for tag in parameters.turbine_ids])
-        )
-        return J
+        return sum([rho * ct * pow(dot(u, u), 1.5) * dx(tag) for tag in tags])
 
     return qoi
 
 
-def get_bnd_functions(n, eta_in, u_in, bnd_marker, bnd_conditions):
-    funcs = bnd_conditions[bnd_marker]
-    eta_ext = u_ext = None
-    if "elev" in funcs and "uv" in funcs:
-        eta_ext = funcs["elev"]
-        u_ext = funcs["uv"]
-    elif "elev" in funcs and "un" in funcs:
-        eta_ext = funcs["elev"]
-        u_ext = funcs["un"] * n
-    elif "elev" in funcs:
-        eta_ext = funcs["elev"]
-        u_ext = u_in
-    elif "uv" in funcs:
-        eta_ext = eta_in
-        u_ext = funcs["uv"]
-    elif "un" in funcs:
-        eta_ext = eta_in
-        u_ext = funcs["un"] * n
-    return eta_ext, u_ext
-
-
 def dwr_indicator(mesh, q, q_star):
+    r"""
+    Evaluate the DWR error indicator as a :math:`\mathbb P0` field.
+
+    :arg mesh: the current mesh
+    :arg q: the forward solution, transferred into enriched space
+    :arg q_star: the adjoint solution in enriched space
+    """
     mesh_plus = q.function_space().mesh()
 
     # Extract parameters from solver object
     solver_obj = setup_solver(mesh_plus, q)
     options = solver_obj.options
+    bnd_conditions = solver_obj.bnd_functions["shallow_water"]
     b = solver_obj.fields.bathymetry_2d
     g = physical_constants["g_grav"]
     nu = options.horizontal_viscosity
@@ -236,6 +300,26 @@ def dwr_indicator(mesh, q, q_star):
             return jump(v, p0test)
         except Exception:
             return v("+") * p0test("+") + v("-") * p0test("-")
+
+    def get_bnd_functions(eta_in, u_in, bnd_marker):
+        funcs = bnd_conditions[bnd_marker]
+        eta_ext = u_ext = None
+        if "elev" in funcs and "uv" in funcs:
+            eta_ext = funcs["elev"]
+            u_ext = funcs["uv"]
+        elif "elev" in funcs and "un" in funcs:
+            eta_ext = funcs["elev"]
+            u_ext = funcs["un"] * n
+        elif "elev" in funcs:
+            eta_ext = funcs["elev"]
+            u_ext = u_in
+        elif "uv" in funcs:
+            eta_ext = eta_in
+            u_ext = funcs["uv"]
+        elif "un" in funcs:
+            eta_ext = eta_in
+            u_ext = funcs["un"] * n
+        return eta_ext, u_ext
 
     # --- Element residual
 
@@ -297,7 +381,6 @@ def dwr_indicator(mesh, q, q_star):
     # --- Boundary flux
 
     bnd_markers = [1, 2, 3]  # NOTE: hard-coded
-    bnd_conditions = solver_obj.bnd_functions["shallow_water"]
     r += (
         p0test * inner(H * dot(u, n), zeta) * ds
     )  # NOTE: assumes freeslip on whole boundary
@@ -309,9 +392,7 @@ def dwr_indicator(mesh, q, q_star):
         if eta_is_dg:
             r += p0test * inner(g * eta * n, z) * ds
             if funcs is not None:
-                eta_ext, u_ext = get_bnd_functions(
-                    n, eta, u, bnd_marker, bnd_conditions
-                )
+                eta_ext, u_ext = get_bnd_functions(eta, u, bnd_marker)
                 un_jump = inner(u - u_ext, n)
                 eta_rie = 0.5 * (eta + eta_ext) + sqrt(H / g) * un_jump
                 r += -p0test * inner(g * eta_rie * n, z) * ds_bnd
@@ -320,18 +401,14 @@ def dwr_indicator(mesh, q, q_star):
                 r += -p0test * inner(g * head_rie * n, z) * ds_bnd
         else:
             if funcs is not None:
-                eta_ext, u_ext = get_bnd_functions(
-                    n, eta, u, bnd_marker, bnd_conditions
-                )
+                eta_ext, u_ext = get_bnd_functions(eta, u, bnd_marker)
                 un_jump = inner(u - u_ext, n)
                 eta_rie = 0.5 * (eta + eta_ext) + sqrt(H / g) * un_jump
                 r += -p0test * inner(g * (eta_rie - eta) * n, z) * ds_bnd
 
         if funcs is None:
-            eta_ext, u_ext = get_bnd_functions(n, eta, u, bnd_marker, bnd_conditions)
-            eta_ext_old, u_ext_old = get_bnd_functions(
-                n, eta_old, u_old, bnd_marker, bnd_conditions
-            )
+            eta_ext, u_ext = get_bnd_functions(eta, u, bnd_marker, bnd_conditions)
+            eta_ext_old, u_ext_old = get_bnd_functions(eta_old, u_old, bnd_marker)
             H_ext = eta_ext_old + b
             h_av = 0.5 * (H + H_ext)
             eta_jump = eta - eta_ext
@@ -354,9 +431,7 @@ def dwr_indicator(mesh, q, q_star):
             if "un" in funcs:
                 delta_u = (dot(u, n) - funcs["un"]) * n
             else:
-                eta_ext, u_ext = get_bnd_functions(
-                    n, eta, u, bnd_marker, bnd_conditions
-                )
+                eta_ext, u_ext = get_bnd_functions(eta, u, bnd_marker)
                 if u_ext is u:
                     continue
                 delta_u = u - u_ext
