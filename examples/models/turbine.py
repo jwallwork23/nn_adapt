@@ -137,7 +137,7 @@ class Parameters(object):
         farm_options.turbine_options.thrust_coefficient = Ct
         return {farm_id: farm_options for farm_id in self.turbine_ids}
 
-    def drag(self, mesh, background=True):
+    def drag(self, mesh, background=False):
         r"""
         Create a :math:`\mathbb P0` field for the drag on the current
         mesh.
