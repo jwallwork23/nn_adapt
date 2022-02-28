@@ -60,18 +60,15 @@ features = None
 targets = None
 errors = None
 for step in range(adaptation_steps):
-    for approach in ("isotropic", "anisotropic"):
-        if step == 0 and approach == "anisotropic":
-            continue
-        for test_case in range(num_training_cases):
-            features = concat(
-                features,
-                np.load(f"{model}/data/features{test_case}_GO{approach}_{step}.npy"),
-            )
-            targets = concat(
-                targets,
-                np.load(f"{model}/data/targets{test_case}_GO{approach}_{step}.npy"),
-            )
+    for test_case in range(num_training_cases):
+        features = concat(
+            features,
+            np.load(f"{model}/data/features{test_case}_GOanisotropic_{step}.npy"),
+        )
+        targets = concat(
+            targets,
+            np.load(f"{model}/data/targets{test_case}_GOanisotropic_{step}.npy"),
+        )
 print(f"Total number of features: {len(features.flatten())}")
 print(f"Total number of targets: {len(targets)}")
 features = torch.from_numpy(preprocess_features(features, preproc=preproc)).type(
