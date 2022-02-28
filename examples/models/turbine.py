@@ -8,6 +8,8 @@ class Parameters(object):
     farm modelling test case.
     """
 
+    discrete = False
+
     qoi_unit = "MW"
     qoi_name = "power output"
 
@@ -54,7 +56,10 @@ class Parameters(object):
         Generate the list of turbine IDs, i.e. cell tags used
         in the gmsh geometry file.
         """
-        return list(2 + np.arange(self.num_turbines, dtype=np.int32))
+        if self.discrete:
+            return list(2 + np.arange(self.num_turbines, dtype=np.int32))
+        else:
+            return ["everywhere"]
 
     @property
     def footprint_area(self):
@@ -123,7 +128,22 @@ class Parameters(object):
         """
         Compute the turbine density function on the current mesh.
         """
-        return Constant(1.0 / self.footprint_area, domain=mesh)
+        if self.discrete:
+            return Constant(1.0 / self.footprint_area, domain=mesh)
+        x, y = SpatialCoordinate(mesh)
+        r = self.turbine_diameter / 2
+
+        def bump(x0, y0, scale=1.0):
+            qx = ((x - x0) / r) ** 2
+            qy = ((y - y0) / r) ** 2
+            cond = And(qx < 1, qy < 1)
+            b = exp(1 - 1 / (1 - qx)) * exp(1 - 1 / (1 - qy))
+            return conditional(cond, Constant(scale) * b, 0)
+
+        bumps = 0
+        for xy in self.turbine_coords:
+            bumps += bump(*xy, scale=1 / assemble(bump(*xy) * dx))
+        return bumps
 
     def farm(self, mesh):
         """
@@ -136,6 +156,14 @@ class Parameters(object):
         farm_options.turbine_options.diameter = self.turbine_diameter
         farm_options.turbine_options.thrust_coefficient = Ct
         return {farm_id: farm_options for farm_id in self.turbine_ids}
+
+    def turbine_drag(self, mesh):
+        P0 = FunctionSpace(mesh, "DG", 0)
+        p0test = TestFunction(P0)
+        Ct = self.corrected_thrust_coefficient
+        At = self.swept_area
+        Cd = 0.5 * Ct * At * self.turbine_density(mesh)
+        return sum([p0test * Cd * dx(tag, domain=mesh) for tag in self.turbine_ids])
 
     def drag(self, mesh, background=False):
         r"""
@@ -157,12 +185,7 @@ class Parameters(object):
         expr = p0test * Cb * dx(domain=mesh)
 
         # Turbine drag
-        Ct = self.corrected_thrust_coefficient
-        At = self.swept_area
-        Cd = 0.5 * Ct * At * self.turbine_density(mesh)
-        for tag in self.turbine_ids:
-            expr += p0test * Cd * dx(tag, domain=mesh)
-        assemble(expr, tensor=ret)
+        assemble(expr + self.turbine_drag(mesh), tensor=ret)
         return ret
 
 
@@ -243,15 +266,14 @@ def get_qoi(mesh):
     It should have one argument - the prognostic solution.
     """
     rho = parameters.density
+    Ct = parameters.corrected_thrust_coefficient
     At = parameters.swept_area
-    A = parameters.footprint_area
-    Ct = parameters.thrust_coefficient
-    ct = Constant(0.5 * Ct * At / A)
+    Cd = 0.5 * Ct * At * parameters.turbine_density(mesh)
     tags = parameters.turbine_ids
 
     def qoi(sol):
         u, eta = split(sol)
-        return sum([rho * ct * pow(dot(u, u), 1.5) * dx(tag) for tag in tags])
+        return sum([rho * Cd * pow(dot(u, u), 1.5) * dx(tag) for tag in tags])
 
     return qoi
 

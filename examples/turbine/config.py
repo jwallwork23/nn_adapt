@@ -13,7 +13,7 @@ def l2dist(xy, xyt):
     return np.sqrt(np.dot(diff, diff))
 
 
-def initialise(case):
+def initialise(case, discrete=False):
     """
     Given some training case (for which ``case``
     is an integer) or testing case (for which
@@ -24,6 +24,7 @@ def initialise(case):
     For training data, these values are chosen
     randomly.
     """
+    parameters.discrete = discrete
     if case == "aligned":
         parameters.viscosity.assign(0.5)
         parameters.depth = 40.0

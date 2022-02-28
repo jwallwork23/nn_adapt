@@ -34,7 +34,7 @@ p = importlib.import_module(f"{model}.plotting")
 fig, axes = plt.subplots(ncols=ncols, nrows=nrows, figsize=(3 * ncols, 1.5 * nrows))
 for i, case in enumerate(cases):
     ax = axes[i] if nrows == 1 else axes[i // ncols, i % nrows]
-    setup.initialise(case)
+    setup.initialise(case, discrete=True)
     mesh = Mesh(f"{model}/meshes/{case}.msh")
     p.plot_config(setup, mesh, ax)
 plt.tight_layout()
