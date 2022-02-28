@@ -44,10 +44,7 @@ def plot_config(config, mesh, axes):
     nu = config.parameters.viscosity.values()[0]
     b = config.parameters.depth
     u_in = config.parameters.inflow_speed
-    axes.annotate(r"$\nu$" + f" = {nu:.3f}", xy=(0.7 * L, 0.85 * W), color="darkgrey")
-    axes.annotate(r"$b$" + f" = {b:.2f}", xy=(0.7 * L, 0.7 * W), color="darkgrey")
+    txt = r"$\nu$ = %.3f, $b$ = %.2f, $u_{\mathrm{in}}$ = %.2f" % (nu, b, u_in)
     axes.annotate(
-        r"$u_{\mathrm{in}}$" + f" = {u_in:.2f}",
-        xy=(0.7 * L, 0.55 * W),
-        color="darkgrey",
+        txt, xy=(0.025 * L, -0.25 * W), bbox={"fc": "w"}, annotation_clip=False
     )
