@@ -5,6 +5,7 @@ mesh adaptation in a fixed point iteration loop.
 from nn_adapt.features import *
 from nn_adapt.metric import *
 from nn_adapt.solving import *
+from firedrake.meshadapt import *
 from firedrake.petsc import PETSc
 
 import argparse

@@ -7,6 +7,7 @@ from nn_adapt.ann import *
 from nn_adapt.features import *
 from nn_adapt.metric import *
 from nn_adapt.solving import *
+from firedrake.meshadapt import *
 
 import argparse
 import importlib
