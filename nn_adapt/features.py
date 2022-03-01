@@ -89,10 +89,10 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
 
     # Features related to flow physics
     with PETSc.Log.Event("Extract physics"):
-    #     drag = config.parameters.drag(mesh).dat.data
-        ones = np.ones(len(d))
+        drag = config.parameters.drag(mesh).dat.data
+        ones = np.ones(len(drag))
         nu = config.parameters.viscosity.values()[0] * ones  # NOTE: assumes constant
-        b = config.parameters.depth * ones  # NOTE: assumes constant
+        # b = config.parameters.depth * ones  # NOTE: assumes constant
 
     # Features describing the forward and adjoint solutions
     with PETSc.Log.Event("Extract DoFs"):
@@ -106,7 +106,7 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
     with PETSc.Log.Event("Combine features"):
         features = np.hstack(
             # (np.vstack([nu, drag, b, d, h1, h2]).transpose(), np.hstack(vals))
-            (np.vstack([nu, b, d, h1, h2]).transpose(), np.hstack(vals))
+            (np.vstack([nu, drag, d, h1, h2]).transpose(), np.hstack(vals))
         )
     assert not np.isnan(features).any()
 
