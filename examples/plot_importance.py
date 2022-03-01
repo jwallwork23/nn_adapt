@@ -48,30 +48,27 @@ num_inputs = sum([md["num"] for label, md in categories.items()])
 # Compute (averaged) sensitivities of the network to the inputs
 sensitivity = torch.zeros(num_inputs)
 count = 0
-for approach in ["isotropic", "anisotropic"]:
-    for step in range(adaptation_steps):
-        if step == 0 and approach == "anisotropic":
-            continue
-        for test_case in range(num_training_cases):
+for step in range(adaptation_steps):
+    for test_case in range(1, num_training_cases + 1):
 
-            # Load some data and mark inputs as independent
-            features = preprocess_features(
-                np.load(f"{model}/data/features{test_case}_GO{approach}_{step}.npy"),
-                preproc=preproc,
-            )
-            features = torch.from_numpy(features).type(torch.float32)
-            expected = torch.from_numpy(
-                np.load(f"{model}/data/targets{test_case}_GO{approach}_{step}.npy")
-            ).type(torch.float32)
-            features.requires_grad_(True)
+        # Load some data and mark inputs as independent
+        features = preprocess_features(
+            np.load(f"{model}/data/features{test_case}_GOanisotropic_{step}.npy"),
+            preproc=preproc,
+        )
+        features = torch.from_numpy(features).type(torch.float32)
+        expected = torch.from_numpy(
+            np.load(f"{model}/data/targets{test_case}_GOanisotropic_{step}.npy")
+        ).type(torch.float32)
+        features.requires_grad_(True)
 
-            # Evaluate the loss
-            loss = loss_fn(expected, nn(features))
+        # Evaluate the loss
+        loss = loss_fn(expected, nn(features))
 
-            # Backpropagate and average to get the sensitivities
-            loss.backward()
-            sensitivity += features.grad.abs().mean(axis=0)
-        count += 1
+        # Backpropagate and average to get the sensitivities
+        loss.backward()
+        sensitivity += features.grad.abs().mean(axis=0)
+    count += 1
 sensitivity /= num_training_cases * adaptation_steps
 
 # Plot increases as a bar chart
