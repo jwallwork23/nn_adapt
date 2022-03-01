@@ -3,7 +3,7 @@ all: setup network convergence profile snapshot
 # --- Configurable parameters
 
 MODELS				= turbine
-NUM_TRAINING_CASES	= 100
+NUM_TRAINING_CASES	= 10
 TESTING_CASES		= aligned offset
 
 # --- Parameters that should not need modifying
@@ -95,9 +95,7 @@ snapshot:
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
-			python3 run_adapt.py $$model $$test_case; \
 			python3 run_adapt.py $$model $$test_case -anisotropic 1; \
-			python3 run_adapt_ml.py $$model $$test_case; \
 			python3 run_adapt_ml.py $$model $$test_case -anisotropic 1; \
 		done; \
 	done && \

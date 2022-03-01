@@ -24,6 +24,6 @@ class NetLayout(NetLayoutBase):
         [1 error indicator value]
     """
 
-    num_inputs = 30
-    num_hidden_neurons = 60
+    num_inputs = 27
+    num_hidden_neurons = 48
     num_outputs = 1
