@@ -120,7 +120,7 @@ for i in range(num_refinements + 1):
 
         # Check for error estimator convergence
         estimator = dwr.vector().gather().sum()
-        print(f"    Error estimator      = {estimator}")
+        print(f"      Error estimator      = {estimator}")
         if estimator_old is not None and fp_iteration >= miniter:
             if abs(estimator - estimator_old) < estimator_rtol * abs(estimator_old):
                 converged_reason = "error estimator convergence"
