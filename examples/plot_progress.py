@@ -30,7 +30,7 @@ epochs = np.arange(len(train_losses)) + 1
 
 # Plot training losses
 fig, axes = plt.subplots()
-axes.semilogx(epochs, train_losses, label="Training", color="deepskyblue")
+axes.loglog(epochs, train_losses, label="Training", color="deepskyblue")
 axes.set_xlabel("Number of epochs")
 axes.set_ylabel("Average loss")
 axes.legend()
@@ -41,7 +41,7 @@ plt.savefig(f"{model}/plots/training_losses.pdf")
 
 # Plot validation losses
 fig, axes = plt.subplots()
-axes.semilogx(epochs, validation_losses, label="Validation", color="deepskyblue")
+axes.loglog(epochs, validation_losses, label="Validation", color="deepskyblue")
 axes.set_xlabel("Number of epochs")
 axes.set_ylabel("Average loss")
 axes.legend()
@@ -52,8 +52,8 @@ plt.savefig(f"{model}/plots/validation_losses.pdf")
 
 # Plot both
 fig, axes = plt.subplots()
-axes.semilogx(epochs, train_losses, label="Training", color="deepskyblue")
-axes.semilogx(epochs, validation_losses, label="Validation", color="darkgreen")
+axes.loglog(epochs, train_losses, label="Training", color="deepskyblue")
+axes.loglog(epochs, validation_losses, label="Validation", color="darkgreen")
 axes.set_xlabel("Number of epochs")
 axes.set_ylabel("Average loss")
 axes.legend()

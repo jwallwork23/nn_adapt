@@ -39,6 +39,7 @@ loss_fn = Loss()
 # Category metadata
 categories = {
     # "Physics": {"num": 3, "colour": "C0"},
+    "Physics": {"num": 2, "colour": "C0"},
     "Mesh": {"num": 3, "colour": "deepskyblue"},
     "Forward": {"num": 12, "colour": "mediumturquoise"},
     "Adjoint": {"num": 12, "colour": "mediumseagreen"},

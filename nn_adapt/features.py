@@ -80,13 +80,6 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
     """
     mesh = fwd_sol.function_space().mesh()
 
-    #  # Features related to flow physics
-    #  with PETSc.Log.Event("Extract physics"):
-    #      drag = config.parameters.drag(mesh).dat.data
-    #      ones = np.ones(len(drag))
-    #      nu = config.parameters.viscosity.values()[0] * ones  # NOTE: assumes constant
-    #      b = config.parameters.depth * ones  # NOTE: assumes constant
-
     # Features describing the mesh element
     with PETSc.Log.Event("Analyse element"):
         J = ufl.Jacobian(mesh)
@@ -94,20 +87,26 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
         JTJ = firedrake.interpolate(ufl.dot(ufl.transpose(J), J), P0_ten)
         d, h1, h2 = [p.dat.data for p in extract_components(JTJ)]
 
+    # Features related to flow physics
+    with PETSc.Log.Event("Extract physics"):
+    #     drag = config.parameters.drag(mesh).dat.data
+        ones = np.ones(len(d))
+        nu = config.parameters.viscosity.values()[0] * ones  # NOTE: assumes constant
+        b = config.parameters.depth * ones  # NOTE: assumes constant
+
     # Features describing the forward and adjoint solutions
     with PETSc.Log.Event("Extract DoFs"):
         fwd_sols = split_into_scalars(fwd_sol)
         adj_sols = split_into_scalars(adj_sol)
-        sols = sum([fi for i, fi in fwd_sols.items()], start=[]) + sum(
-            [ai for i, ai in adj_sols.items()], start=[]
-        )
+        sols = sum([fi for i, fi in fwd_sols.items()], start=[])
+        sols += sum([ai for i, ai in adj_sols.items()], start=[])
         vals = [get_values_at_elements(s).dat.data for s in sols]
 
     # Combine the features together
     with PETSc.Log.Event("Combine features"):
         features = np.hstack(
             # (np.vstack([nu, drag, b, d, h1, h2]).transpose(), np.hstack(vals))
-            (np.vstack([d, h1, h2]).transpose(), np.hstack(vals))
+            (np.vstack([nu, b, d, h1, h2]).transpose(), np.hstack(vals))
         )
     assert not np.isnan(features).any()
 
