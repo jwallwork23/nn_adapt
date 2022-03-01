@@ -3,8 +3,8 @@ Train a network on ``num_training_cases`` problem
 specifications of a given ``model``.
 """
 from nn_adapt.ann import *
+from nn_adapt.parse import *
 
-import argparse
 import git
 import importlib
 from sklearn import model_selection
@@ -13,54 +13,96 @@ from torch.optim.lr_scheduler import StepLR
 
 
 # Configuration
-parser = argparse.ArgumentParser(prog="test_and_train.py")
-parser.add_argument("model", help="The equation set being solved")
-parser.add_argument("num_training_cases", help="The configuration file number")
-parser.add_argument("-adaptation_steps", help="Steps to learn from (default 3)")
-parser.add_argument("-lr", help="Initial learning rate (default 2.0e-03)")
-parser.add_argument("-lr_adapt_num_steps", help="Adaptation frequency (default 1000)")
-parser.add_argument(
-    "-lr_adapt_factor", help="Learning rate reduction factor (default 0.8)"
-)
-parser.add_argument("-num_epochs", help="The number of iterations (default 1000)")
-parser.add_argument("-preproc", help="Data preprocess function (default 'arctan')")
-parser.add_argument(
-    "-batch_size", help="Data points per training iteration (default 100)"
+parser = argparse.ArgumentParser(
+    prog="test_and_train.py",
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser.add_argument(
-    "-test_batch_size", help="Data points per validation iteration (default 100)"
+    "-m",
+    "--model",
+    help="The equation set being solved",
+    type=str,
+    choices=["turbine"],
+    default="turbine",
 )
-parser.add_argument("-test_size", help="Data proportion for validation (default 0.3)")
-parser.add_argument("-seed", help="Seed for random number generator (default 42)")
+parser.add_argument(
+    "-n",
+    "--num_training_cases",
+    help="The number of test cases to train on",
+    type=positive_int,
+    default=100,
+)
+parser.add_argument(
+    "--adaptation_steps",
+    help="Steps to learn from",
+    type=positive_int,
+    default=3,
+)
+parser.add_argument(
+    "--lr",
+    help="Initial learning rate",
+    type=positive_float,
+    default=2.0e-03,
+)
+parser.add_argument(
+    "--lr_adapt_num_steps",
+    help="Adaptation frequency",
+    type=positive_int,
+    default=1000,
+)
+parser.add_argument(
+    "--lr_adapt_factor",
+    help="Learning rate reduction factor",
+    type=bounded_float(0, 1),
+    default=0.8,
+)
+parser.add_argument(
+    "--num_epochs",
+    help="The number of iterations",
+    type=positive_int,
+    default=1000,
+)
+parser.add_argument(
+    "--preproc",
+    help="Data preprocess function",
+    type=str,
+    choices=["none", "arctan", "tanh", "logabs"],
+    default="arctan",
+)
+parser.add_argument(
+    "--batch_size",
+    help="Data points per training iteration",
+    type=positive_int,
+    default=100,
+)
+parser.add_argument(
+    "--test_batch_size",
+    help="Data points per validation iteration",
+    type=positive_int,
+    default=100,
+)
+parser.add_argument(
+    "--test_size",
+    help="Data proportion for validation",
+    type=bounded_float(0, 1),
+    default=0.3,
+)
+parser.add_argument(
+    "--seed",
+    help="Seed for random number generator",
+    type=positive_int,
+    default=42,
+)
 parsed_args = parser.parse_args()
 model = parsed_args.model
-num_training_cases = int(parsed_args.num_training_cases)
-adaptation_steps = int(parsed_args.adaptation_steps or 3)
-lr = float(parsed_args.lr or 2.0e-03)
-assert lr > 0.0
-lr_adapt_num_steps = int(parsed_args.lr_adapt_num_steps or 200)
-assert lr_adapt_num_steps > 0
-lr_adapt_factor = float(parsed_args.lr_adapt_factor or 0.8)
-assert 0.0 < lr_adapt_factor < 1.0
-num_epochs = int(parsed_args.num_epochs or 1000)
-assert num_epochs > 0
-preproc = parsed_args.preproc or "arctan"
-batch_size = int(parsed_args.batch_size or 100)
-assert batch_size > 0
-test_batch_size = int(parsed_args.test_batch_size or 100)
-assert test_batch_size > 0
-test_size = float(parsed_args.test_size or 0.3)
-assert 0.0 < test_size < 1.0
-seed = int(parsed_args.seed or 42)
-assert seed > 0
 
 # Load data
 concat = lambda a, b: b if a is None else np.concatenate((a, b), axis=0)
 features = None
 targets = None
 errors = None
-for step in range(adaptation_steps):
-    for test_case in range(num_training_cases):
+for step in range(parsed_args.adaptation_steps):
+    for test_case in range(parsed_args.num_training_cases):
         features = concat(
             features,
             np.load(f"{model}/data/features{test_case}_GOanisotropic_{step}.npy"),
@@ -71,41 +113,42 @@ for step in range(adaptation_steps):
         )
 print(f"Total number of features: {len(features.flatten())}")
 print(f"Total number of targets: {len(targets)}")
-features = torch.from_numpy(preprocess_features(features, preproc=preproc)).type(
-    torch.float32
-)
+features = torch.from_numpy(
+    preprocess_features(features, preproc=parsed_args.preproc)
+).type(torch.float32)
 targets = torch.from_numpy(targets).type(torch.float32)
 
 # Get train and validation datasets
 xtrain, xval, ytrain, yval = model_selection.train_test_split(
-    features, targets, test_size=0.3, random_state=42
+    features, targets, test_size=parsed_args.test_size, random_state=parsed_args.seed
 )
 train_data = torch.utils.data.TensorDataset(torch.Tensor(xtrain), torch.Tensor(ytrain))
 train_loader = torch.utils.data.DataLoader(
-    train_data, batch_size=batch_size, shuffle=True, num_workers=0
+    train_data, batch_size=parsed_args.batch_size, shuffle=True, num_workers=0
 )
 validate_data = torch.utils.data.TensorDataset(torch.Tensor(xval), torch.Tensor(yval))
 validate_loader = torch.utils.data.DataLoader(
-    validate_data, batch_size=test_batch_size, shuffle=False, num_workers=0
+    validate_data, batch_size=parsed_args.test_batch_size, shuffle=False, num_workers=0
 )
 
 # Setup model
 layout = importlib.import_module(f"{model}.network").NetLayout()
 nn = SimpleNet(layout).to(device)
-optimizer = torch.optim.Adam(nn.parameters(), lr=lr)
-scheduler = StepLR(optimizer, lr_adapt_num_steps, gamma=lr_adapt_factor)
-criterion = Loss()
-print(
-    f"Model parameters are{'' if all(p.is_cuda for p in nn.parameters()) else ' not'} using GPU cores."
+optimizer = torch.optim.Adam(nn.parameters(), lr=parsed_args.lr)
+scheduler = StepLR(
+    optimizer, parsed_args.lr_adapt_num_steps, gamma=parsed_args.lr_adapt_factor
 )
+criterion = Loss()
+cuda = all(p.is_cuda for p in nn.parameters())
+print(f"Model parameters are{'' if cuda else ' not'} using GPU cores.")
 
 # Train
 train_losses = []
 validation_losses = []
 adapt_steps = []
-set_seed(seed)
+set_seed(parsed_args.seed)
 sha = git.Repo(search_parent_directories=True).head.object.hexsha
-for epoch in range(num_epochs):
+for epoch in range(parsed_args.num_epochs):
 
     # Training step
     start_time = perf_counter()
@@ -119,13 +162,13 @@ for epoch in range(num_epochs):
 
     # Adapt learning rate
     scheduler.step()
-    if epoch % lr_adapt_num_steps == 0:
+    if epoch % parsed_args.lr_adapt_num_steps == 0:
         adapt_steps.append(epoch)
         np.save(f"{model}/data/adapt_steps", adapt_steps)
 
     # Stash progreess
     print(
-        f"Epoch {epoch:4d}/{num_epochs:d}"
+        f"Epoch {epoch:4d}/{parsed_args.num_epochs:d}"
         f"  avg loss: {train:.4e} / {val:.4e}"
         f"  wallclock: {train_time:.2f}s / {validation_time:.2f}s"
     )

@@ -71,7 +71,7 @@ train:
 	touch timing.log
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
-		python3 test_and_train.py $$model $(NUM_TRAINING_CASES); \
+		python3 test_and_train.py -m $$model -n $(NUM_TRAINING_CASES); \
 	done && \
 	date >> timing.log && \
 	git log -n 1 --oneline >> timing.log && \
