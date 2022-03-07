@@ -105,6 +105,16 @@ for step in range(parsed_args.adaptation_steps):
     for test_case in range(1, parsed_args.num_training_cases + 1):
         features = concat(
             features,
+            np.load(f"{model}/data/features{test_case}_GOisotropic_{step}.npy"),
+        )
+        targets = concat(
+            targets,
+            np.load(f"{model}/data/targets{test_case}_GOisotropic_{step}.npy"),
+        )
+for step in range(1, parsed_args.adaptation_steps):
+    for test_case in range(1, parsed_args.num_training_cases + 1):
+        features = concat(
+            features,
             np.load(f"{model}/data/features{test_case}_GOanisotropic_{step}.npy"),
         )
         targets = concat(
