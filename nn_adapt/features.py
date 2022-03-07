@@ -80,6 +80,10 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
     """
     mesh = fwd_sol.function_space().mesh()
 
+    # Coarse-grained DWR estimator
+    with PETSc.Log.Event("Extract estimator"):
+        dwr = config.dwr_indicator(mesh, fwd_sol, adj_sol).dat.data
+
     # Features describing the mesh element
     with PETSc.Log.Event("Analyse element"):
         J = ufl.Jacobian(mesh)
@@ -92,7 +96,6 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
         drag = config.parameters.drag(mesh).dat.data
         ones = np.ones(len(drag))
         nu = config.parameters.viscosity.values()[0] * ones  # NOTE: assumes constant
-        # b = config.parameters.depth * ones  # NOTE: assumes constant
 
     # Features describing the forward and adjoint solutions
     with PETSc.Log.Event("Extract DoFs"):
@@ -105,8 +108,7 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
     # Combine the features together
     with PETSc.Log.Event("Combine features"):
         features = np.hstack(
-            # (np.vstack([nu, drag, b, d, h1, h2]).transpose(), np.hstack(vals))
-            (np.vstack([nu, drag, d, h1, h2]).transpose(), np.hstack(vals))
+            (np.vstack([dwr, nu, drag, d, h1, h2]).transpose(), np.hstack(vals))
         )
     assert not np.isnan(features).any()
 
