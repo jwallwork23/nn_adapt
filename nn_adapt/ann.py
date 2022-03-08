@@ -48,7 +48,7 @@ class SimpleNet(nn.Module):
         super(SimpleNet, self).__init__()
         self.linear1 = nn.Linear(layout.num_inputs, layout.num_hidden_neurons)
         self.activate1 = nn.Sigmoid()
-        self.linear2 = nn.Linear(layout.num_hidden_neurons, layout.num_outputs)
+        self.linear2 = nn.Linear(layout.num_hidden_neurons, 1)
 
     def forward(self, x):
         z1 = self.linear1(x)
