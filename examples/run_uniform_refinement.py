@@ -2,9 +2,9 @@
 Run a given ``test_case`` of a ``model`` on a sequence of
 uniformly refined meshes generated from the initial mesh.
 """
+from nn_adapt.parse import Parser
 from nn_adapt.solving import *
 
-import argparse
 import importlib
 import numpy as np
 from time import perf_counter
@@ -12,11 +12,9 @@ from time import perf_counter
 
 start_time = perf_counter()
 
-# Parse for test case and number of refinements
-parser = argparse.ArgumentParser(prog="run_uniform_refinement.py")
-parser.add_argument("model", help="The model")
-parser.add_argument("test_case", help="The configuration file number")
-parser.add_argument("-num_refinements", help="Number of mesh refinements")
+# Parse user input
+parser = Parser("run_uniform_refinement.py")
+parser.parse_num_refinements(default=5)
 parsed_args = parser.parse_args()
 model = parsed_args.model
 try:
@@ -24,8 +22,7 @@ try:
     assert test_case > 0
 except ValueError:
     test_case = parsed_args.test_case
-num_refinements = int(parsed_args.num_refinements or 5)
-assert num_refinements >= 0
+num_refinements = parsed_args.num_refinements
 
 # Setup
 setup = importlib.import_module(f"{model}.config")
