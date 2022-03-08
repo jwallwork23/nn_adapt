@@ -96,8 +96,10 @@ snapshot:
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
-			python3 run_adapt.py $$model $$test_case -anisotropic 1; \
-			python3 run_adapt_ml.py $$model $$test_case -anisotropic 1; \
+			python3 run_adapt.py $$model $$test_case -a isotropic; \
+			python3 run_adapt.py $$model $$test_case -a anisotropic; \
+			python3 run_adapt_ml.py $$model $$test_case -a isotropic; \
+			python3 run_adapt_ml.py $$model $$test_case -a anisotropic; \
 		done; \
 	done && \
 	date >> timing.log && \
@@ -207,7 +209,7 @@ profile_ml:
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
-			python3 run_adapt_ml.py $$model $$test_case -anisotropic 1 -optimise 1 -target 64000 -log_view :$$model/outputs/$$test_case/logview.txt:ascii_flamegraph; \
+			python3 run_adapt_ml.py $$model $$test_case -a anisotropic --optimise --target_complexity 64000 -log_view :$$model/outputs/$$test_case/logview.txt:ascii_flamegraph; \
 		done; \
 	done && \
 	date >> timing.log && \
