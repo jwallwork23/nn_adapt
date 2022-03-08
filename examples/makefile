@@ -59,8 +59,8 @@ features:
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TRAINING_CASES); do \
-			python3 run_adapt.py $$model $$test_case -no_outputs 1; \
-			python3 run_adapt.py $$model $$test_case -anisotropic 1 -no_outputs 1; \
+			python3 run_adapt.py $$model $$test_case -a isotropic --no_outputs; \
+			python3 run_adapt.py $$model $$test_case -a anisotropic --no_outputs; \
 		done; \
 	done && \
 	date >> timing.log && \
@@ -191,7 +191,7 @@ profile_go:
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
-			python3 run_adapt.py $$model $$test_case -anisotropic 1 -optimise 1 -target 64000 -log_view :$$model/outputs/$$test_case/logview.txt:ascii_flamegraph; \
+			python3 run_adapt.py $$model $$test_case -a anisotropic --optimise --target_complexity 64000 -log_view :$$model/outputs/$$test_case/logview.txt:ascii_flamegraph; \
 		done; \
 	done && \
 	date >> timing.log && \
