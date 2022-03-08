@@ -177,7 +177,7 @@ profile_uni:
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
-			python3 run_fixed_mesh.py $$model $$test_case -optimise 1 -num_refinements 4 -log_view :$$model/outputs/$$test_case/logview_uni.txt:ascii_flamegraph; \
+			python3 run_fixed_mesh.py $$model $$test_case --optimise --num_refinements 4 -log_view :$$model/outputs/$$test_case/logview_uni.txt:ascii_flamegraph; \
 		done; \
 	done && \
 	date >> timing.log && \
