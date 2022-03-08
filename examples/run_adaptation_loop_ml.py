@@ -5,11 +5,12 @@ of increasing target metric complexities,
 """
 from nn_adapt.ann import *
 from nn_adapt.features import *
-from nn_adapt.parse import *
+from nn_adapt.parse import Parser
 from nn_adapt.metric import *
 from nn_adapt.solving import *
 from firedrake.meshadapt import *
 
+import git
 import importlib
 import numpy as np
 from time import perf_counter
@@ -17,16 +18,13 @@ from time import perf_counter
 
 set_log_level(ERROR)
 
-# Parse for test case and number of refinements
-parser = argparse.ArgumentParser(prog="run_adaptation_loop_ml.py")
-parser.add_argument("model", help="The model", type=str)
-parser.add_argument("test_case", help="The configuration file number or name")
-parser.add_argument("--num_refinements", help="Number of mesh refinements", type=positive_int, default=4)
-parser.add_argument("--optimise", help="Turn off plotting and debugging", action="store_true")
-parser.add_argument("--git_sha", help="Git commit sha (defaults to current)", default=None)
-parse_approach(parser)
-parse_convergence_criteria(parser)
-parse_preproc(parser)
+# Parse user input
+parser = Parser("run_adaptation_loop_ml.py")
+parser.parse_num_refinements(default=5)
+parser.parse_approach()
+parser.parse_convergence_criteria()
+parser.parse_tag()
+parser.parse_preproc()
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 try:
@@ -34,9 +32,8 @@ try:
     assert test_case > 0
 except ValueError:
     test_case = parsed_args.test_case
-approach = parsed_args.anisotropic
-num_refinements = int(parsed_args.num_refinements or 5)
-assert num_refinements > 0
+approach = parsed_args.approach
+num_refinements = parsed_args.num_refinements
 miniter = parsed_args.miniter
 maxiter = parsed_args.maxiter
 assert maxiter >= miniter
@@ -44,11 +41,7 @@ qoi_rtol = parsed_args.qoi_rtol
 element_rtol = parsed_args.element_rtol
 estimator_rtol = parsed_args.estimator_rtol
 preproc = parsed_args.preproc
-sha = parsed_args.git_sha
-if sha is None:
-    import git
-
-    sha = git.Repo(search_parent_directories=True).head.object.hexsha
+tag = parsed_args.tag or git.Repo(search_parent_directories=True).head.object.hexsha
 
 # Setup
 setup = importlib.import_module(f"{model}.config")
@@ -58,7 +51,7 @@ unit = setup.parameters.qoi_unit
 # Load the model
 layout = importlib.import_module(f"{model}.network").NetLayout()
 nn = SimpleNet(layout).to(device)
-nn.load_state_dict(torch.load(f"{model}/model_{sha}.pt"))
+nn.load_state_dict(torch.load(f"{model}/model_{tag}.pt"))
 nn.eval()
 
 # Run adaptation loop
@@ -97,7 +90,9 @@ for i in range(num_refinements + 1):
         qoi_old = qoi
 
         # Extract features
-        features = extract_features(setup, fwd_sol, adj_sol, preproc=preproc)
+        features = collect_features(
+            extract_features(setup, fwd_sol, adj_sol, preproc=preproc)
+        )
 
         # Run model
         test_targets = np.array([])
