@@ -12,11 +12,9 @@ import importlib
 # Parse model
 parser = argparse.ArgumentParser(prog="plot_config.py")
 parser.add_argument("model", help="The equation set being solved")
-parser.add_argument("mode", help='Choose from "train" and "test"')
-parser.add_argument(
-    "-num_columns", help="The number of columns in the plot (default 4)"
-)
-parser.add_argument("-num_rows", help="The number of rows in the plot (default 4)")
+parser.add_argument("mode", help="Choose from 'train' and 'test'")
+parser.add_argument("-num_cols", help="Number of columns in the plot (default 4)")
+parser.add_argument("-num_rows", help="Number of rows in the plot (default 4)")
 parsed_args = parser.parse_args()
 model = parsed_args.model
 mode = parsed_args.mode
