@@ -3,6 +3,7 @@ Train a network on ``num_training_cases`` problem
 specifications of a given ``model``.
 """
 from nn_adapt.ann import *
+from nn_adapt.features import collect_features
 from nn_adapt.parse import argparse, bounded_float, positive_float, positive_int
 
 import git
@@ -110,6 +111,7 @@ parser.add_argument(
 parsed_args = parser.parse_args()
 model = parsed_args.model
 approaches = parsed_args.approaches
+preproc = parsed_args.preproc
 
 # Load network layout
 layout = importlib.import_module(f"{model}.network").NetLayout()
@@ -129,14 +131,12 @@ for step in range(parsed_args.adaptation_steps):
                 key: np.load(f"{data_dir}/feature_{key}_{suffix}.npy")
                 for key in layout.inputs
             }
-            features = concat(features, collect_features(data))
+            features = concat(features, collect_features(data, preproc=preproc))
             target = np.load(f"{data_dir}/target_{suffix}.npy")
             targets = concat(targets, target)
 print(f"Total number of features: {len(features.flatten())}")
 print(f"Total number of targets: {len(targets)}")
-features = torch.from_numpy(
-    preprocess_features(features, preproc=parsed_args.preproc)
-).type(torch.float32)
+features = torch.from_numpy(features).type(torch.float32)
 targets = torch.from_numpy(targets).type(torch.float32)
 
 # Get train and validation datasets

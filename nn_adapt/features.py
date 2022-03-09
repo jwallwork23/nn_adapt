@@ -180,11 +180,22 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
     return features
 
 
-def collect_features(feature_dict):
+def collect_features(feature_dict, preproc="none"):
     """
     Given a dictionary of feature arrays, stack their
     data appropriately to be fed into a neural network.
+
+    :arg feature_dict: dictionary containing feature data
+    :kwarg preproc: preprocessor function
     """
+
+    # Pre-process, if requested
+    if preproc != "none":
+        from nn_adapt.ann import preprocess_features
+
+        feature_dict = preprocess_features(feature_dict, preproc=preproc)
+
+    # Stack appropriately
     dofs = [feature for key, feature in feature_dict.items() if "dofs" in key]
     nodofs = [feature for key, feature in feature_dict.items() if "dofs" not in key]
     return np.hstack((np.vstack(nodofs).transpose(), np.hstack(dofs)))
