@@ -6,12 +6,11 @@ import firedrake
 from firedrake.petsc import PETSc
 from firedrake import op2
 import numpy as np
-from nn_adapt.solving import split_into_scalars
 from pyroteus.metric import *
 import ufl
 
 
-__all__ = ["extract_features", "get_values_at_elements"]
+__all__ = ["extract_features", "get_values_at_elements", "collect_features"]
 
 
 @PETSc.Log.EventDecorator("Extract components")
@@ -55,17 +54,80 @@ def get_values_at_elements(M):
         raise ValueError(f"Dimension {dim} not supported")
     el = fs.ufl_element()
     if el.sub_elements() == []:
-        size = (dim + 1) * el.value_size() * el.degree()
+        p = el.degree()
+        size = el.value_size() * (p + 1) * (p + 2) // 2
     else:
-        size = (dim + 1) * sum(
-            sel.value_size() * sel.degree() for sel in el.sub_elements()
-        )
+        size = 0
+        for sel in el.sub_elements():
+            p = sel.degree()
+            size += sel.value_size() * (p + 1) * (p + 2) // 2
     P0_vec = firedrake.VectorFunctionSpace(mesh, "DG", 0, dim=size)
     values = firedrake.Function(P0_vec)
     kernel = "for (int i=0; i < vertexwise.dofs; i++) elementwise[i] += vertexwise[i];"
     keys = {"vertexwise": (M, op2.READ), "elementwise": (values, op2.INC)}
     firedrake.par_loop(kernel, ufl.dx, keys)
     return values
+
+
+def split_into_scalars(f):
+    """
+    Given a :class:`Function`, split it into
+    components from its constituent scalar
+    spaces.
+
+    If it is not mixed then no splitting is
+    required.
+
+    :arg f: the mixed :class:`Function`
+    :return: a dictionary containing the
+        nested structure of the mixed function
+    """
+    V = f.function_space()
+    if V.value_size > 1:
+        subspaces = [V.sub(i) for i in range(len(V.node_count))]
+        ret = {}
+        for i, (Vi, fi) in enumerate(zip(subspaces, f.split())):
+            if len(Vi.shape) == 0:
+                ret[i] = [fi]
+            else:
+                assert len(Vi.shape) == 1, "Tensor spaces not supported"
+                el = Vi.ufl_element()
+                fs = firedrake.FunctionSpace(V.mesh(), el.family(), el.degree())
+                ret[i] = [firedrake.interpolate(fi[j], fs) for j in range(Vi.shape[0])]
+        return ret
+    elif len(V.shape) > 0:
+        assert len(V.shape) == 1, "Tensor spaces not supported"
+        el = V.ufl_element()
+        fs = firedrake.FunctionSpace(V.mesh(), el.family(), el.degree())
+        return {0: [firedrake.interpolate(f[i], fs) for i in range(V.shape[0])]}
+    else:
+        return {0: [f]}
+
+
+def extract_array(f, mesh=None):
+    r"""
+    Extract a cell-wise data array from a :class:`Constant` or
+    :class:`Function`.
+
+    For constants and scalar fields, this will be an :math:`n\times 1`
+    array, where :math:`n` is the number of mesh elements. For a mixed
+    field with :math:`m` components, it will be :math:`n\times m`.
+
+    :arg f: the :class:`Constant` or :class:`Function`
+    :kwarg mesh: the underlying :class:`MeshGeometry`
+    """
+    mesh = mesh or f.ufl_domain()
+    if isinstance(f, firedrake.Constant):
+        ones = np.ones(mesh.num_cells())
+        assert len(f.values()) == 1
+        return f.values()[0] * ones
+    elif not isinstance(f, firedrake.Function):
+        raise ValueError(f"Unexpected input type {type(f)}")
+    s = sum([fi for i, fi in split_into_scalars(f).items()], start=[])
+    if len(s) == 1:
+        return get_values_at_elements(s[0]).dat.data
+    else:
+        return np.hstack([get_values_at_elements(si).dat.data for si in s])
 
 
 @PETSc.Log.EventDecorator("Extract features")
@@ -77,38 +139,38 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
     :arg fwd_sol: the forward solution
     :arg adj_sol: the adjoint solution
     :kwarg preproc: preprocessor function
+    :return: a list of feature arrays
     """
     mesh = fwd_sol.function_space().mesh()
+
+    # Coarse-grained DWR estimator
+    with PETSc.Log.Event("Extract estimator"):
+        dwr = config.dwr_indicator(mesh, fwd_sol, adj_sol)
 
     # Features describing the mesh element
     with PETSc.Log.Event("Analyse element"):
         J = ufl.Jacobian(mesh)
         P0_ten = firedrake.TensorFunctionSpace(mesh, "DG", 0)
         JTJ = firedrake.interpolate(ufl.dot(ufl.transpose(J), J), P0_ten)
-        d, h1, h2 = [p.dat.data for p in extract_components(JTJ)]
-
-    # Features related to flow physics
-    with PETSc.Log.Event("Extract physics"):
-        drag = config.parameters.drag(mesh).dat.data
-        ones = np.ones(len(drag))
-        nu = config.parameters.viscosity.values()[0] * ones  # NOTE: assumes constant
-        # b = config.parameters.depth * ones  # NOTE: assumes constant
-
-    # Features describing the forward and adjoint solutions
-    with PETSc.Log.Event("Extract DoFs"):
-        fwd_sols = split_into_scalars(fwd_sol)
-        adj_sols = split_into_scalars(adj_sol)
-        sols = sum([fi for i, fi in fwd_sols.items()], start=[])
-        sols += sum([ai for i, ai in adj_sols.items()], start=[])
-        vals = [get_values_at_elements(s).dat.data for s in sols]
+        d, h1, h2 = (extract_array(p) for p in extract_components(JTJ))
+        bnodes = firedrake.DirichletBC(dwr.function_space(), 0, "on_boundary").nodes
+        bnd = np.array([1 if i in bnodes else 0 for i in range(mesh.num_cells())])
 
     # Combine the features together
-    with PETSc.Log.Event("Combine features"):
-        features = np.hstack(
-            # (np.vstack([nu, drag, b, d, h1, h2]).transpose(), np.hstack(vals))
-            (np.vstack([nu, drag, d, h1, h2]).transpose(), np.hstack(vals))
-        )
-    assert not np.isnan(features).any()
+    features = {
+        "coarse_estimator": extract_array(dwr),
+        "drag_coefficient": extract_array(config.parameters.drag(mesh)),
+        "viscosity_coefficient": extract_array(config.parameters.viscosity(mesh)),
+        "bathymetry": extract_array(config.parameters.bathymetry(mesh)),
+        "element_d": d,
+        "element_h1": h1,
+        "element_h2": h2,
+        "element_bnd": bnd,
+        "forward_dofs": extract_array(fwd_sol),
+        "adjoint_dofs": extract_array(adj_sol),
+    }
+    for key, value in features.items():
+        assert not np.isnan(value).any()
 
     # Pre-process, if requested
     if preproc != "none":
@@ -116,3 +178,13 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
 
         features = preprocess_features(features, preproc=preproc)
     return features
+
+
+def collect_features(feature_dict):
+    """
+    Given a dictionary of feature arrays, stack their
+    data appropriately to be fed into a neural network.
+    """
+    dofs = [feature for key, feature in feature_dict.items() if "dofs" in key]
+    nodofs = [feature for key, feature in feature_dict.items() if "dofs" not in key]
+    return np.hstack((np.vstack(nodofs).transpose(), np.hstack(dofs)))

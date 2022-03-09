@@ -13,14 +13,49 @@ class NetLayoutBase(object):
     for each of these parameters.
     """
 
-    num_inputs = None
+    inputs = None
     num_hidden_neurons = None
-    num_outputs = None
+    # TODO: Allow more general networks
+
+    colours = {
+        "estimator": "b",
+        "physics": "C0",
+        "mesh": "deepskyblue",
+        "forward": "mediumturquoise",
+        "adjoint": "mediumseagreen",
+    }
 
     def __init__(self):
-        if self.num_inputs is None:
-            raise ValueError("Need to set number of inputs")
+        if self.inputs is None:
+            raise ValueError("Need to set inputs")
+        colours = set(self.colours.keys())
+        for i in self.inputs:
+            okay = False
+            for c in colours:
+                if i.startswith(c):
+                    okay = True
+                    break
+            if not okay:
+                raise ValueError("Input names must begin with one of {colours}")
         if self.num_hidden_neurons is None:
             raise ValueError("Need to set number of hidden neurons")
-        if self.num_outputs is None:
-            raise ValueError("Need to set number of outputs")
+
+    def count_inputs(self, prefix):
+        """
+        Count all scalar inputs that start with a given `prefix`.
+        """
+        cnt = 0
+        for i in self.inputs:
+            if i.startswith(prefix):
+                if i in ("forward_dofs", "adjoint_dofs"):
+                    cnt += 12
+                else:
+                    cnt += 1
+        return cnt
+
+    @property
+    def num_inputs(self):
+        """
+        The total number of scalar inputs.
+        """
+        return self.count_inputs("")

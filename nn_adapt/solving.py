@@ -68,43 +68,6 @@ def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None):
     return q, q_star, q_star_plus
 
 
-def split_into_scalars(f):
-    """
-    Given a :class:`Function`, split it into
-    components from its constituent scalar
-    spaces.
-
-    If it is not mixed then no splitting is
-    required.
-
-    :arg f: the mixed :class:`Function`
-    :return: a dictionary containing the
-        nested structure of the mixed function
-    """
-    V = f.function_space()
-    if V.value_size > 1:
-        subspaces = [V.sub(i) for i in range(len(V.node_count))]
-        ret = {}
-        for i, (Vi, fi) in enumerate(zip(subspaces, f.split())):
-            if len(Vi.shape) == 0:
-                ret[i] = [fi]
-            else:
-                assert len(Vi.shape) == 1, "Tensor spaces not supported"
-                el = Vi.ufl_element()
-                fs = FunctionSpace(V.mesh(), el.family(), el.degree())
-                # ret[i] = [Function(fs).assign(fi.sub(j)) for j in range(Vi.shape[0])]
-                ret[i] = [interpolate(fi[j], fs) for j in range(Vi.shape[0])]
-        return ret
-    elif len(V.shape) > 0:
-        assert len(V.shape) == 1, "Tensor spaces not supported"
-        el = V.ufl_element()
-        fs = FunctionSpace(V.mesh(), el.family(), el.degree())
-        # return {0: [Function(fs).assign(f.sub(i)) for i in range(V.shape[0])]}
-        return {0: [interpolate(f[i], fs) for i in range(V.shape[0])]}
-    else:
-        return {0: [f]}
-
-
 def split_into_components(f):
     r"""
     Extend the :attr:`split` method to apply

@@ -3,7 +3,7 @@ Train a network on ``num_training_cases`` problem
 specifications of a given ``model``.
 """
 from nn_adapt.ann import *
-from nn_adapt.parse import *
+from nn_adapt.parse import argparse, bounded_float, positive_float, positive_int
 
 import git
 import importlib
@@ -31,6 +31,14 @@ parser.add_argument(
     help="The number of test cases to train on",
     type=positive_int,
     default=100,
+)
+parser.add_argument(
+    "-a",
+    "--approaches",
+    nargs="+",
+    help="Adaptive approaches to consider",
+    choices=["isotropic", "anisotropic"],
+    default=["isotropic", "anisotropic"],
 )
 parser.add_argument(
     "--adaptation_steps",
@@ -93,24 +101,37 @@ parser.add_argument(
     type=positive_int,
     default=42,
 )
+parser.add_argument(
+    "--tag",
+    help="Tag for the model",
+    type=str,
+    default=None,
+)
 parsed_args = parser.parse_args()
 model = parsed_args.model
+approaches = parsed_args.approaches
+
+# Load network layout
+layout = importlib.import_module(f"{model}.network").NetLayout()
 
 # Load data
 concat = lambda a, b: b if a is None else np.concatenate((a, b), axis=0)
 features = None
 targets = None
-errors = None
+data_dir = f"{model}/data"
 for step in range(parsed_args.adaptation_steps):
-    for test_case in range(1, parsed_args.num_training_cases + 1):
-        features = concat(
-            features,
-            np.load(f"{model}/data/features{test_case}_GOanisotropic_{step}.npy"),
-        )
-        targets = concat(
-            targets,
-            np.load(f"{model}/data/targets{test_case}_GOanisotropic_{step}.npy"),
-        )
+    for approach in approaches:
+        for test_case in range(1, parsed_args.num_training_cases + 1):
+            if test_case == 1 and approach != approaches[0]:
+                continue
+            suffix = f"{test_case}_GO{approach}_{step}"
+            data = {
+                key: np.load(f"{data_dir}/feature_{key}_{suffix}.npy")
+                for key in layout.inputs
+            }
+            features = concat(features, collect_features(data))
+            target = np.load(f"{data_dir}/target_{suffix}.npy")
+            targets = concat(targets, target)
 print(f"Total number of features: {len(features.flatten())}")
 print(f"Total number of targets: {len(targets)}")
 features = torch.from_numpy(
@@ -132,7 +153,6 @@ validate_loader = torch.utils.data.DataLoader(
 )
 
 # Setup model
-layout = importlib.import_module(f"{model}.network").NetLayout()
 nn = SimpleNet(layout).to(device)
 optimizer = torch.optim.Adam(nn.parameters(), lr=parsed_args.lr)
 scheduler = StepLR(
@@ -147,7 +167,7 @@ train_losses = []
 validation_losses = []
 adapt_steps = []
 set_seed(parsed_args.seed)
-sha = git.Repo(search_parent_directories=True).head.object.hexsha
+tag = parsed_args.tag or git.Repo(search_parent_directories=True).head.object.hexsha
 for epoch in range(parsed_args.num_epochs):
 
     # Training step
@@ -174,6 +194,6 @@ for epoch in range(parsed_args.num_epochs):
     )
     train_losses.append(train)
     validation_losses.append(val)
-    np.save(f"{model}/data/train_losses_{sha}", train_losses)
-    np.save(f"{model}/data/validation_losses_{sha}", validation_losses)
-    torch.save(nn.state_dict(), f"{model}/model_{sha}.pt")
+    np.save(f"{model}/data/train_losses_{tag}", train_losses)
+    np.save(f"{model}/data/validation_losses_{tag}", validation_losses)
+    torch.save(nn.state_dict(), f"{model}/model_{tag}.pt")

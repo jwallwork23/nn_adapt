@@ -48,7 +48,7 @@ class SimpleNet(nn.Module):
         super(SimpleNet, self).__init__()
         self.linear1 = nn.Linear(layout.num_inputs, layout.num_hidden_neurons)
         self.activate1 = nn.Sigmoid()
-        self.linear2 = nn.Linear(layout.num_hidden_neurons, layout.num_outputs)
+        self.linear2 = nn.Linear(layout.num_hidden_neurons, 1)
 
     def forward(self, x):
         z1 = self.linear1(x)
@@ -94,7 +94,7 @@ def preprocess_features(features, preproc="none"):
     Pre-process features so that they are
     similarly scaled.
 
-    :arg features: the array of features
+    :arg features: the list of feature arrays
     :kwarg preproc: preprocessor function
     """
     if preproc == "none":
@@ -107,8 +107,9 @@ def preprocess_features(features, preproc="none"):
         f = lambda x: np.ln(np.abs(x))
     else:
         raise ValueError(f'Preprocessor "{preproc}" not recognised.')
-    shape = features.shape
-    return f(features.reshape(1, shape[0] * shape[1])).reshape(*shape)
+    for i, feature in features.items():
+        features[i] = f(feature.flatten()).reshape(*feature.shape)
+    return features
 
 
 def Loss():

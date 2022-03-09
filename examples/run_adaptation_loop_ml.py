@@ -5,11 +5,12 @@ of increasing target metric complexities,
 """
 from nn_adapt.ann import *
 from nn_adapt.features import *
+from nn_adapt.parse import Parser
 from nn_adapt.metric import *
 from nn_adapt.solving import *
 from firedrake.meshadapt import *
 
-import argparse
+import git
 import importlib
 import numpy as np
 from time import perf_counter
@@ -17,19 +18,13 @@ from time import perf_counter
 
 set_log_level(ERROR)
 
-# Parse for test case and number of refinements
-parser = argparse.ArgumentParser(prog="run_adaptation_loop_ml.py")
-parser.add_argument("model", help="The model")
-parser.add_argument("test_case", help="The configuration file number")
-parser.add_argument("-anisotropic", help="Toggle isotropic vs. anisotropic metric")
-parser.add_argument("-num_refinements", help="Number of refinements (default 4)")
-parser.add_argument("-miniter", help="Minimum number of iterations (default 3)")
-parser.add_argument("-maxiter", help="Maximum number of iterations (default 35)")
-parser.add_argument("-qoi_rtol", help="Relative tolerance for QoI (default 0.001)")
-parser.add_argument("-element_rtol", help="Element count tolerance (default 0.001)")
-parser.add_argument("-estimator_rtol", help="Error estimator tolerance (default 0.001)")
-parser.add_argument("-preproc", help="Data preprocess function (default 'arctan')")
-parser.add_argument("-git_sha", help="Git commit sha (defaults to current)")
+# Parse user input
+parser = Parser("run_adaptation_loop_ml.py")
+parser.parse_num_refinements(default=5)
+parser.parse_approach()
+parser.parse_convergence_criteria()
+parser.parse_tag()
+parser.parse_preproc()
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 try:
@@ -37,25 +32,16 @@ try:
     assert test_case > 0
 except ValueError:
     test_case = parsed_args.test_case
-approach = "isotropic" if parsed_args.anisotropic in [None, "0"] else "anisotropic"
-num_refinements = int(parsed_args.num_refinements or 5)
-assert num_refinements > 0
-miniter = int(parsed_args.miniter or 3)
-assert miniter >= 0
-maxiter = int(parsed_args.maxiter or 35)
+approach = parsed_args.approach
+num_refinements = parsed_args.num_refinements
+miniter = parsed_args.miniter
+maxiter = parsed_args.maxiter
 assert maxiter >= miniter
-qoi_rtol = float(parsed_args.qoi_rtol or 0.001)
-assert qoi_rtol > 0.0
-element_rtol = float(parsed_args.element_rtol or 0.001)
-assert element_rtol > 0.0
-estimator_rtol = float(parsed_args.estimator_rtol or 0.001)
-assert estimator_rtol > 0.0
-preproc = parsed_args.preproc or "arctan"
-sha = parsed_args.git_sha
-if sha is None:
-    import git
-
-    sha = git.Repo(search_parent_directories=True).head.object.hexsha
+qoi_rtol = parsed_args.qoi_rtol
+element_rtol = parsed_args.element_rtol
+estimator_rtol = parsed_args.estimator_rtol
+preproc = parsed_args.preproc
+tag = parsed_args.tag or git.Repo(search_parent_directories=True).head.object.hexsha
 
 # Setup
 setup = importlib.import_module(f"{model}.config")
@@ -65,7 +51,7 @@ unit = setup.parameters.qoi_unit
 # Load the model
 layout = importlib.import_module(f"{model}.network").NetLayout()
 nn = SimpleNet(layout).to(device)
-nn.load_state_dict(torch.load(f"{model}/model_{sha}.pt"))
+nn.load_state_dict(torch.load(f"{model}/model_{tag}.pt"))
 nn.eval()
 
 # Run adaptation loop
@@ -104,7 +90,9 @@ for i in range(num_refinements + 1):
         qoi_old = qoi
 
         # Extract features
-        features = extract_features(setup, fwd_sol, adj_sol, preproc=preproc)
+        features = collect_features(
+            extract_features(setup, fwd_sol, adj_sol, preproc=preproc)
+        )
 
         # Run model
         test_targets = np.array([])

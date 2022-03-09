@@ -4,31 +4,25 @@ mesh adaptation in a fixed point iteration loop.
 """
 from nn_adapt.ann import *
 from nn_adapt.features import *
+from nn_adapt.parse import Parser
 from nn_adapt.metric import *
 from nn_adapt.solving import *
 from firedrake.meshadapt import *
 
-import argparse
+import git
 import importlib
 from time import perf_counter
 
 
 start_time = perf_counter()
 
-# Parse for test case and number of refinements
-parser = argparse.ArgumentParser(prog="run_adapt_ml.py")
-parser.add_argument("model", help="The model")
-parser.add_argument("test_case", help="The configuration file number")
-parser.add_argument("-anisotropic", help="Toggle isotropic vs. anisotropic metric")
-parser.add_argument("-miniter", help="Minimum number of iterations (default 3)")
-parser.add_argument("-maxiter", help="Maximum number of iterations (default 35)")
-parser.add_argument("-qoi_rtol", help="Relative tolerance for QoI (default 0.001)")
-parser.add_argument("-element_rtol", help="Element count tolerance (default 0.001)")
-parser.add_argument("-estimator_rtol", help="Error estimator tolerance (default 0.001)")
-parser.add_argument("-target", help="Target metric complexity (default 4000.0)")
-parser.add_argument("-preproc", help="Data preprocess function (default 'arctan')")
-parser.add_argument("-optimise", help="Turn off plotting and debugging (default False)")
-parser.add_argument("-git_sha", help="Git commit sha (defaults to current)")
+# Parse user input
+parser = Parser("run_adapt_ml.py")
+parser.parse_approach()
+parser.parse_convergence_criteria()
+parser.parse_preproc()
+parser.parse_target_complexity()
+parser.parse_tag()
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 try:
@@ -36,28 +30,19 @@ try:
     assert test_case > 0
 except ValueError:
     test_case = parsed_args.test_case
-approach = "isotropic" if parsed_args.anisotropic in [None, "0"] else "anisotropic"
-miniter = int(parsed_args.miniter or 3)
-assert miniter >= 0
-maxiter = int(parsed_args.maxiter or 35)
+approach = parsed_args.approach
+miniter = parsed_args.miniter
+maxiter = parsed_args.maxiter
 assert maxiter >= miniter
-qoi_rtol = float(parsed_args.qoi_rtol or 0.001)
-assert qoi_rtol > 0.0
-element_rtol = float(parsed_args.element_rtol or 0.001)
-assert element_rtol > 0.0
-estimator_rtol = float(parsed_args.estimator_rtol or 0.001)
-assert estimator_rtol > 0.0
-target_complexity = float(parsed_args.target or 4000.0)
-assert target_complexity > 0.0
-preproc = parsed_args.preproc or "arctan"
-optimise = bool(parsed_args.optimise or False)
+qoi_rtol = parsed_args.qoi_rtol
+element_rtol = parsed_args.element_rtol
+estimator_rtol = parsed_args.estimator_rtol
+target_complexity = parsed_args.target_complexity
+preproc = parsed_args.preproc
+optimise = parsed_args.optimise
 if not optimise:
     from pyroteus.utility import File
-sha = parsed_args.git_sha
-if sha is None:
-    import git
-
-    sha = git.Repo(search_parent_directories=True).head.object.hexsha
+tag = parsed_args.tag or git.Repo(search_parent_directories=True).head.object.hexsha
 
 # Setup
 setup = importlib.import_module(f"{model}.config")
@@ -68,7 +53,7 @@ mesh = Mesh(f"{model}/meshes/{test_case}.msh")
 # Load the model
 layout = importlib.import_module(f"{model}.network").NetLayout()
 nn = SimpleNet(layout).to(device)
-nn.load_state_dict(torch.load(f"{model}/model_{sha}.pt"))
+nn.load_state_dict(torch.load(f"{model}/model_{tag}.pt"))
 nn.eval()
 
 # Run adaptation loop
@@ -77,10 +62,11 @@ elements_old = mesh.num_cells()
 estimator_old = None
 converged_reason = None
 if not optimise:
-    fwd_file = File(f"{model}/outputs/{test_case}/ML/{approach}/forward.pvd")
-    adj_file = File(f"{model}/outputs/{test_case}/ML/{approach}/adjoint.pvd")
-    ee_file = File(f"{model}/outputs/{test_case}/ML/{approach}/estimator.pvd")
-    metric_file = File(f"{model}/outputs/{test_case}/ML/{approach}/metric.pvd")
+    output_dir = f"{model}/outputs/{test_case}/ML/{approach}"
+    fwd_file = File(f"{output_dir}/forward.pvd")
+    adj_file = File(f"{output_dir}/adjoint.pvd")
+    ee_file = File(f"{output_dir}/estimator.pvd")
+    metric_file = File(f"{output_dir}/metric.pvd")
 print(f"Test case {test_case}")
 print("  Mesh 0")
 print(f"    Element count        = {elements_old}")
@@ -109,7 +95,9 @@ for fp_iteration in range(maxiter + 1):
     qoi_old = qoi
 
     # Extract features
-    features = extract_features(setup, fwd_sol, adj_sol, preproc=preproc)
+    features = collect_features(
+        extract_features(setup, fwd_sol, adj_sol, preproc=preproc)
+    )
 
     # Run model
     with PETSc.Log.Event("Network propagate"):

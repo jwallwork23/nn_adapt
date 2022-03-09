@@ -3,9 +3,9 @@ Plot QoI convergence curves under uniform refinement,
 goal-oriented mesh adaptation and data-driven mesh
 adaptation, for a given ``test_case`` and ``model``.
 """
+from nn_adapt.parse import Parser
 from nn_adapt.plotting import *
 
-import argparse
 import importlib
 from matplotlib.ticker import FormatStrFormatter
 import numpy as np
@@ -21,10 +21,8 @@ def plot_slope(x0, x1, y0, g, axes):
 
 matplotlib.rcParams["font.size"] = 20
 
-# Parse for test case
-parser = argparse.ArgumentParser(prog="plot_convergence.py")
-parser.add_argument("model", help="The model")
-parser.add_argument("test_case", help="The configuration name")
+# Parse user input
+parser = Parser("plot_convergence.py")
 parsed_args = parser.parse_args()
 model = parsed_args.model
 test_case = parsed_args.test_case

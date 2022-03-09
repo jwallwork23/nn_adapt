@@ -3,6 +3,7 @@ Functions for generating Riemannian metrics from solution
 fields.
 """
 from pyroteus import *
+from nn_adapt.features import split_into_scalars
 from nn_adapt.solving import *
 
 

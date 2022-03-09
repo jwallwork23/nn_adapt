@@ -2,6 +2,7 @@ from thetis import *
 import numpy as np
 
 
+# TODO: Write a base class
 class Parameters(object):
     """
     Class encapsulating all parameters required for the tidal
@@ -10,15 +11,15 @@ class Parameters(object):
 
     discrete = False
 
-    qoi_unit = "MW"
     qoi_name = "power output"
+    qoi_unit = "MW"
 
     # Adaptation parameters
     h_min = 1.0e-05
     h_max = 500.0
 
     # Physical parameters
-    viscosity = Constant(0.5)
+    viscosity_coefficient = 0.5
     depth = 40.0
     drag_coefficient = Constant(0.0025)
     inflow_speed = 5.0
@@ -99,7 +100,7 @@ class Parameters(object):
 
     def bathymetry(self, mesh):
         """
-        Compute the bathymetry field on the current mesh.
+        Compute the bathymetry field on the current `mesh`.
         """
         # NOTE: We assume a constant bathymetry field
         P0_2d = get_functionspace(mesh, "DG", 0)
@@ -107,7 +108,7 @@ class Parameters(object):
 
     def u_inflow(self, mesh):
         """
-        Compute the inflow velocity based on the current mesh.
+        Compute the inflow velocity based on the current `mesh`.
         """
         # NOTE: We assume a constant inflow
         return as_vector([self.inflow_speed, 0])
@@ -115,18 +116,18 @@ class Parameters(object):
     def Re(self, fwd_sol):
         """
         Compute the mesh Reynolds number based on the current
-        forward solution.
+        forward solution, `fwd_sol`.
         """
         u = fwd_sol.split()[0]
         unorm = sqrt(dot(u, u))
         mesh = u.function_space().mesh()
-        P0 = get_functionspace(mesh, "DG", 0)
+        P0_2d = get_functionspace(mesh, "DG", 0)
         h = CellSize(mesh)
-        return interpolate(0.5 * h * unorm / self.viscosity, P0)
+        return interpolate(0.5 * h * unorm / self.viscosity(mesh), P0_2d)
 
     def turbine_density(self, mesh):
         """
-        Compute the turbine density function on the current mesh.
+        Compute the turbine density function on the current `mesh`.
         """
         if self.discrete:
             return Constant(1.0 / self.footprint_area, domain=mesh)
@@ -148,7 +149,7 @@ class Parameters(object):
     def farm(self, mesh):
         """
         Construct a dictionary of :class:`TidalTurbineFarmOptions`
-        objects based on the current mesh.
+        objects based on the current `mesh`.
         """
         Ct = self.corrected_thrust_coefficient
         farm_options = TidalTurbineFarmOptions()
@@ -158,8 +159,12 @@ class Parameters(object):
         return {farm_id: farm_options for farm_id in self.turbine_ids}
 
     def turbine_drag(self, mesh):
-        P0 = FunctionSpace(mesh, "DG", 0)
-        p0test = TestFunction(P0)
+        """
+        Compute the contribution to the drag coefficient due to the
+        tidal turbine parametrisation on the current `mesh`.
+        """
+        P0_2d = get_functionspace(mesh, "DG", 0)
+        p0test = TestFunction(P0_2d)
         Ct = self.corrected_thrust_coefficient
         At = self.swept_area
         Cd = 0.5 * Ct * At * self.turbine_density(mesh)
@@ -168,25 +173,33 @@ class Parameters(object):
     def drag(self, mesh, background=False):
         r"""
         Create a :math:`\mathbb P0` field for the drag on the current
-        mesh.
+        `mesh`.
 
-        :arg mesh: the current mesh
         :kwarg background: should we consider the background drag
             alone, or should the turbine drag be included?
         """
-        P0 = FunctionSpace(mesh, "DG", 0)
-        ret = Function(P0)
+        P0_2d = get_functionspace(mesh, "DG", 0)
+        ret = Function(P0_2d)
 
         # Background drag
         Cb = self.drag_coefficient
         if background:
             return ret.assign(Cb)
-        p0test = TestFunction(P0)
+        p0test = TestFunction(P0_2d)
         expr = p0test * Cb * dx(domain=mesh)
 
         # Turbine drag
         assemble(expr + self.turbine_drag(mesh), tensor=ret)
         return ret
+
+    def viscosity(self, mesh):
+        r"""
+        Create a :math:`\mathbb P0` field for the viscosity coefficient
+        on the current `mesh`.
+        """
+        # NOTE: We assume a constant viscosity coefficient
+        P0_2d = get_functionspace(mesh, "DG", 0)
+        return Function(P0_2d).assign(self.viscosity_coefficient)
 
 
 PETSc.Sys.popErrorHandler()
@@ -198,9 +211,9 @@ def get_function_space(mesh):
     Construct the (mixed) finite element space used for the
     prognostic solution.
     """
-    return get_functionspace(mesh, "DG", 1, vector=True) * get_functionspace(
-        mesh, "CG", 2
-    )
+    P1v_2d = get_functionspace(mesh, "DG", 1, vector=True)
+    P2_2d = get_functionspace(mesh, "CG", 2)
+    return P1v_2d * P2_2d
 
 
 def setup_solver(mesh, ic):
@@ -221,7 +234,7 @@ def setup_solver(mesh, ic):
     options.swe_timestepper_type = "SteadyState"
     options.swe_timestepper_options.solver_parameters = parameters.solver_parameters
     options.use_grad_div_viscosity_term = False
-    options.horizontal_viscosity = parameters.viscosity
+    options.horizontal_viscosity = parameters.viscosity(mesh)
     options.quadratic_drag_coefficient = Cd
     options.use_lax_friedrichs_velocity = True
     options.lax_friedrichs_velocity_scaling_factor = Constant(1.0)
