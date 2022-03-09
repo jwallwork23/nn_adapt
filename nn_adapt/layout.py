@@ -15,6 +15,7 @@ class NetLayoutBase(object):
 
     inputs = None
     num_hidden_neurons = None
+    # TODO: Allow more general networks
 
     colours = {
         "estimator": "b",
