@@ -107,7 +107,7 @@ def preprocess_features(features, preproc="none"):
         f = lambda x: np.ln(np.abs(x))
     else:
         raise ValueError(f'Preprocessor "{preproc}" not recognised.')
-    for i, feature in enumerate(features):
+    for i, feature in features.items():
         features[i] = f(feature.flatten()).reshape(*feature.shape)
     return features
 
