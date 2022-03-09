@@ -72,7 +72,7 @@ train:
 	touch timing.log
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
-		python3 test_and_train.py -m $$model -n $(NUM_TRAINING_CASES); \
+		python3 test_and_train.py -m $$model -n $(NUM_TRAINING_CASES) --tag all; \
 	done && \
 	date >> timing.log && \
 	git log -n 1 --oneline >> timing.log && \
@@ -81,12 +81,12 @@ train:
 
 plot_progress:
 	for model in $(MODELS); do \
-		python3 plot_progress.py $$model; \
+		python3 plot_progress.py $$model --tag all; \
 	done
 
 plot_importance:
 	for model in $(MODELS); do \
-		python3 plot_importance.py $$model $(NUM_TRAINING_CASES); \
+		python3 plot_importance.py $$model $(NUM_TRAINING_CASES) --tag all; \
 	done
 
 # --- Snapshots
@@ -98,8 +98,8 @@ snapshot:
 		for test_case in $(TESTING_CASES); do \
 			python3 run_adapt.py $$model $$test_case -a isotropic; \
 			python3 run_adapt.py $$model $$test_case -a anisotropic; \
-			python3 run_adapt_ml.py $$model $$test_case -a isotropic; \
-			python3 run_adapt_ml.py $$model $$test_case -a anisotropic; \
+			python3 run_adapt_ml.py $$model $$test_case -a isotropic --tag all; \
+			python3 run_adapt_ml.py $$model $$test_case -a anisotropic --tag all; \
 		done; \
 	done && \
 	date >> timing.log && \
@@ -143,8 +143,8 @@ ml:
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
-			python3 run_adaptation_loop_ml.py $$model $$test_case -a isotropic; \
-			python3 run_adaptation_loop_ml.py $$model $$test_case -a anisotropic; \
+			python3 run_adaptation_loop_ml.py $$model $$test_case -a isotropic --tag all; \
+			python3 run_adaptation_loop_ml.py $$model $$test_case -a anisotropic --tag all; \
 		done; \
 	done && \
 	date >> timing.log && \
@@ -209,7 +209,7 @@ profile_ml:
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
-			python3 run_adapt_ml.py $$model $$test_case -a anisotropic --optimise --target_complexity 64000 -log_view :$$model/outputs/$$test_case/logview.txt:ascii_flamegraph; \
+			python3 run_adapt_ml.py $$model $$test_case -a anisotropic --optimise --target_complexity 64000 --tag all -log_view :$$model/outputs/$$test_case/logview.txt:ascii_flamegraph; \
 		done; \
 	done && \
 	date >> timing.log && \
