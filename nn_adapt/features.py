@@ -10,7 +10,7 @@ from pyroteus.metric import *
 import ufl
 
 
-__all__ = ["extract_features", "get_values_at_elements"]
+__all__ = ["extract_features", "get_values_at_elements", "collect_features"]
 
 
 @PETSc.Log.EventDecorator("Extract components")
@@ -179,3 +179,13 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
 
         features = preprocess_features(features, preproc=preproc)
     return features
+
+
+def collect_features(feature_dict):
+    """
+    Given a dictionary of feature arrays, stack their
+    data appropriately to be fed into a neural network.
+    """
+    dofs = [feature for key, feature in feature_dict.items() if "dofs" in key]
+    nodofs = [feature for key, feature in feature_dict.items() if "dofs" not in key]
+    return np.hstack((np.vstack(nodofs).transpose(), np.hstack(dofs)))
