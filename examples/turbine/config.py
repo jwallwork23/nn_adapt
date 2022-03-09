@@ -51,7 +51,7 @@ def initialise(case, discrete=False):
     # Random viscosity from 0.001 to 10
     significand = 1.0 + np.random.rand()
     exponent = np.random.randint(-3, 1)
-    parameters.viscosity = significand * 10**exponent
+    parameters.viscosity_coefficient = significand * 10**exponent
 
     # Randomise turbine configuration such that all
     # turbines are at least 50m from the domain
