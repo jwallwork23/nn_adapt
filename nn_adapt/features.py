@@ -160,8 +160,7 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
     features = {
         "coarse_estimator": extract_array(dwr),
         "drag_coefficient": extract_array(config.parameters.drag(mesh)),
-        "viscosity_coefficient": extract_array(config.parameters.viscosity, mesh=mesh),
-        # TODO: allow spatially-varying viscosity
+        "viscosity_coefficient": extract_array(config.parameters.viscosity(mesh)),
         "bathymetry": extract_array(config.parameters.bathymetry(mesh)),
         "element_d": d,
         "element_h1": h1,
