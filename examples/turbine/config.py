@@ -26,13 +26,13 @@ def initialise(case, discrete=False):
     """
     parameters.discrete = discrete
     if case == "aligned":
-        parameters.viscosity.assign(0.5)
+        parameters.viscosity_coefficient = 0.5
         parameters.depth = 40.0
         parameters.inflow_speed = 5.0
         parameters.turbine_coords = [(456, 250), (744, 250)]
         return
     elif case == "offset":
-        parameters.viscosity.assign(0.5)
+        parameters.viscosity_coefficient = 0.5
         parameters.depth = 40.0
         parameters.inflow_speed = 5.0
         parameters.turbine_coords = [(456, 232), (744, 268)]
@@ -51,7 +51,7 @@ def initialise(case, discrete=False):
     # Random viscosity from 0.001 to 10
     significand = 1.0 + np.random.rand()
     exponent = np.random.randint(-3, 1)
-    parameters.viscosity.assign(significand * 10**exponent)
+    parameters.viscosity = significand * 10**exponent
 
     # Randomise turbine configuration such that all
     # turbines are at least 50m from the domain
