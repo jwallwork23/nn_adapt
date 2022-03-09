@@ -2,27 +2,53 @@
 Plot the problem configurations for a given ``model``.
 The ``mode`` is chosen from 'train' and 'test'.
 """
-from firedrake import *
+from firedrake import Mesh
+from nn_adapt.parse import argparse, positive_int
 from nn_adapt.plotting import *
 
-import argparse
 import importlib
 
 
 # Parse model
-parser = argparse.ArgumentParser(prog="plot_config.py")
-parser.add_argument("model", help="The equation set being solved")
-parser.add_argument("mode", help="Choose from 'train' and 'test'")
-parser.add_argument("-num_cols", help="Number of columns in the plot (default 4)")
-parser.add_argument("-num_rows", help="Number of rows in the plot (default 4)")
+parser = argparse.ArgumentParser(
+    prog="plot_config.py",
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
+parser.add_argument(
+    "model",
+    help="The model",
+    type=str,
+    choices=["turbine"],
+)
+parser.add_argument(
+    "mode",
+    help="Training or testing?",
+    type=str,
+    choices=["train", "test"],
+)
+parser.add_argument(
+    "--num_cols",
+    help="Number of columns in the plot",
+    type=positive_int,
+    default=4,
+)
+parser.add_argument(
+    "--num_rows",
+    help="Number of rows in the plot",
+    type=positive_int,
+    default=4,
+)
 parsed_args = parser.parse_args()
 model = parsed_args.model
 mode = parsed_args.mode
-assert mode in ["train", "test"]
 setup = importlib.import_module(f"{model}.config")
 cases = setup.testing_cases
-ncols = int(parsed_args.num_columns or len(cases) if mode == "test" else 4)
-nrows = int(parsed_args.num_rows or 1 if mode == "test" else 4)
+ncols = parsed_args.num_cols
+if mode == "test":
+    ncols = len(cases)
+nrows = parsed_args.num_rows
+if mode == "test":
+    nrows = 1
 N = ncols * nrows
 if mode == "train":
     cases = range(1, N + 1)
