@@ -153,8 +153,8 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
         P0_ten = firedrake.TensorFunctionSpace(mesh, "DG", 0)
         JTJ = firedrake.interpolate(ufl.dot(ufl.transpose(J), J), P0_ten)
         d, h1, h2 = (extract_array(p) for p in extract_components(JTJ))
-        bnodes = firedrake.DirichletBC(dwr.function_space(), 0, "on_boundary").nodes
-        bnd = np.array([1 if i in bnodes else 0 for i in range(mesh.num_cells())])
+        p0test = firedrake.TestFunction(dwr.function_space())
+        bnd = firedrake.assemble(p0test * ufl.ds).dat.data
 
     # Combine the features together
     features = {
