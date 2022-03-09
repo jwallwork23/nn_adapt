@@ -54,7 +54,7 @@ class Parser(argparse.ArgumentParser):
         self.add_argument(
             "--optimise",
             help="Turn off plotting and debugging",
-            action="store_true"
+            action="store_true",
         )
 
     def parse_convergence_criteria(self):
