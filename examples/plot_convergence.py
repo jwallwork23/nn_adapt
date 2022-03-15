@@ -65,19 +65,24 @@ setup = importlib.import_module(f"{model}.config")
 unit = setup.parameters.qoi_unit
 qoi_name = setup.parameters.qoi_name.capitalize()
 
+dofs, elements, qois = {}, {}, {}
+for approach in approaches:
+    try:
+        dofs[approach] = np.load(f"{model}/data/dofs_{approach}_{test_case}.npy")
+        elements[approach] = np.load(f"{model}/data/elements_{approach}_{test_case}.npy")
+        qois[approach] = np.load(f"{model}/data/qois_{approach}_{test_case}.npy")
+    except IOError:
+        print(f"Cannot load {approach} data for test case {test_case}")
+        approaches.pop(approach)
+        continue
+
 # Plot QoI curves against DoF count
 fig, axes = plt.subplots()
 start = max(np.load(f"{model}/data/qois_uniform_{test_case}.npy"))
 conv = np.load(f"{model}/data/qois_GOanisotropic_{test_case}.npy")[-1]
 axes.hlines(conv, *xlim, "k", label="Converged QoI")
 for approach, metadata in approaches.items():
-    try:
-        dofs = np.load(f"{model}/data/dofs_{approach}_{test_case}.npy")
-        qois = np.load(f"{model}/data/qois_{approach}_{test_case}.npy")
-    except IOError:
-        print(f"Cannot load {approach} data for test case {test_case}")
-        continue
-    axes.semilogx(dofs, qois, **metadata)
+    axes.semilogx(dofs[approach], qois[approach], **metadata)
 axes.set_xlim(xlim)
 axes.set_ylim([conv - 0.05 * (start - conv), start + 0.05 * (start - conv)])
 axes.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
@@ -102,13 +107,7 @@ start = max(np.load(f"{model}/data/qois_uniform_{test_case}.npy"))
 conv = np.load(f"{model}/data/qois_GOanisotropic_{test_case}.npy")[-1]
 axes.hlines(conv, *xlim, "k", label="Converged QoI")
 for approach, metadata in approaches.items():
-    try:
-        elements = np.load(f"{model}/data/elements_{approach}_{test_case}.npy")
-        qois = np.load(f"{model}/data/qois_{approach}_{test_case}.npy")
-    except IOError:
-        print(f"Cannot load {approach} data for test case {test_case}")
-        continue
-    axes.semilogx(elements, qois, **metadata)
+    axes.semilogx(elements[approach], qois[approach], **metadata)
 axes.set_ylim([conv - 0.05 * (start - conv), start + 0.05 * (start - conv)])
 axes.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
 axes.set_xlabel("Element count")
@@ -119,19 +118,13 @@ plt.savefig(f"{model}/plots/qoi_vs_elements_{test_case}.pdf")
 plt.close()
 
 # Plot QoI error curves against DoF count
+errors = {}
 fig, axes = plt.subplots()
-conv = np.load(f"{model}/data/qois_GOanisotropic_{test_case}.npy")[-1]
 for approach, metadata in approaches.items():
-    try:
-        dofs = np.load(f"{model}/data/dofs_{approach}_{test_case}.npy")
-        errors = np.abs(np.load(f"{model}/data/qois_{approach}_{test_case}.npy") - conv)
-    except IOError:
-        print(f"Cannot load {approach} data for test case {test_case}")
-        continue
-    if approach == "GOanisotropic":
-        dofs = dofs[:-1]
-        errors = errors[:-1]
-    axes.loglog(dofs, errors, **metadata)
+    errors[approach] = np.abs(qois[approach] - conv)
+    d = dofs[approach][:-1] if approach == "GOanisotropic" else dofs[approach]
+    err = errors[approach][:-1] if approach == "GOanisotropic" else errors[approach]
+    axes.loglog(d, err, **metadata)
 axes.set_xlim(xlim)
 axes.set_xlabel("DoF count")
 axes.set_ylabel(r"QoI error ($\%$)")
@@ -142,18 +135,10 @@ plt.close()
 
 # Plot QoI error curves against element count
 fig, axes = plt.subplots()
-conv = np.load(f"{model}/data/qois_GOanisotropic_{test_case}.npy")[-1]
 for approach, metadata in approaches.items():
-    try:
-        elements = np.load(f"{model}/data/elements_{approach}_{test_case}.npy")
-        errors = np.abs(np.load(f"{model}/data/qois_{approach}_{test_case}.npy") - conv)
-    except IOError:
-        print(f"Cannot load {approach} data for test case {test_case}")
-        continue
-    if approach == "GOanisotropic":
-        elements = elements[:-1]
-        errors = errors[:-1]
-    axes.loglog(elements, errors, **metadata)
+    els = elements[approach][:-1] if approach == "GOanisotropic" else elements[approach]
+    err = errors[approach][:-1] if approach == "GOanisotropic" else errors[approach]
+    axes.loglog(els, err, **metadata)
 axes.set_xlabel("Element count")
 axes.set_ylabel(r"QoI error ($\%$)")
 axes.grid(True, which="both")
