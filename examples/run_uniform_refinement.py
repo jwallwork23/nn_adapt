@@ -32,9 +32,7 @@ mesh = Mesh(f"{model}/meshes/{test_case}.msh")
 mh = MeshHierarchy(mesh, num_refinements)
 
 # Run uniform refinement
-qois = []
-dofs = []
-elements = []
+qois, dofs, elements, times = [], [], [], []
 setup_time = perf_counter() - start_time
 print(f"Test case {test_case}")
 print(f"Setup time: {setup_time:.2f} seconds")
@@ -45,12 +43,15 @@ for i, mesh in enumerate(mh):
     fwd_sol = get_solutions(mesh, setup, solve_adjoint=False)
     fs = fwd_sol.function_space()
     qoi = assemble(setup.get_qoi(mesh)(fwd_sol))
+    time = perf_counter() - start_time
     print(f"    Quantity of Interest = {qoi} {unit}")
-    print(f"    Runtime: {perf_counter() - start_time:.2f} seconds")
+    print(f"    Runtime: {time:.2f} seconds")
     qois.append(qoi)
     dofs.append(sum(fs.dof_count))
+    times.append(time)
     elements.append(mesh.num_cells())
     np.save(f"{model}/data/qois_uniform_{test_case}", qois)
     np.save(f"{model}/data/dofs_uniform_{test_case}", dofs)
     np.save(f"{model}/data/elements_uniform_{test_case}", elements)
+    np.save(f"{model}/data/times_uniform_{test_case}", times)
 print(f"Setup time: {setup_time:.2f} seconds")

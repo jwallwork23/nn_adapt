@@ -43,11 +43,7 @@ setup.initialise(test_case)
 unit = setup.parameters.qoi_unit
 
 # Run adaptation loop
-qois = []
-dofs = []
-elements = []
-estimators = []
-times = []
+qois, dofs, elements, estimators, times = [], [], [], [], []
 print(f"Test case {test_case}")
 for i in range(num_refinements + 1):
     target_complexity = 200.0 * 4**i
@@ -127,3 +123,4 @@ for i in range(num_refinements + 1):
     np.save(f"{model}/data/dofs_GO{approach}_{test_case}", dofs)
     np.save(f"{model}/data/elements_GO{approach}_{test_case}", elements)
     np.save(f"{model}/data/estimators_GO{approach}_{test_case}", estimators)
+    np.save(f"{model}/data/times_GO{approach}_{test_case}", times)
