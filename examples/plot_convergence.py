@@ -28,24 +28,24 @@ approaches = {
         "marker": "x",
         "linestyle": "-",
     },
-    "GOisotropic": {
-        "label": "Isotropic goal-oriented adaptation",
-        "color": "orange",
-        "marker": "^",
-        "linestyle": "-",
-    },
+    # "GOisotropic": {
+    #     "label": "Isotropic goal-oriented adaptation",
+    #     "color": "orange",
+    #     "marker": "^",
+    #     "linestyle": "-",
+    # },
     "GOanisotropic": {
         "label": "Anisotropic goal-oriented adaptation",
         "color": "g",
         "marker": "o",
         "linestyle": "-",
     },
-    "MLisotropic": {
-        "label": "Isotropic data-driven adaptation",
-        "color": "orange",
-        "marker": "^",
-        "linestyle": "--",
-    },
+    # "MLisotropic": {
+    #     "label": "Isotropic data-driven adaptation",
+    #     "color": "orange",
+    #     "marker": "^",
+    #     "linestyle": "--",
+    # },
     "MLanisotropic": {
         "label": "Anisotropic data-driven adaptation",
         "color": "g",
