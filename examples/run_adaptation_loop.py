@@ -28,7 +28,7 @@ try:
     assert test_case > 0
 except ValueError:
     test_case = parsed_args.test_case
-approach = parsed_args.anisotropic
+approach = parsed_args.approach
 num_refinements = parsed_args.num_refinements
 miniter = parsed_args.miniter
 maxiter = parsed_args.maxiter
