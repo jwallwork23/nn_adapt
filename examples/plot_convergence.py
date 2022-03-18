@@ -56,7 +56,7 @@ approaches = {
 xlim = {
     "dofs": [3.0e03, 4.0e06],
     "elements": [3.0e02, 4.0e05],
-    "times": [1.0e0, 1.0e03],
+    "times": [2.0e0, 2.0e03],
 }
 
 # Load configuration
