@@ -14,7 +14,7 @@ start_time = perf_counter()
 
 # Parse user input
 parser = Parser("run_uniform_refinement.py")
-parser.parse_num_refinements(default=5)
+parser.parse_num_refinements(default=4)
 parsed_args = parser.parse_args()
 model = parsed_args.model
 try:
@@ -32,7 +32,7 @@ mesh = Mesh(f"{model}/meshes/{test_case}.msh")
 mh = MeshHierarchy(mesh, num_refinements)
 
 # Run uniform refinement
-qois, dofs, elements, times = [], [], [], []
+qois, dofs, elements, times, niter = [], [], [], [], []
 setup_time = perf_counter() - start_time
 print(f"Test case {test_case}")
 print(f"Setup time: {setup_time:.2f} seconds")
@@ -50,8 +50,10 @@ for i, mesh in enumerate(mh):
     dofs.append(sum(fs.dof_count))
     times.append(time)
     elements.append(mesh.num_cells())
+    niter.append(1)
     np.save(f"{model}/data/qois_uniform_{test_case}", qois)
     np.save(f"{model}/data/dofs_uniform_{test_case}", dofs)
     np.save(f"{model}/data/elements_uniform_{test_case}", elements)
     np.save(f"{model}/data/times_uniform_{test_case}", times)
+    np.save(f"{model}/data/niter_uniform_{test_case}", niter)
 print(f"Setup time: {setup_time:.2f} seconds")
