@@ -85,7 +85,7 @@ if len(approaches.keys()) == 0:
 # Plot QoI curves against DoF count
 fig, axes = plt.subplots()
 start = max(np.load(f"{model}/data/qois_uniform_{test_case}.npy"))
-conv = np.load(f"{model}/data/qois_GOanisotropic_{test_case}.npy")[-1]
+conv = 19.82480044 if test_case == "aligned" else 23.17004884  # TODO: avoid hard-code
 axes.hlines(conv, *xlim["dofs"], "k", label="Converged QoI")
 for approach, metadata in approaches.items():
     axes.semilogx(dofs[approach], qois[approach], **metadata)
@@ -112,7 +112,6 @@ if not os.path.exists(fname):
 # Plot QoI curves against element count
 fig, axes = plt.subplots()
 start = max(qois["uniform"])
-conv = qois["GOanisotropic"][-1]
 axes.hlines(conv, *xlim["elements"], "k", label="Converged QoI")
 for approach, metadata in approaches.items():
     axes.semilogx(elements[approach], qois[approach], **metadata)
@@ -146,9 +145,7 @@ errors = {}
 fig, axes = plt.subplots()
 for approach, metadata in approaches.items():
     errors[approach] = np.abs(qois[approach] - conv)
-    d = dofs[approach][:-1] if approach == "GOanisotropic" else dofs[approach]
-    err = errors[approach][:-1] if approach == "GOanisotropic" else errors[approach]
-    axes.loglog(d, err, **metadata)
+    axes.loglog(dofs[approach], errors[approach], **metadata)
 axes.set_xlim(xlim["dofs"])
 axes.set_xlabel("DoF count")
 axes.set_ylabel(r"QoI error ($\%$)")
@@ -160,9 +157,7 @@ plt.close()
 # Plot QoI error curves against element count
 fig, axes = plt.subplots()
 for approach, metadata in approaches.items():
-    els = elements[approach][:-1] if approach == "GOanisotropic" else elements[approach]
-    err = errors[approach][:-1] if approach == "GOanisotropic" else errors[approach]
-    axes.loglog(els, err, **metadata)
+    axes.loglog(elements[approach], errors[approach], **metadata)
 axes.set_xlim(xlim["elements"])
 axes.set_xlabel("Element count")
 axes.set_ylabel(r"QoI error ($\%$)")
@@ -174,9 +169,7 @@ plt.close()
 # Plot QoI error curves against CPU time
 fig, axes = plt.subplots()
 for approach, metadata in approaches.items():
-    t = times[approach][:-1] if approach == "GOanisotropic" else times[approach]
-    err = errors[approach][:-1] if approach == "GOanisotropic" else errors[approach]
-    axes.loglog(t, err, **metadata)
+    axes.loglog(times[approach], errors[approach], **metadata)
 axes.set_xlim(xlim["times"])
 axes.set_xlabel(r"CPU time ($\mathrm{s}$)")
 axes.set_ylabel(r"QoI error ($\%$)")
