@@ -55,7 +55,7 @@ nn.load_state_dict(torch.load(f"{model}/model_{tag}.pt"))
 nn.eval()
 
 # Run adaptation loop
-qois, dofs, elements, times = [], [], [], []
+qois, dofs, elements, times, niter = [], [], [], [], []
 print(f"Test case {test_case}")
 for i in range(num_refinements + 1):
     target_complexity = 200.0 * 4**i
@@ -152,7 +152,9 @@ for i in range(num_refinements + 1):
     qois.append(qoi)
     dofs.append(sum(fwd_sol.function_space().dof_count))
     elements.append(elements_old)
+    niter.append(fp_iteration + 1)
     np.save(f"{model}/data/qois_ML{approach}_{test_case}", qois)
     np.save(f"{model}/data/dofs_ML{approach}_{test_case}", dofs)
     np.save(f"{model}/data/elements_ML{approach}_{test_case}", elements)
     np.save(f"{model}/data/times_ML{approach}_{test_case}", times)
+    np.save(f"{model}/data/niter_ML{approach}_{test_case}", niter)

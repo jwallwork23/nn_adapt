@@ -65,8 +65,8 @@ unit = setup.parameters.qoi_unit
 qoi_name = setup.parameters.qoi_name.capitalize()
 
 # Load outputs
-dofs, elements, qois, times = {}, {}, {}, {}
-for approach in approaches:
+dofs, elements, qois, times, niter = {}, {}, {}, {}, {}
+for approach in approaches.copy():
     try:
         dofs[approach] = np.load(f"{model}/data/dofs_{approach}_{test_case}.npy")
         elements[approach] = np.load(
@@ -74,6 +74,8 @@ for approach in approaches:
         )
         qois[approach] = np.load(f"{model}/data/qois_{approach}_{test_case}.npy")
         times[approach] = np.load(f"{model}/data/times_{approach}_{test_case}.npy")
+        niter[approach] = np.load(f"{model}/data/niter_{approach}_{test_case}.npy")
+        print(f"Iteration count for {approach}: {niter[approach]}")
     except IOError:
         print(f"Cannot load {approach} data for test case {test_case}")
         approaches.pop(approach)

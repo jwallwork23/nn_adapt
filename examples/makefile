@@ -129,7 +129,6 @@ go:
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
-			python3 run_adaptation_loop.py $$model $$test_case -a isotropic; \
 			python3 run_adaptation_loop.py $$model $$test_case -a anisotropic; \
 		done; \
 	done && \
@@ -143,7 +142,6 @@ ml:
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
-			python3 run_adaptation_loop_ml.py $$model $$test_case -a isotropic --tag all; \
 			python3 run_adaptation_loop_ml.py $$model $$test_case -a anisotropic --tag all; \
 		done; \
 	done && \
