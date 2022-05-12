@@ -32,7 +32,7 @@ mesh:
 	for model in $(MODELS); do \
 		for test_case in $(CASES); do \
 			python3 meshgen.py $$model $$test_case; \
-			cd $$model/meshes && gmsh -2 $$test_case.geo && cd ../..; \
+			cd $$model/meshes && gmsh -2 -algo pack $$test_case.geo && cd ../..; \
 		done; \
 	done && \
 	date >> timing.log && \
