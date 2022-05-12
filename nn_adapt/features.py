@@ -158,14 +158,14 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
 
     # Combine the features together
     features = {
-        "coarse_estimator": extract_array(dwr),
-        "drag_coefficient": extract_array(config.parameters.drag(mesh)),
-        "viscosity_coefficient": extract_array(config.parameters.viscosity(mesh)),
-        "bathymetry": extract_array(config.parameters.bathymetry(mesh)),
-        "element_d": d,
-        "element_h1": h1,
-        "element_h2": h2,
-        "element_bnd": bnd,
+        "estimator_coarse": extract_array(dwr),
+        "physics_drag": extract_array(config.parameters.drag(mesh)),
+        "physics_viscosity": extract_array(config.parameters.viscosity(mesh)),
+        "physics_bathymetry": extract_array(config.parameters.bathymetry(mesh)),
+        "mesh_d": d,
+        "mesh_h1": h1,
+        "mesh_h2": h2,
+        "mesh_bnd": bnd,
         "forward_dofs": extract_array(fwd_sol),
         "adjoint_dofs": extract_array(adj_sol),
     }
