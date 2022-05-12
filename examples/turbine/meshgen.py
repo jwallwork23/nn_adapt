@@ -11,8 +11,8 @@ def generate_geo(config):
 L = 1200.0;
 W = 500.0;
 D = 18.0;
-dx_outer = 10.0;
-dx_inner = 10.0;
+dx_outer = 20.0;
+dx_inner = 20.0;
 """
     for i, xy in enumerate(tc):
         f += "xt%d = %f;  // x-location of turbine %d\n" % (i, xy[0], i)
