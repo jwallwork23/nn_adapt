@@ -2,6 +2,7 @@ all: setup network convergence profile snapshot
 
 # --- Configurable parameters
 
+APPROACHES			= isotropic anisotropic
 MODELS				= turbine
 NUM_TRAINING_CASES	= 100
 TESTING_CASES		= aligned offset
@@ -59,8 +60,9 @@ features:
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TRAINING_CASES); do \
-			python3 run_adapt.py $$model $$test_case -a isotropic --no_outputs; \
-			python3 run_adapt.py $$model $$test_case -a anisotropic --no_outputs; \
+			for approach in $(APPROACHES); do \
+				python3 run_adapt.py $$model $$test_case -a $$approach --no_outputs; \
+			done; \
 		done; \
 	done && \
 	date >> timing.log && \
@@ -96,10 +98,10 @@ snapshot:
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
-			python3 run_adapt.py $$model $$test_case -a isotropic; \
-			python3 run_adapt.py $$model $$test_case -a anisotropic; \
-			python3 run_adapt_ml.py $$model $$test_case -a isotropic --tag all; \
-			python3 run_adapt_ml.py $$model $$test_case -a anisotropic --tag all; \
+			for approach in $(APPROACHES); do \
+				python3 run_adapt.py $$model $$test_case -a $$approach; \
+				python3 run_adapt_ml.py $$model $$test_case -a $$approach --tag all; \
+			done; \
 		done; \
 	done && \
 	date >> timing.log && \
@@ -129,7 +131,9 @@ go:
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
-			python3 run_adaptation_loop.py $$model $$test_case -a anisotropic; \
+			for approach in $(APPROACHES); do \
+				python3 run_adaptation_loop.py $$model $$test_case -a $$approach; \
+			done; \
 		done; \
 	done && \
 	date >> timing.log && \
@@ -142,7 +146,9 @@ ml:
 	d=$$(date +%s) && \
 	for model in $(MODELS); do \
 		for test_case in $(TESTING_CASES); do \
-			python3 run_adaptation_loop_ml.py $$model $$test_case -a anisotropic --tag all; \
+			for approach in $(APPROACHES); do \
+				python3 run_adaptation_loop_ml.py $$model $$test_case -a $$approach --tag all; \
+			done; \
 		done; \
 	done && \
 	date >> timing.log && \
@@ -182,9 +188,13 @@ profile_uni:
 	git log -n 1 --oneline >> timing.log && \
 	echo "Uniform refinement profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \
 	echo "" >> timing.log
-	cd $$model/outputs/$$test_case && \
-	flamegraph.pl --title "Uniform refinement ($$test_case)" logview.txt > uni.svg && \
-	rm logview.txt && cd ../../..
+	for model in $(MODELS); do \
+		for test_case in $(TESTING_CASES); do \
+			cd $$model/outputs/$$test_case && \
+			flamegraph.pl --title "Uniform refinement ($$test_case)" logview.txt > uni.svg && \
+			rm logview.txt && cd ../../..; \
+		done; \
+	done
 
 profile_go:
 	touch timing.log
@@ -198,9 +208,13 @@ profile_go:
 	git log -n 1 --oneline >> timing.log && \
 	echo "Goal-oriented adaptation profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \
 	echo "" >> timing.log
-	cd $$model/outputs/$$test_case && \
-	flamegraph.pl --title "Goal-oriented adaptation ($$test_case)" logview.txt > go.svg && \
-	rm logview.txt && ../../..
+	for model in $(MODELS); do \
+		for test_case in $(TESTING_CASES); do \
+			cd $$model/outputs/$$test_case && \
+			flamegraph.pl --title "Goal-oriented adaptation ($$test_case)" logview.txt > go.svg && \
+			rm logview.txt && cd ../../..; \
+		done; \
+	done
 
 profile_ml:
 	touch timing.log
@@ -214,6 +228,10 @@ profile_ml:
 	git log -n 1 --oneline >> timing.log && \
 	echo "Data-driven adaptation profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \
 	echo "" >> timing.log
-	cd $$model/outputs/$$test_case && \
-	flamegraph.pl --title "Data-driven adaptation ($$test_case)" logview.txt > ml.svg && \
-	rm logview.txt && cd ../../..
+	for model in $(MODELS); do \
+		for test_case in $(TESTING_CASES); do \
+			cd $$model/outputs/$$test_case && \
+			flamegraph.pl --title "Data-driven adaptation ($$test_case)" logview.txt > ml.svg && \
+			rm logview.txt && cd ../../..; \
+		done; \
+	done
