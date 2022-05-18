@@ -73,7 +73,7 @@ print(f"    Element count        = {elements_old}")
 for fp_iteration in range(maxiter + 1):
 
     # Ramp up the target complexity
-    target_ramp = ramp_complexity(250.0, target_complexity, fp_iteration)
+    target_ramp = ramp_complexity(200.0, target_complexity, fp_iteration)
 
     # Solve forward and adjoint and compute Hessians
     fwd_sol, adj_sol = get_solutions(mesh, setup)
@@ -141,6 +141,7 @@ for fp_iteration in range(maxiter + 1):
         # Process metric
         P1_ten = TensorFunctionSpace(mesh, "CG", 1)
         p1metric = hessian_metric(clement_interpolant(p0metric))
+        space_normalise(p1metric, target_ramp, "inf")
         enforce_element_constraints(
             p1metric, setup.parameters.h_min, setup.parameters.h_max, 1.0e05
         )

@@ -23,8 +23,8 @@ parser = Parser("run_adaptation_loop_ml.py")
 parser.parse_num_refinements(default=5)
 parser.parse_approach()
 parser.parse_convergence_criteria()
-parser.parse_tag()
 parser.parse_preproc()
+parser.parse_tag()
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 try:

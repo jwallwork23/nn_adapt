@@ -80,7 +80,7 @@ for fp_iteration in range(maxiter + 1):
 
     # Ramp up the target complexity
     kwargs["target_complexity"] = ramp_complexity(
-        250.0, target_complexity, fp_iteration
+        200.0, target_complexity, fp_iteration
     )
 
     # Compute goal-oriented metric
@@ -126,6 +126,7 @@ for fp_iteration in range(maxiter + 1):
     with PETSc.Log.Event("Metric construction"):
         P1_ten = TensorFunctionSpace(mesh, "CG", 1)
         p1metric = hessian_metric(clement_interpolant(p0metric))
+        space_normalise(p1metric, target_ramp, "inf")
         enforce_element_constraints(
             p1metric, setup.parameters.h_min, setup.parameters.h_max, 1.0e05
         )
