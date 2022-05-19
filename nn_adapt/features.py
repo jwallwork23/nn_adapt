@@ -150,12 +150,25 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
 
     # Features describing the mesh element
     with PETSc.Log.Event("Analyse element"):
-        J = ufl.Jacobian(mesh)
+        P0_vec = firedrake.VectorFunctionSpace(mesh, "DG", 0)
         P0_ten = firedrake.TensorFunctionSpace(mesh, "DG", 0)
+        P1DG = firedrake.FunctionSpace(mesh, "DG", 1)
+        P1DG_vec = firedrake.VectorFunctionSpace(mesh, "DG", 1)
+
+        # Element size, orientation and shape
+        J = ufl.Jacobian(mesh)
         JTJ = firedrake.interpolate(ufl.dot(ufl.transpose(J), J), P0_ten)
         d, h1, h2 = (extract_array(p) for p in extract_components(JTJ))
+
+        # Is the element on the boundary?
         p0test = firedrake.TestFunction(dwr.function_space())
         bnd = firedrake.assemble(p0test * ufl.ds).dat.data
+
+        # Local arguments of each vertex
+        coords = firedrake.project(mesh.coordinates, P1DG_vec)
+        centroid = firedrake.project(mesh.coordinates, P0_vec)
+        x, y = coords - centroid
+        theta = firedrake.interpolate(ufl.atan(y / x), P1DG)
 
     # Combine the features together
     features = {
@@ -167,6 +180,7 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
         "mesh_h1": h1,
         "mesh_h2": h2,
         "mesh_bnd": bnd,
+        "mesh_dofs": extract_array(theta),
         "forward_dofs": extract_array(fwd_sol),
         "adjoint_dofs": extract_array(adj_sol),
     }
@@ -198,5 +212,5 @@ def collect_features(feature_dict, preproc="none"):
 
     # Stack appropriately
     dofs = [feature for key, feature in feature_dict.items() if "dofs" in key]
-    nodofs = [feature for key, feature in feature_dict.items() if "dofs" not in key]
+    nodofs = [feature for key, feature in feature_dict.items() if not "dofs" in key]
     return np.hstack((np.vstack(nodofs).transpose(), np.hstack(dofs)))

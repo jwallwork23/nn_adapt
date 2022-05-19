@@ -16,14 +16,15 @@ class NetLayout(NetLayoutBase):
           + [element orientation]
           + [element shape]
           + [boundary element?]
+          + [3 local vertex arguments]
           + [12 forward DoFs per element]
           + [12 adjoint DoFs per element]
-          = 32
+          = 35
 
     Hidden layer:
     -------------
 
-        64 neurons
+        70 neurons
 
     Output layer:
     -------------
@@ -40,7 +41,8 @@ class NetLayout(NetLayoutBase):
         "mesh_h1",
         "mesh_h2",
         "mesh_bnd",
+        "mesh_dofs",
         "forward_dofs",
         "adjoint_dofs",
     )
-    num_hidden_neurons = 64
+    num_hidden_neurons = 70
