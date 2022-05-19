@@ -6,13 +6,12 @@ APPROACHES			= anisotropic
 MODELS				= turbine
 NUM_TRAINING_CASES	= 100
 TESTING_CASES		= aligned offset
+# TODO: Generalise TESTING_CASES
 
 # --- Parameters that should not need modifying
 
 TRAINING_CASES	= $(shell seq 1 ${NUM_TRAINING_CASES})
 CASES			= ${TRAINING_CASES} ${TESTING_CASES}
-
-.PHONY: plot_config, plot_progress, plot_importance, plot_convergence
 
 # --- Setup directories and meshes
 
