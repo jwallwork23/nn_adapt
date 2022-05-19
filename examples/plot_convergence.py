@@ -28,35 +28,23 @@ approaches = {
         "marker": "x",
         "linestyle": "-",
     },
-    # "GOisotropic": {
-    #     "label": "Isotropic goal-oriented adaptation",
-    #     "color": "orange",
-    #     "marker": "^",
-    #     "linestyle": "-",
-    # },
     "GOanisotropic": {
-        "label": "Anisotropic goal-oriented adaptation",
-        "color": "g",
+        "label": "Goal-oriented adaptation",
+        "color": "orange",
         "marker": "o",
         "linestyle": "-",
     },
-    # "MLisotropic": {
-    #     "label": "Isotropic data-driven adaptation",
-    #     "color": "orange",
-    #     "marker": "^",
-    #     "linestyle": "--",
-    # },
     "MLanisotropic": {
-        "label": "Anisotropic data-driven adaptation",
+        "label": "Data-driven adaptation",
         "color": "g",
-        "marker": "o",
-        "linestyle": "--",
+        "marker": "^",
+        "linestyle": "-",
     },
 }
 xlim = {
     "dofs": [3.0e03, 4.0e06],
     "elements": [3.0e02, 4.0e05],
-    "times": [2.0e0, 2.0e03],
+    "times": [1.0e0, 2.0e03],
 }
 
 # Load configuration
@@ -111,22 +99,6 @@ if not os.path.exists(fname):
     bbox = legend.get_window_extent().transformed(fig2.dpi_scale_trans.inverted())
     plt.savefig(fname, bbox_inches=bbox)
 
-# Plot QoI curves against element count
-fig, axes = plt.subplots()
-start = max(qois["uniform"])
-axes.hlines(conv, *xlim["elements"], "k", label="Converged QoI")
-for approach, metadata in approaches.items():
-    axes.semilogx(elements[approach], qois[approach], **metadata)
-axes.set_xlim(xlim["elements"])
-axes.set_ylim([conv - 0.05 * (start - conv), start + 0.05 * (start - conv)])
-axes.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
-axes.set_xlabel("Element count")
-axes.set_ylabel(qoi_name + r" ($\mathrm{" + unit + "}$)")
-axes.grid(True)
-plt.tight_layout()
-plt.savefig(f"{model}/plots/qoi_vs_elements_{test_case}.pdf")
-plt.close()
-
 # Plot QoI curves against CPU time
 fig, axes = plt.subplots()
 axes.hlines(conv, *xlim["times"], "k", label="Converged QoI")
@@ -156,18 +128,6 @@ plt.tight_layout()
 plt.savefig(f"{model}/plots/qoi_error_vs_dofs_{test_case}.pdf")
 plt.close()
 
-# Plot QoI error curves against element count
-fig, axes = plt.subplots()
-for approach, metadata in approaches.items():
-    axes.loglog(elements[approach], errors[approach], **metadata)
-axes.set_xlim(xlim["elements"])
-axes.set_xlabel("Element count")
-axes.set_ylabel(r"QoI error ($\%$)")
-axes.grid(True, which="both")
-plt.tight_layout()
-plt.savefig(f"{model}/plots/qoi_error_vs_elements_{test_case}.pdf")
-plt.close()
-
 # Plot QoI error curves against CPU time
 fig, axes = plt.subplots()
 for approach, metadata in approaches.items():
@@ -178,4 +138,17 @@ axes.set_ylabel(r"QoI error ($\%$)")
 axes.grid(True, which="both")
 plt.tight_layout()
 plt.savefig(f"{model}/plots/qoi_error_vs_cputime_{test_case}.pdf")
+plt.close()
+
+# Plot CPU time curves against DoF count
+fig, axes = plt.subplots()
+for approach, metadata in approaches.items():
+    axes.loglog(dofs[approach], times[approach], **metadata)
+axes.set_xlabel("DoF count")
+axes.set_ylabel(r"CPU time ($\mathrm{s}$)")
+axes.set_xlim(xlim["dofs"])
+axes.set_ylim(xlim["times"])
+axes.grid(True, which="both")
+plt.tight_layout()
+plt.savefig(f"{model}/plots/cputime_vs_dofs_{test_case}.pdf")
 plt.close()

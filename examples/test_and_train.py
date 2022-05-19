@@ -39,7 +39,7 @@ parser.add_argument(
     nargs="+",
     help="Adaptive approaches to consider",
     choices=["isotropic", "anisotropic"],
-    default=["isotropic", "anisotropic"],
+    default=["anisotropic"],
 )
 parser.add_argument(
     "--adaptation_steps",

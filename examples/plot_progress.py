@@ -21,19 +21,12 @@ parser.add_argument(
     choices=["turbine"],
 )
 parser.add_argument(
-    "--num_epochs",
-    help="The number of iterations",
-    type=positive_int,
-    default=1000,
-)
-parser.add_argument(
     "--tag",
     help="Model tag (defaults to current git commit sha)",
     default=None,
 )
 parsed_args = parser.parse_args()
 model = parsed_args.model
-num_epochs = parsed_args.num_epochs
 tag = parsed_args.tag or git.Repo(search_parent_directories=True).head.object.hexsha
 
 # Load data
@@ -49,6 +42,6 @@ axes.set_xlabel("Number of epochs")
 axes.set_ylabel("Average loss")
 axes.legend()
 axes.grid(True)
-axes.set_xlim([1, num_epochs])
+axes.set_xlim([1, epochs[-1]])
 plt.tight_layout()
 plt.savefig(f"{model}/plots/losses_{tag}.pdf")

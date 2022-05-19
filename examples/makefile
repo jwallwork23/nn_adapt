@@ -2,7 +2,7 @@ all: setup network convergence profile snapshot
 
 # --- Configurable parameters
 
-APPROACHES			= isotropic anisotropic
+APPROACHES			= anisotropic
 MODELS				= turbine
 NUM_TRAINING_CASES	= 100
 TESTING_CASES		= aligned offset
