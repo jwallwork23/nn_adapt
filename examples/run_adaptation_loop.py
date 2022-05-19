@@ -69,6 +69,7 @@ for i in range(num_refinements + 1):
 
         # Compute goal-oriented metric
         p0metric, dwr, fwd_sol, adj_sol = go_metric(mesh, setup, **kwargs)
+        # TODO: break this up for optimising timings
         dof = sum(fwd_sol.function_space().dof_count)
         print(f"      DoF count            = {dof}")
 
