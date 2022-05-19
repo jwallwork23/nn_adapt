@@ -51,13 +51,13 @@ parser.add_argument(
     "--lr",
     help="Initial learning rate",
     type=positive_float,
-    default=2.0e-03,
+    default=1.0e-03,
 )
 parser.add_argument(
     "--lr_adapt_num_steps",
     help="Adaptation frequency",
     type=positive_int,
-    default=1000,
+    default=400,
 )
 parser.add_argument(
     "--lr_adapt_factor",
@@ -69,7 +69,7 @@ parser.add_argument(
     "--num_epochs",
     help="The number of iterations",
     type=positive_int,
-    default=1000,
+    default=400,
 )
 parser.add_argument(
     "--preproc",
@@ -82,13 +82,13 @@ parser.add_argument(
     "--batch_size",
     help="Data points per training iteration",
     type=positive_int,
-    default=100,
+    default=200,
 )
 parser.add_argument(
     "--test_batch_size",
     help="Data points per validation iteration",
     type=positive_int,
-    default=100,
+    default=200,
 )
 parser.add_argument(
     "--test_size",
