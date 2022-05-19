@@ -57,19 +57,19 @@ parser.add_argument(
     "--lr_adapt_num_steps",
     help="Adaptation frequency",
     type=positive_int,
-    default=400,
+    default=1000,
 )
 parser.add_argument(
     "--lr_adapt_factor",
     help="Learning rate reduction factor",
     type=bounded_float(0, 1),
-    default=0.8,
+    default=0.9,
 )
 parser.add_argument(
     "--num_epochs",
     help="The number of iterations",
     type=positive_int,
-    default=400,
+    default=1000,
 )
 parser.add_argument(
     "--preproc",
@@ -82,13 +82,13 @@ parser.add_argument(
     "--batch_size",
     help="Data points per training iteration",
     type=positive_int,
-    default=200,
+    default=500,
 )
 parser.add_argument(
     "--test_batch_size",
     help="Data points per validation iteration",
     type=positive_int,
-    default=200,
+    default=500,
 )
 parser.add_argument(
     "--test_size",
