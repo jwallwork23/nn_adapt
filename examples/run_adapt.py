@@ -79,9 +79,10 @@ for fp_iteration in range(maxiter + 1):
     suffix = f"{test_case}_GO{approach}_{fp_iteration}"
 
     # Ramp up the target complexity
-    kwargs["target_complexity"] = ramp_complexity(
+    target_ramp = ramp_complexity(
         200.0, target_complexity, fp_iteration
     )
+    kwargs["target_complexity"] = target_ramp
 
     # Compute goal-oriented metric
     p0metric, dwr, fwd_sol, adj_sol = go_metric(mesh, setup, **kwargs)
