@@ -482,7 +482,6 @@ def dwr_indicator(mesh, q, q_star):
     # Process R and r
     residual = Function(P0_plus).assign(assemble(R))
     sp = {
-        "mat_type": "matfree",
         "snes_type": "ksponly",
         "ksp_type": "preonly",
         "pc_type": "jacobi",
