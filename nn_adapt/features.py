@@ -36,15 +36,15 @@ def extract_components(matrix):
 
 
 @PETSc.Log.EventDecorator("Extract elementwise")
-def get_values_at_elements(M):
+def get_values_at_elements(f):
     r"""
     Extract the values for all degrees of freedom associated
     with each element.
 
-    :arg M: a :math:`\mathbb P1` metric :class:`Function`
-    :return: a vector :class:`Function` holding all DoFs
+    :arg f: some class:`Function`
+    :return: a vector :class:`Function` holding all DoFs of `f`
     """
-    fs = M.function_space()
+    fs = f.function_space()
     mesh = fs.mesh()
     dim = mesh.topological_dimension()
     if dim == 2:
@@ -65,7 +65,7 @@ def get_values_at_elements(M):
     P0_vec = firedrake.VectorFunctionSpace(mesh, "DG", 0, dim=size)
     values = firedrake.Function(P0_vec)
     kernel = "for (int i=0; i < vertexwise.dofs; i++) elementwise[i] += vertexwise[i];"
-    keys = {"vertexwise": (M, op2.READ), "elementwise": (values, op2.INC)}
+    keys = {"vertexwise": (f, op2.READ), "elementwise": (values, op2.INC)}
     firedrake.par_loop(kernel, ufl.dx, keys)
     return values
 
