@@ -49,8 +49,6 @@ class NetLayoutBase(object):
             if i.startswith(prefix):
                 if i in ("forward_dofs", "adjoint_dofs"):
                     cnt += 12
-                elif i == "mesh_dofs":
-                    cnt += 3
                 else:
                     cnt += 1
         return cnt

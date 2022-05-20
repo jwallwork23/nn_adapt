@@ -37,11 +37,11 @@ def extract_components(matrix):
 
 @PETSc.Log.EventDecorator("Extract elementwise")
 def get_values_at_elements(f):
-    r"""
+    """
     Extract the values for all degrees of freedom associated
     with each element.
 
-    :arg f: some class:`Function`
+    :arg f: some :class:`Function`
     :return: a vector :class:`Function` holding all DoFs of `f`
     """
     fs = f.function_space()
@@ -67,6 +67,63 @@ def get_values_at_elements(f):
     kernel = "for (int i=0; i < vertexwise.dofs; i++) elementwise[i] += vertexwise[i];"
     keys = {"vertexwise": (f, op2.READ), "elementwise": (values, op2.INC)}
     firedrake.par_loop(kernel, ufl.dx, keys)
+    return values
+
+
+@PETSc.Log.EventDecorator("Extract at centroids")
+def get_values_at_centroids(f):
+    """
+    Extract the values for the function at each element centroid,
+    along with all derivatives up to the :math:`p^{th}`, where
+    :math:`p` is the polynomial degree.
+
+    :arg f: some :class:`Function`
+    :return: a vector :class:`Function` holding all DoFs of `f`
+    """
+    fs = f.function_space()
+    mesh = fs.mesh()
+    dim = mesh.topological_dimension()
+    if dim == 2:
+        assert fs.ufl_element().cell() == ufl.triangle, "Simplex meshes only"
+    elif dim == 3:
+        assert fs.ufl_element().cell() == ufl.tetrahedron, "Simplex meshes only"
+    else:
+        raise ValueError(f"Dimension {dim} not supported")
+    el = fs.ufl_element()
+    if el.sub_elements() == []:
+        p = el.degree()
+        degrees = [p]
+        size = el.value_size() * (p + 1) * (p + 2) // 2
+        funcs = [f]
+    else:
+        size = 0
+        degrees = [sel.degree() for sel in el.sub_elements()]
+        for sel, p in zip(el.sub_elements(), degrees):
+            size += sel.value_size() * (p + 1) * (p + 2) // 2
+        funcs = f
+    values = firedrake.Function(firedrake.VectorFunctionSpace(mesh, "DG", 0, dim=size))
+    P0 = firedrake.FunctionSpace(mesh, "DG", 0)
+    P0_vec = firedrake.VectorFunctionSpace(mesh, "DG", 0)
+    P0_ten = firedrake.TensorFunctionSpace(mesh, "DG", 0)
+    i = 0
+    for func, p in zip(funcs, degrees):
+        values.dat.data[:, i] = firedrake.project(func, P0).dat.data_ro
+        i += 1
+        if p == 0:
+            continue
+        g = firedrake.project(ufl.grad(func), P0_vec)
+        values.dat.data[:, i] = g.dat.data_ro[:, 0]
+        values.dat.data[:, i+1] = g.dat.data_ro[:, 1]
+        i += 2
+        if p == 1:
+            continue
+        H = firedrake.project(ufl.grad(ufl.grad(func)), P0_ten)
+        values.dat.data[:, i] = H.dat.data_ro[:, 0, 0]
+        values.dat.data[:, i+1] = 0.5 * (H.dat.data_ro[:, 0, 1] + H.dat.data_ro[:, 1, 0])
+        values.dat.data[:, i+2] = H.dat.data_ro[:, 1, 1]
+        i += 3
+        if p > 2:
+            raise NotImplementedError("Polynomial degrees greater than 2 not yet considered")
     return values
 
 
@@ -105,7 +162,7 @@ def split_into_scalars(f):
         return {0: [f]}
 
 
-def extract_array(f, mesh=None):
+def extract_array(f, mesh=None, centroid=False):
     r"""
     Extract a cell-wise data array from a :class:`Constant` or
     :class:`Function`.
@@ -125,10 +182,11 @@ def extract_array(f, mesh=None):
     elif not isinstance(f, firedrake.Function):
         raise ValueError(f"Unexpected input type {type(f)}")
     s = sum([fi for i, fi in split_into_scalars(f).items()], start=[])
+    get = get_values_at_centroids if centroid else get_values_at_elements
     if len(s) == 1:
-        return get_values_at_elements(s[0]).dat.data
+        return get(s[0]).dat.data
     else:
-        return np.hstack([get_values_at_elements(si).dat.data for si in s])
+        return np.hstack([get(si).dat.data for si in s])
 
 
 @PETSc.Log.EventDecorator("Extract features")
@@ -180,9 +238,8 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
         "mesh_h1": h1,
         "mesh_h2": h2,
         "mesh_bnd": bnd,
-        "mesh_dofs": extract_array(theta),
-        "forward_dofs": extract_array(fwd_sol),
-        "adjoint_dofs": extract_array(adj_sol),
+        "forward_dofs": extract_array(fwd_sol, centroid=True),
+        "adjoint_dofs": extract_array(adj_sol, centroid=True),
     }
     for key, value in features.items():
         assert not np.isnan(value).any()
