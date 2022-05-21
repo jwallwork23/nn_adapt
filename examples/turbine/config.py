@@ -42,16 +42,16 @@ def initialise(case, discrete=False):
         parameters.turbine_coords = []
     np.random.seed(100 * case)
 
-    # Random depth from 20m to 100m
+    # Random depth from 20m to 100m, i.e. ~U(20, 100)
     parameters.depth = 20.0 + 80.0 * np.random.rand()
+    # TODO: spatially varying
 
-    # Random inflow speed from 0.5 m/s to 5 m/s
-    parameters.inflow_speed = 0.5 + 4.5 * np.random.rand()
+    # Random inflow speed from 0.5 m/s to 6 m/s, i.e. ~U(0.5, 6)
+    parameters.inflow_speed = 0.5 + 5.5 * np.random.rand()
 
-    # Random viscosity from 0.001 to 10
-    significand = 1.0 + np.random.rand()
-    exponent = np.random.randint(-3, 1)
-    parameters.viscosity_coefficient = significand * 10**exponent
+    # Random viscosity from 0.01 to 10, i.e. ~U(0.1, 1)
+    parameters.viscosity_coefficient = 0.1 + 0.9 * np.random.rand()
+    # TODO: spatially varying
 
     # Randomise turbine configuration such that all
     # turbines are at least 50m from the domain
