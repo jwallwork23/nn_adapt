@@ -36,8 +36,9 @@ epochs = np.arange(len(train_losses)) + 1
 
 # Plot losses
 fig, axes = plt.subplots()
-axes.loglog(epochs, train_losses, label="Training", color="deepskyblue")
-axes.loglog(epochs, validation_losses, label="Validation", color="darkgreen")
+kw = dict(linewidth=0.5)
+axes.loglog(epochs, train_losses, label="Training", color="deepskyblue", **kw)
+axes.loglog(epochs, validation_losses, label="Validation", color="darkgreen", **kw)
 axes.set_xlabel("Number of epochs")
 axes.set_ylabel("Average loss")
 axes.legend()
