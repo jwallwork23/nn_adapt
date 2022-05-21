@@ -119,7 +119,8 @@ def Loss():
     Needed when there is only one output value.
     """
 
-    def mse(tens1, tens2):
-        return torch.nn.MSELoss(reduction="mean")(tens1, tens2.reshape(*tens1.shape))
+    def mse(output, target):
+        target = target.reshape(*output.shape)
+        return torch.nn.MSELoss(reduction="sum")(output, target)
 
     return mse
