@@ -41,7 +41,7 @@ def plot_config(config, mesh, axes):
     axes.set_ylim([ymin - dW - eps, ymax - dW + eps])
 
     # Annotate with viscosity coefficient and bathymetry
-    nu = config.parameters.viscosity.values()[0]
+    nu = config.parameters.viscosity_coefficient
     b = config.parameters.depth
     u_in = config.parameters.inflow_speed
     txt = r"$\nu$ = %.3f, $b$ = %.2f, $u_{\mathrm{in}}$ = %.2f" % (nu, b, u_in)
