@@ -88,17 +88,6 @@ axes.grid(True)
 plt.tight_layout()
 plt.savefig(f"{model}/plots/qoi_vs_dofs_{test_case}.pdf")
 
-# Plot legend
-fname = f"{model}/plots/legend.pdf"
-if not os.path.exists(fname):
-    fig2, axes2 = plt.subplots()
-    lines, labels = axes.get_legend_handles_labels()
-    legend = axes2.legend(lines, labels, frameon=False, ncol=3)
-    fig2.canvas.draw()
-    axes2.set_axis_off()
-    bbox = legend.get_window_extent().transformed(fig2.dpi_scale_trans.inverted())
-    plt.savefig(fname, bbox_inches=bbox)
-
 # Plot QoI curves against CPU time
 fig, axes = plt.subplots()
 axes.hlines(conv, *xlim["times"], "k", label="Converged QoI")
@@ -129,6 +118,17 @@ axes.grid(True, which="both")
 plt.tight_layout()
 plt.savefig(f"{model}/plots/qoi_error_vs_dofs_{test_case}.pdf")
 plt.close()
+
+# Plot legend
+fname = f"{model}/plots/legend.pdf"
+if not os.path.exists(fname):
+    fig2, axes2 = plt.subplots()
+    lines, labels = axes.get_legend_handles_labels()
+    legend = axes2.legend(lines, labels, frameon=False, ncol=3)
+    fig2.canvas.draw()
+    axes2.set_axis_off()
+    bbox = legend.get_window_extent().transformed(fig2.dpi_scale_trans.inverted())
+    plt.savefig(fname, bbox_inches=bbox)
 
 # Plot QoI error curves against CPU time
 fig, axes = plt.subplots()
