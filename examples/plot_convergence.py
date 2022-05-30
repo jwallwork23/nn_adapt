@@ -93,7 +93,7 @@ fname = f"{model}/plots/legend.pdf"
 if not os.path.exists(fname):
     fig2, axes2 = plt.subplots()
     lines, labels = axes.get_legend_handles_labels()
-    legend = axes2.legend(lines, labels, frameon=False, ncol=3)
+    legend = axes2.legend(lines, labels, frameon=False, ncol=2)
     fig2.canvas.draw()
     axes2.set_axis_off()
     bbox = legend.get_window_extent().transformed(fig2.dpi_scale_trans.inverted())
