@@ -104,6 +104,8 @@ fig, axes = plt.subplots()
 axes.hlines(conv, *xlim["times"], "k", label="Converged QoI")
 for approach, metadata in approaches.items():
     axes.semilogx(times[approach], qois[approach], **metadata)
+    for n, t, q in zip(niter[approach], times[approach], qois[approach]):
+        axes.annotate(str(n), (1.1 * t, q), color=metadata["color"], fontsize=14)
 axes.set_xlim(xlim["times"])
 axes.set_ylim([conv - 0.05 * (start - conv), start + 0.05 * (start - conv)])
 axes.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
@@ -132,6 +134,8 @@ plt.close()
 fig, axes = plt.subplots()
 for approach, metadata in approaches.items():
     axes.loglog(times[approach], errors[approach], **metadata)
+    for n, t, e in zip(niter[approach], times[approach], errors[approach]):
+        axes.annotate(str(n), (1.1 * t, e), color=metadata["color"], fontsize=14)
 axes.set_xlim(xlim["times"])
 axes.set_xlabel(r"CPU time ($\mathrm{s}$)")
 axes.set_ylabel(r"QoI error ($\%$)")
@@ -144,6 +148,8 @@ plt.close()
 fig, axes = plt.subplots()
 for approach, metadata in approaches.items():
     axes.loglog(dofs[approach], times[approach], **metadata)
+    for n, t, d in zip(niter[approach], times[approach], dofs[approach]):
+        axes.annotate(str(n), (1.1 * d, t), color=metadata["color"], fontsize=14)
 axes.set_xlabel("DoF count")
 axes.set_ylabel(r"CPU time ($\mathrm{s}$)")
 axes.set_xlim(xlim["dofs"])
