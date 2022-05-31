@@ -20,7 +20,7 @@ set_log_level(ERROR)
 
 # Parse user input
 parser = Parser("run_adaptation_loop_ml.py")
-parser.parse_num_refinements(default=5)
+parser.parse_num_refinements(default=4)
 parser.parse_approach()
 parser.parse_convergence_criteria()
 parser.parse_preproc()
