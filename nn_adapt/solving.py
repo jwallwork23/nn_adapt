@@ -31,23 +31,23 @@ def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None):
 
     # Solve forward problem in base space
     V = config.get_function_space(mesh)
-    ic = config.get_initial_condition(V)
-    solver_obj = config.setup_solver(mesh, ic)
     with PETSc.Log.Event("Forward solve"):
+        ic = config.get_initial_condition(V)
+        solver_obj = config.setup_solver(mesh, ic)
         solver_obj.iterate()
     q = solver_obj.fields.solution_2d
     if not solve_adjoint:
         return q
 
     # Solve adjoint problem in base space
-    sp = config.parameters.adjoint_solver_parameters
-    J = config.get_qoi(mesh)(q)
-    q_star = Function(V)
-    F = solver_obj.timestepper.F
-    dFdq = derivative(F, q, TrialFunction(V))
-    dFdq_transpose = adjoint(dFdq)
-    dJdq = derivative(J, q, TestFunction(V))
     with PETSc.Log.Event("Adjoint solve"):
+        sp = config.parameters.adjoint_solver_parameters
+        J = config.get_qoi(mesh)(q)
+        q_star = Function(V)
+        F = solver_obj.timestepper.F
+        dFdq = derivative(F, q, TrialFunction(V))
+        dFdq_transpose = adjoint(dFdq)
+        dJdq = derivative(J, q, TestFunction(V))
         solve(dFdq_transpose == dJdq, q_star, solver_parameters=sp)
     if refined_mesh is None:
         return q, q_star
