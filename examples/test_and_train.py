@@ -69,7 +69,7 @@ parser.add_argument(
     "--num_epochs",
     help="The number of iterations",
     type=positive_int,
-    default=1000,
+    default=4000,
 )
 parser.add_argument(
     "--preproc",
