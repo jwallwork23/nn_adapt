@@ -76,6 +76,7 @@ if len(approaches.keys()) == 0:
 fig, axes = plt.subplots()
 start = max(np.load(f"{model}/data/qois_uniform_{test_case}.npy"))
 conv = 19.82480044 if test_case == "aligned" else 23.17004884  # TODO: avoid hard-code
+# conv = np.load(f"{model}/data/qois_GOanisotropic_{test_case}.npy")[-1]
 axes.hlines(conv, *xlim["dofs"], "k", label="Converged QoI")
 for approach, metadata in approaches.items():
     axes.semilogx(dofs[approach], qois[approach], **metadata)
@@ -109,7 +110,7 @@ plt.close()
 errors = {}
 fig, axes = plt.subplots()
 for approach, metadata in approaches.items():
-    errors[approach] = np.abs(qois[approach] - conv)
+    errors[approach] = np.abs((qois[approach] - conv) / conv)
     axes.loglog(dofs[approach], errors[approach], **metadata)
 axes.set_xlim(xlim["dofs"])
 axes.set_xlabel("DoF count")
