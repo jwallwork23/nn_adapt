@@ -35,6 +35,7 @@ def initialise(case, discrete=False):
     For training data, these values are chosen
     randomly.
     """
+    parameters.case = case
     parameters.discrete = discrete
     if "aligned" in case:
         parameters.viscosity_coefficient = 0.5
@@ -51,6 +52,21 @@ def initialise(case, discrete=False):
         parameters.depth = 200.0
         parameters.inflow_speed = 10.0
         parameters.turbine_coords = [(456, 232), (744, 268)]
+    elif "pipe" in case:
+
+        def inflow(mesh):
+            x, y = SpatialCoordinate(mesh)
+            yy = y / 200
+            return as_vector([yy ** 2 * (1 - yy ** 2), 0])
+
+        parameters.viscosity_coefficient = 100.0
+        parameters.depth = 50.0
+        parameters.u_inflow = inflow
+        parameters.ic = lambda mesh: as_vector([1.0, 0.0])
+        parameters.turbine_coords = [(500, 250), (700, 440)]
+        parameters.wall_boundary_type = "uv"
+        parameters.qoi_unit = "kW"
+        parameters.density = Constant(1030.0 * 1.0e-03)
     else:
         assert isinstance(case, int)
         parameters.turbine_coords = []

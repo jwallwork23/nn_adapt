@@ -8,6 +8,8 @@ def generate_geo(config, reverse=False):
     :arg config: the configuration file
     :kwarg reverse: should the flow direction be reversed?
     """
+    if config.case == "pipe":
+        return
     tc = config.parameters.turbine_coords
     num_turbines = len(tc)
     f = """// Domain and turbine specification

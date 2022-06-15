@@ -31,6 +31,9 @@ class Parameters(object):
     turbine_coords = []
     thrust_coefficient = 0.8
 
+    # Boundary condition parameters
+    wall_boundary_type = "un"
+
     # Solver parameters
     solver_parameters = {
         "mat_type": "aij",
@@ -252,10 +255,11 @@ def setup_solver(mesh, ic):
     # Apply boundary conditions
     P1v_2d = solver_obj.function_spaces.P1v_2d
     u_inflow = interpolate(parameters.u_inflow(mesh), P1v_2d)
+    wall = parameters.wall_boundary_type
     solver_obj.bnd_functions["shallow_water"] = {
         1: {"uv": u_inflow},
         2: {"elev": Constant(0.0)},
-        3: {"un": Constant(0.0)},
+        3: {wall: Constant(as_vector([0.0, 0.0]))},
     }
 
     # Create tidal farm
