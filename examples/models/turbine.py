@@ -8,6 +8,7 @@ class Parameters(object):
     Class encapsulating all parameters required for the tidal
     farm modelling test case.
     """
+    case = None
 
     discrete = False
 

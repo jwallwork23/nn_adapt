@@ -4,6 +4,7 @@ of a given ``model``.
 """
 import argparse
 import importlib
+import sys
 
 
 # Parse for test case
@@ -25,5 +26,8 @@ setup.initialise(case)
 meshgen = importlib.import_module(f"{model}.meshgen")
 
 # Write geometry file
+code = meshgen.generate_geo(setup, reverse=reverse)
+if code is None:
+    sys.exit(0)
 with open(f"{model}/meshes/{case}.geo", "w+") as meshfile:
-    meshfile.write(meshgen.generate_geo(setup, reverse=reverse))
+    meshfile.write(code)
