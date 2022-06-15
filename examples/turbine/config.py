@@ -46,6 +46,11 @@ def initialise(case, discrete=False):
         parameters.depth = 40.0
         parameters.inflow_speed = 5.0
         parameters.turbine_coords = [(456, 232), (744, 268)]
+    elif "unseen" in case:
+        parameters.viscosity_coefficient = 2.0
+        parameters.depth = 200.0
+        parameters.inflow_speed = 10.0
+        parameters.turbine_coords = [(456, 232), (744, 268)]
     else:
         assert isinstance(case, int)
         parameters.turbine_coords = []
