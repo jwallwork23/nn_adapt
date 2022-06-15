@@ -13,6 +13,17 @@ def l2dist(xy, xyt):
     return np.sqrt(np.dot(diff, diff))
 
 
+def sample_uniform(l, u):
+    """
+    Sample from the continuous uniform
+    distribution :math:`U(l, u)`.
+
+    :arg l: the lower bound
+    :arg u: the upper bound
+    """
+    return l + (u - l) * np.random.rand()
+
+
 def initialise(case, discrete=False):
     """
     Given some training case (for which ``case``
@@ -40,15 +51,15 @@ def initialise(case, discrete=False):
         parameters.turbine_coords = []
         np.random.seed(100 * case)
 
-        # Random depth from 20m to 100m, i.e. ~U(20, 100)
-        parameters.depth = 20.0 + 80.0 * np.random.rand()
+        # Random depth from 20m to 100m
+        parameters.depth = sample_uniform(20.0, 10.0)
         # TODO: spatially varying
 
-        # Random inflow speed from 0.5 m/s to 6 m/s, i.e. ~U(0.5, 6)
-        parameters.inflow_speed = 0.5 + 5.5 * np.random.rand()
+        # Random inflow speed from 0.5 m/s to 6 m/s
+        parameters.inflow_speed = sample_uniform(0.5, 6.0)
 
-        # Random viscosity from 0.01 to 10, i.e. ~U(0.1, 1)
-        parameters.viscosity_coefficient = 0.1 + 0.9 * np.random.rand()
+        # Random viscosity from 0.01 m^2/s to 10 m^2/s
+        parameters.viscosity_coefficient = sample_uniform(0.1, 1.0)
         # TODO: spatially varying
 
         # Randomise turbine configuration such that all
