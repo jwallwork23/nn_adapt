@@ -5,7 +5,7 @@ all: setup network convergence profile snapshot
 APPROACHES			= anisotropic
 MODELS				= turbine
 NUM_TRAINING_CASES	= 100
-TESTING_CASES		= aligned offset
+TESTING_CASES		= aligned offset aligned_reversed offset_reversed
 # TODO: Generalise TESTING_CASES
 
 # --- Parameters that should not need modifying

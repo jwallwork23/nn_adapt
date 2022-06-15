@@ -1,5 +1,5 @@
 """
-Generate the mesh for configuration ``test_case``
+Generate the mesh for configuration ``case``
 of a given ``model``.
 """
 import argparse
@@ -9,20 +9,21 @@ import importlib
 # Parse for test case
 parser = argparse.ArgumentParser(prog="meshgen.py")
 parser.add_argument("model", help="The model")
-parser.add_argument("test_case", help="The configuration file number")
+parser.add_argument("case", help="The configuration file name")
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 try:
-    test_case = int(parsed_args.test_case)
-    assert test_case > 0
+    case = int(parsed_args.case)
+    assert case > 0
 except ValueError:
-    test_case = parsed_args.test_case
+    case = parsed_args.case
+reverse = "reversed" in case
 
 # Load setup
 setup = importlib.import_module(f"{model}.config")
-setup.initialise(test_case)
+setup.initialise(case)
 meshgen = importlib.import_module(f"{model}.meshgen")
 
 # Write geometry file
-with open(f"{model}/meshes/{test_case}.geo", "w+") as meshfile:
-    meshfile.write(meshgen.generate_geo(setup))
+with open(f"{model}/meshes/{case}.geo", "w+") as meshfile:
+    meshfile.write(meshgen.generate_geo(setup, reverse=reverse))

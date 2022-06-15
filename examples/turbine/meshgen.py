@@ -1,9 +1,12 @@
-def generate_geo(config):
+def generate_geo(config, reverse=False):
     """
     Given a configuration object for a given training
     or testing case, generate a gmsh geometry file
     defining the initial mesh, with all turbines
     meshed explicitly.
+
+    :arg config: the configuration file
+    :kwarg reverse: should the flow direction be reversed?
     """
     tc = config.parameters.turbine_coords
     num_turbines = len(tc)
@@ -27,11 +30,11 @@ Line(1) = {1, 2};
 Line(2) = {2, 3};
 Line(3) = {3, 4};
 Line(4) = {4, 1};
-Physical Line(1) = {4};   // Left boundary
-Physical Line(2) = {2};   // Right boundary
+Physical Line(1) = {%d};   // Left boundary
+Physical Line(2) = {%d};   // Right boundary
 Physical Line(3) = {1, 3}; // Sides
 Line Loop(1) = {1, 2, 3, 4};  // outside loop
-"""
+""" % (2 if reverse else 4, 4 if reverse else 2)
     i = 5
     j = 2
     for k in range(num_turbines):
