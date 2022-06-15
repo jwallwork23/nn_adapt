@@ -103,7 +103,7 @@ class Parser(argparse.ArgumentParser):
             "--approach",
             help="Adaptive approach to consider",
             choices=["isotropic", "anisotropic"],
-            default="isotropic",
+            default="anisotropic",
         )
 
     def parse_target_complexity(self):
