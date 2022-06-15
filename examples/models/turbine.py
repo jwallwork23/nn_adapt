@@ -113,6 +113,12 @@ class Parameters(object):
         # NOTE: We assume a constant inflow
         return as_vector([self.inflow_speed, 0])
 
+    def ic(self, mesh):
+        """
+        Initial condition.
+        """
+        return self.u_inflow(mesh)
+
     def Re(self, fwd_sol):
         """
         Compute the mesh Reynolds number based on the current
@@ -267,7 +273,7 @@ def get_initial_condition(function_space):
     """
     q = Function(function_space)
     u, eta = q.split()
-    u.interpolate(parameters.u_inflow(function_space.mesh()))
+    u.interpolate(parameters.ic(function_space.mesh()))
     return q
 
 
