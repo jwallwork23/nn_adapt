@@ -6,6 +6,7 @@ APPROACHES			= anisotropic
 MODEL				= turbine
 NUM_TRAINING_CASES	= 100
 TESTING_CASES		= $(shell cat $(MODEL)/testing_cases.txt)
+PETSC_OPTIONS		= -dm_plex_metric_hausdorff_number 1
 
 # --- Parameters that should not need modifying
 
@@ -51,7 +52,7 @@ features:
 	d=$$(date +%s)
 	for test_case in $(TRAINING_CASES); do \
 		for approach in $(APPROACHES); do \
-			python3 run_adapt.py $(MODEL) $$test_case -a $$approach --no_outputs; \
+			python3 run_adapt.py $(MODEL) $$test_case -a $$approach --no_outputs $(PETSC_OPTIONS); \
 		done; \
 	done
 	date >> timing.log
@@ -81,8 +82,8 @@ snapshot:
 	d=$$(date +%s)
 	for test_case in $(TESTING_CASES); do \
 		for approach in $(APPROACHES); do \
-			python3 run_adapt.py $(MODEL) $$test_case -a $$approach; \
-			python3 run_adapt_ml.py $(MODEL) $$test_case -a $$approach --tag all; \
+			python3 run_adapt.py $(MODEL) $$test_case -a $$approach $(PETSC_OPTIONS); \
+			python3 run_adapt_ml.py $(MODEL) $$test_case -a $$approach --tag all $(PETSC_OPTIONS); \
 		done; \
 	done
 	date >> timing.log
@@ -110,7 +111,7 @@ go:
 	d=$$(date +%s)
 	for test_case in $(TESTING_CASES); do \
 		for approach in $(APPROACHES); do \
-			python3 run_adaptation_loop.py $(MODEL) $$test_case -a $$approach; \
+			python3 run_adaptation_loop.py $(MODEL) $$test_case -a $$approach $(PETSC_OPTIONS); \
 		done; \
 	done
 	date >> timing.log
@@ -123,7 +124,7 @@ ml:
 	d=$$(date +%s)
 	for test_case in $(TESTING_CASES); do \
 		for approach in $(APPROACHES); do \
-			python3 run_adaptation_loop_ml.py $(MODEL) $$test_case -a $$approach --tag all; \
+			python3 run_adaptation_loop_ml.py $(MODEL) $$test_case -a $$approach --tag all $(PETSC_OPTIONS); \
 		done; \
 	done
 	date >> timing.log
@@ -153,7 +154,7 @@ profile_uni:
 	touch timing.log
 	d=$$(date +%s) && \
 	for test_case in $(TESTING_CASES); do \
-		python3 run_fixed_mesh.py $(MODEL) $$test_case --optimise --num_refinements 4 -log_view :$(MODEL)/outputs/$$test_case/logview_uni.txt:ascii_flamegraph; \
+		python3 run_fixed_mesh.py $(MODEL) $$test_case --optimise --num_refinements 4 $(PETSC_OPTIONS) -log_view :$(MODEL)/outputs/$$test_case/logview_uni.txt:ascii_flamegraph; \
 	done
 	date >> timing.log
 	git log -n 1 --oneline >> timing.log
@@ -169,7 +170,7 @@ profile_go:
 	touch timing.log
 	d=$$(date +%s)
 	for test_case in $(TESTING_CASES); do \
-		python3 run_adapt.py $(MODEL) $$test_case -a anisotropic --optimise --target_complexity 64000 -log_view :$(MODEL)/outputs/$$test_case/logview.txt:ascii_flamegraph; \
+		python3 run_adapt.py $(MODEL) $$test_case -a anisotropic --optimise --target_complexity 64000 $(PETSC_OPTIONS) -log_view :$(MODEL)/outputs/$$test_case/logview.txt:ascii_flamegraph; \
 	done
 	date >> timing.log
 	git log -n 1 --oneline >> timing.log
@@ -185,7 +186,7 @@ profile_ml:
 	touch timing.log
 	d=$$(date +%s)
 	for test_case in $(TESTING_CASES); do \
-		python3 run_adapt_ml.py $(MODEL) $$test_case -a anisotropic --optimise --target_complexity 64000 --tag all -log_view :$(MODEL)/outputs/$$test_case/logview.txt:ascii_flamegraph; \
+		python3 run_adapt_ml.py $(MODEL) $$test_case -a anisotropic --optimise --target_complexity 64000 $(PETSC_OPTIONS) --tag all -log_view :$(MODEL)/outputs/$$test_case/logview.txt:ascii_flamegraph; \
 	done
 	date >> timing.log
 	git log -n 1 --oneline >> timing.log
