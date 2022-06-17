@@ -256,10 +256,11 @@ def setup_solver(mesh, ic):
     P1v_2d = solver_obj.function_spaces.P1v_2d
     u_inflow = interpolate(parameters.u_inflow(mesh), P1v_2d)
     wall = parameters.wall_boundary_type
+    zero = as_vector([0.0, 0.0]) if wall == "uv" else 0.0
     solver_obj.bnd_functions["shallow_water"] = {
         1: {"uv": u_inflow},
         2: {"elev": Constant(0.0)},
-        3: {wall: Constant(as_vector([0.0, 0.0]))},
+        3: {wall: Constant(zero)},
     }
 
     # Create tidal farm
