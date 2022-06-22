@@ -89,7 +89,7 @@ def initialise(case, discrete=False):
 
         def inflow(mesh):
             y = SpatialCoordinate(mesh)[1] / w
-            return as_vector([u_in * y ** 2 * (1 - y) ** 2, 0])
+            return as_vector([u_in * y**2 * (1 - y) ** 2, 0])
 
         parameters.viscosity_coefficient = 20.0
         parameters.depth = 40.0

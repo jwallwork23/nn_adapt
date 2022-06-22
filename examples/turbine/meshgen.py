@@ -36,7 +36,10 @@ Physical Line(1) = {%d};   // Left boundary
 Physical Line(2) = {%d};   // Right boundary
 Physical Line(3) = {1, 3}; // Sides
 Line Loop(1) = {1, 2, 3, 4};  // outside loop
-""" % (2 if reverse else 4, 4 if reverse else 2)
+""" % (
+        2 if reverse else 4,
+        4 if reverse else 2,
+    )
     i = 5
     j = 2
     for k in range(num_turbines):

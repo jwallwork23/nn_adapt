@@ -15,7 +15,9 @@ start_time = perf_counter()
 # Parse user input
 parser = Parser("run_uniform_refinement.py")
 parser.parse_num_refinements(default=3)
-parser.add_argument("--prolong", help="Use previous solution as initial guess", action="store_true")
+parser.add_argument(
+    "--prolong", help="Use previous solution as initial guess", action="store_true"
+)
 parsed_args = parser.parse_args()
 model = parsed_args.model
 try:

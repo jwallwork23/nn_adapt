@@ -8,6 +8,7 @@ class Parameters(object):
     Class encapsulating all parameters required for the tidal
     farm modelling test case.
     """
+
     case = None
 
     discrete = False
@@ -243,7 +244,9 @@ def setup_solver(mesh, ic, **kwargs):
     options.simulation_export_time = 20.0
     options.simulation_end_time = 18.0
     options.swe_timestepper_type = "SteadyState"
-    options.swe_timestepper_options.solver_parameters = sp or parameters.solver_parameters
+    options.swe_timestepper_options.solver_parameters = (
+        sp or parameters.solver_parameters
+    )
     options.use_grad_div_viscosity_term = False
     options.horizontal_viscosity = parameters.viscosity(mesh)
     options.quadratic_drag_coefficient = Cd

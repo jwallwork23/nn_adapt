@@ -36,6 +36,10 @@ out = get_solutions(mesh, setup, solve_adjoint=not parsed_args.optimise)
 qoi = out["qoi"]
 print_output(f"QoI for test case {test_case} = {qoi:.8f} {unit}")
 if not parsed_args.optimise:
-    File(f"{model}/outputs/{test_case}/fixed/forward.pvd").write(*out["forward"].split())
-    File(f"{model}/outputs/{test_case}/fixed/adjoint.pvd").write(*out["adjoint"].split())
+    File(f"{model}/outputs/{test_case}/fixed/forward.pvd").write(
+        *out["forward"].split()
+    )
+    File(f"{model}/outputs/{test_case}/fixed/adjoint.pvd").write(
+        *out["adjoint"].split()
+    )
 print_output(f"  Total time taken: {perf_counter() - start_time:.2f} seconds")
