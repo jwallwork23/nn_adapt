@@ -36,6 +36,7 @@ def go_metric(
     interpolant="L2",
     anisotropic=False,
     retall=False,
+    convergence_checker=None,
     **kwargs,
 ):
     """
@@ -59,12 +60,24 @@ def go_metric(
     :kwarg retall: if ``True``, the error indicator,
         forward solution and adjoint solution
         are returned, in addition to the metric
+    :kwarg convergence_checker: :class:`ConvergenceTracer`
+        instance
     """
     out = indicate_errors(
-        mesh, config, enrichment_method=enrichment_method, retall=True, **kwargs
+        mesh,
+        config,
+        enrichment_method=enrichment_method,
+        retall=True,
+        convergence_checker=convergence_checker,
+        **kwargs,
     )
     if retall and "adjoint" not in out:
         return out
+    out["estimator"] = out["dwr"].vector().gather().sum()
+    if convergence_checker is not None:
+        if convergence_checker.check_estimator(out["estimator"]):
+            return out
+
     with PETSc.Log.Event("Metric construction"):
         if anisotropic:
             hessian = combine_metrics(*get_hessians(out["forward"]), average=average)
