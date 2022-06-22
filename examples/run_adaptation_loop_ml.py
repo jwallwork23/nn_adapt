@@ -21,7 +21,7 @@ set_log_level(ERROR)
 
 # Parse user input
 parser = Parser("run_adaptation_loop_ml.py")
-parser.parse_num_refinements(default=6)
+parser.parse_num_refinements(default=24)
 parser.parse_approach()
 parser.parse_convergence_criteria()
 parser.parse_preproc()
@@ -54,7 +54,7 @@ qois, dofs, elements, estimators, times, niter = [], [], [], [], [], []
 print(f"Test case {test_case}")
 for i in range(num_refinements + 1):
     try:
-        target_complexity = 100.0 * 2**i
+        target_complexity = 100.0 * 2 ** (i / 4)
         mesh = Mesh(f"{model}/meshes/{test_case}.msh")
         ct = ConvergenceTracker(mesh, parsed_args)
         kwargs = {}
