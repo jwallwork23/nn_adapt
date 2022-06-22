@@ -63,6 +63,8 @@ def go_metric(
     out = indicate_errors(
         mesh, config, enrichment_method=enrichment_method, retall=True, **kwargs
     )
+    if retall and "adjoint" not in out:
+        return out
     with PETSc.Log.Event("Metric construction"):
         if anisotropic:
             hessian = combine_metrics(*get_hessians(out["forward"]), average=average)

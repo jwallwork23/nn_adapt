@@ -17,6 +17,7 @@ def get_solutions(
     solve_adjoint=True,
     refined_mesh=None,
     init=None,
+    convergence_checker=None,
     **kwargs,
 ):
     """
@@ -33,6 +34,8 @@ def get_solutions(
     :kwarg refined_mesh: refined mesh to compute
         enriched adjoint solution on
     :kwarg init: custom initial condition function
+    :kwarg convergence_checker: :class:`ConvergenceTracer`
+        instance
     :return: forward solution, adjoint solution
         and enriched adjoint solution (if requested)
     """
@@ -49,8 +52,12 @@ def get_solutions(
         q = solver_obj.fields.solution_2d
         J = config.get_qoi(mesh)(q)
         qoi = assemble(J)
+    out = {"qoi": qoi, "forward": q}
+    if convergence_checker is not None:
+        if convergence_checker.check_qoi(qoi):
+            return out
     if not solve_adjoint:
-        return {"qoi": qoi, "forward": q}
+        return out
 
     # Solve adjoint problem in base space
     with PETSc.Log.Event("Adjoint solve"):
@@ -61,8 +68,9 @@ def get_solutions(
         dFdq_transpose = adjoint(dFdq)
         dJdq = derivative(J, q, TestFunction(V))
         solve(dFdq_transpose == dJdq, q_star, solver_parameters=sp)
+        out["adjoint"] = q_star
     if refined_mesh is None:
-        return {"qoi": qoi, "forward": q, "adjoint": q_star}
+        return out
 
     # Solve adjoint problem in enriched space
     with PETSc.Log.Event("Enrichment"):
@@ -78,12 +86,8 @@ def get_solutions(
         dFdq_transpose = adjoint(dFdq)
         dJdq = derivative(J, q_plus, TestFunction(V))
         solve(dFdq_transpose == dJdq, q_star_plus, solver_parameters=sp)
-    return {
-        "qoi": qoi,
-        "forward": q,
-        "adjoint": q_star,
-        "enriched_adjoint": q_star_plus,
-    }
+        out["enriched_adjoint"] = q_star_plus
+    return out
 
 
 def split_into_components(f):
@@ -115,6 +119,8 @@ def indicate_errors(mesh, config, enrichment_method="h", retall=False, **kwargs)
 
     # Solve the forward and adjoint problems
     out = get_solutions(mesh, config, refined_mesh=ref_mesh, **kwargs)
+    if retall and "adjoint" not in out:
+        return out
 
     with PETSc.Log.Event("Enrichment"):
         adj_sol_plus = out["enriched_adjoint"]
