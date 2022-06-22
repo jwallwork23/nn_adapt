@@ -226,13 +226,14 @@ def get_function_space(mesh):
     return P1v_2d * P2_2d
 
 
-def setup_solver(mesh, ic):
+def setup_solver(mesh, ic, **kwargs):
     """
     Set up the Thetis :class:`FlowSolver2d` object, based on
     the current mesh and initial condition.
     """
     bathymetry = parameters.bathymetry(mesh)
     Cd = parameters.drag_coefficient
+    sp = kwargs.pop("solver_parameters", None)
 
     # Create solver object
     solver_obj = solver2d.FlowSolver2d(mesh, bathymetry)
@@ -242,7 +243,7 @@ def setup_solver(mesh, ic):
     options.simulation_export_time = 20.0
     options.simulation_end_time = 18.0
     options.swe_timestepper_type = "SteadyState"
-    options.swe_timestepper_options.solver_parameters = parameters.solver_parameters
+    options.swe_timestepper_options.solver_parameters = sp or parameters.solver_parameters
     options.use_grad_div_viscosity_term = False
     options.horizontal_viscosity = parameters.viscosity(mesh)
     options.quadratic_drag_coefficient = Cd
@@ -250,6 +251,7 @@ def setup_solver(mesh, ic):
     options.lax_friedrichs_velocity_scaling_factor = Constant(1.0)
     options.use_grad_depth_viscosity_term = False
     options.no_exports = True
+    options.update(kwargs)
     solver_obj.create_equations()
 
     # Apply boundary conditions

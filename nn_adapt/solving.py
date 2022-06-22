@@ -11,7 +11,7 @@ from pyroteus.error_estimation import get_dwr_indicator
 tm = TransferManager()
 
 
-def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None):
+def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None, **kwargs):
     """
     Solve forward and adjoint equations on a
     given mesh.
@@ -33,7 +33,7 @@ def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None):
     V = config.get_function_space(mesh)
     with PETSc.Log.Event("Forward solve"):
         ic = config.get_initial_condition(V)
-        solver_obj = config.setup_solver(mesh, ic)
+        solver_obj = config.setup_solver(mesh, ic, **kwargs)
         solver_obj.iterate()
     q = solver_obj.fields.solution_2d
     if not solve_adjoint:
@@ -56,7 +56,7 @@ def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None):
     with PETSc.Log.Event("Enrichment"):
         V = config.get_function_space(refined_mesh)
         q_plus = Function(V)
-        solver_obj = config.setup_solver(refined_mesh, q_plus)
+        solver_obj = config.setup_solver(refined_mesh, q_plus, **kwargs)
         q_plus = solver_obj.fields.solution_2d
         J = config.get_qoi(refined_mesh)(q_plus)
         F = solver_obj.timestepper.F
