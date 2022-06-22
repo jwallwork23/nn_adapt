@@ -11,7 +11,14 @@ from pyroteus.error_estimation import get_dwr_indicator
 tm = TransferManager()
 
 
-def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None, **kwargs):
+def get_solutions(
+    mesh,
+    config,
+    solve_adjoint=True,
+    refined_mesh=None,
+    init=None,
+    **kwargs,
+):
     """
     Solve forward and adjoint equations on a
     given mesh.
@@ -25,6 +32,7 @@ def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None, **kwargs)
         adjoint problem?
     :kwarg refined_mesh: refined mesh to compute
         enriched adjoint solution on
+    :kwarg init: custom initial condition function
     :return: forward solution, adjoint solution
         and enriched adjoint solution (if requested)
     """
@@ -32,21 +40,21 @@ def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None, **kwargs)
     # Solve forward problem in base space
     V = config.get_function_space(mesh)
     with PETSc.Log.Event("Forward solve"):
-        init = kwargs.pop("init", None)
         if init is None:
             ic = config.get_initial_condition(V)
         else:
             ic = init(V)
         solver_obj = config.setup_solver(mesh, ic, **kwargs)
         solver_obj.iterate()
-    q = solver_obj.fields.solution_2d
+        q = solver_obj.fields.solution_2d
+        J = config.get_qoi(mesh)(q)
+        qoi = assemble(J)
     if not solve_adjoint:
-        return q
+        return {"qoi": qoi, "forward": q}
 
     # Solve adjoint problem in base space
     with PETSc.Log.Event("Adjoint solve"):
         sp = config.parameters.adjoint_solver_parameters
-        J = config.get_qoi(mesh)(q)
         q_star = Function(V)
         F = solver_obj.timestepper.F
         dFdq = derivative(F, q, TrialFunction(V))
@@ -54,7 +62,7 @@ def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None, **kwargs)
         dJdq = derivative(J, q, TestFunction(V))
         solve(dFdq_transpose == dJdq, q_star, solver_parameters=sp)
     if refined_mesh is None:
-        return q, q_star
+        return {"qoi": qoi, "forward": q, "adjoint": q_star}
 
     # Solve adjoint problem in enriched space
     with PETSc.Log.Event("Enrichment"):
@@ -70,7 +78,12 @@ def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None, **kwargs)
         dFdq_transpose = adjoint(dFdq)
         dJdq = derivative(J, q_plus, TestFunction(V))
         solve(dFdq_transpose == dJdq, q_star_plus, solver_parameters=sp)
-    return q, q_star, q_star_plus
+    return {
+        "qoi": qoi,
+        "forward": q,
+        "adjoint": q_star,
+        "enriched_adjoint": q_star_plus,
+    }
 
 
 def split_into_components(f):
@@ -98,21 +111,20 @@ def indicate_errors(mesh, config, enrichment_method="h", retall=False, **kwargs)
     if not enrichment_method == "h":
         raise NotImplementedError  # TODO
     with PETSc.Log.Event("Enrichment"):
-        mesh, refined_mesh = MeshHierarchy(mesh, 1)
+        mesh, ref_mesh = MeshHierarchy(mesh, 1)
 
     # Solve the forward and adjoint problems
-    fwd_sol, adj_sol, adj_sol_plus = get_solutions(
-        mesh, config, refined_mesh=refined_mesh, **kwargs
-    )
+    out = get_solutions(mesh, config, refined_mesh=ref_mesh, **kwargs)
 
     with PETSc.Log.Event("Enrichment"):
+        adj_sol_plus = out["enriched_adjoint"]
 
         # Prolong
         V_plus = adj_sol_plus.function_space()
         fwd_sol_plg = Function(V_plus)
-        tm.prolong(fwd_sol, fwd_sol_plg)
+        tm.prolong(out["forward"], fwd_sol_plg)
         adj_sol_plg = Function(V_plus)
-        tm.prolong(adj_sol, adj_sol_plg)
+        tm.prolong(out["adjoint"], adj_sol_plg)
 
         # Subtract prolonged adjoint solution from enriched version
         adj_error = Function(V_plus)
@@ -122,12 +134,9 @@ def indicate_errors(mesh, config, enrichment_method="h", retall=False, **kwargs)
             err += adj_sols_plus[i] - adj_sols_plg[i]
 
         # Evaluate errors
-        dwr = dwr_indicator(config, mesh, fwd_sol_plg, adj_error)
+        out["dwr"] = dwr_indicator(config, mesh, fwd_sol_plg, adj_error)
 
-    if retall:
-        return dwr, fwd_sol, adj_sol
-    else:
-        return dwr
+    return out if retall else out["dwr"]
 
 
 def dwr_indicator(config, mesh, q, q_star):
