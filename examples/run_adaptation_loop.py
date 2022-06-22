@@ -4,7 +4,7 @@ mesh adaptation in a fixed point iteration loop, for a sequence
 of increasing target metric complexities,
 """
 from nn_adapt.features import *
-from nn_adapt.parse import Parser
+from nn_adapt.parse import Parser, positive_float
 from nn_adapt.metric import *
 from nn_adapt.solving import *
 from nn_adapt.utility import ConvergenceTracker
@@ -22,6 +22,12 @@ parser = Parser("run_adaptation_loop.py")
 parser.parse_num_refinements(default=24)
 parser.parse_approach()
 parser.parse_convergence_criteria()
+parser.add_argument(
+    "--factor",
+    help="Power by which to increase target metric complexity",
+    type=positive_float,
+    default=0.25,
+)
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 try:
@@ -31,6 +37,7 @@ except ValueError:
     test_case = parsed_args.test_case
 approach = parsed_args.approach
 num_refinements = parsed_args.num_refinements
+f = parsed_args.factor
 
 # Setup
 setup = importlib.import_module(f"{model}.config")
@@ -42,7 +49,7 @@ qois, dofs, elements, estimators, times, niter = [], [], [], [], [], []
 print(f"Test case {test_case}")
 for i in range(num_refinements + 1):
     try:
-        target_complexity = 100.0 * 2 ** (i / 4)
+        target_complexity = 100.0 * 2 ** (f * i)
         kwargs = {
             "enrichment_method": "h",
             "average": False,
