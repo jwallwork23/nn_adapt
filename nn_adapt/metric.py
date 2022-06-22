@@ -36,6 +36,7 @@ def go_metric(
     interpolant="L2",
     anisotropic=False,
     retall=False,
+    **kwargs,
 ):
     """
     Compute an anisotropic goal-oriented
@@ -60,7 +61,7 @@ def go_metric(
         are returned, in addition to the metric
     """
     dwr, fwd_sol, adj_sol = indicate_errors(
-        mesh, config, enrichment_method=enrichment_method, retall=True
+        mesh, config, enrichment_method=enrichment_method, retall=True, **kwargs
     )
     with PETSc.Log.Event("Metric construction"):
         if anisotropic:

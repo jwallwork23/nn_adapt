@@ -77,7 +77,7 @@ def split_into_components(f):
     return [f] if f.function_space().value_size == 1 else f.split()
 
 
-def indicate_errors(mesh, config, enrichment_method="h", retall=False):
+def indicate_errors(mesh, config, enrichment_method="h", retall=False, **kwargs):
     """
     Indicate errors according to ``dwr_indicator``,
     using the solver given in the configuration file.
@@ -98,7 +98,7 @@ def indicate_errors(mesh, config, enrichment_method="h", retall=False):
 
     # Solve the forward and adjoint problems
     fwd_sol, adj_sol, adj_sol_plus = get_solutions(
-        mesh, config, refined_mesh=refined_mesh
+        mesh, config, refined_mesh=refined_mesh, **kwargs
     )
 
     with PETSc.Log.Event("Enrichment"):
