@@ -60,22 +60,19 @@ def go_metric(
         forward solution and adjoint solution
         are returned, in addition to the metric
     """
-    dwr, fwd_sol, adj_sol = indicate_errors(
+    out = indicate_errors(
         mesh, config, enrichment_method=enrichment_method, retall=True, **kwargs
     )
     with PETSc.Log.Event("Metric construction"):
         if anisotropic:
-            hessian = combine_metrics(*get_hessians(fwd_sol), average=average)
+            hessian = combine_metrics(*get_hessians(out["forward"]), average=average)
         else:
             hessian = None
-        metric = anisotropic_metric(
-            dwr,
+        out["metric"] = anisotropic_metric(
+            out["dwr"],
             hessian=hessian,
             target_complexity=target_complexity,
             target_space=TensorFunctionSpace(mesh, "DG", 0),
             interpolant=interpolant,
         )
-    if retall:
-        return metric, dwr, fwd_sol, adj_sol
-    else:
-        return metric
+    return out if retall else out["metric"]
