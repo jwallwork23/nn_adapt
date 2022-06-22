@@ -75,7 +75,9 @@ for i in range(num_refinements + 1):
             target_ramp = ramp_complexity(200.0, target_complexity, fp_iteration)
 
             # Solve forward and adjoint and compute Hessians
-            fwd_sol, adj_sol = get_solutions(mesh, setup, **kwargs)
+            out = get_solutions(mesh, setup, **kwargs)
+            qoi, fwd_sol = out["qoi"], out["forward"]
+            adj_sol = out["adjoint"]
             P0 = FunctionSpace(mesh, "DG", 0)
             P0_ten = TensorFunctionSpace(mesh, "DG", 0)
 
@@ -97,7 +99,6 @@ for i in range(num_refinements + 1):
                 kwargs["init"] = proj
 
             # Check for QoI convergence
-            qoi = assemble(setup.get_qoi(mesh)(fwd_sol))
             print(f"      Quantity of Interest = {qoi} {unit}")
             if qoi_old is not None and fp_iteration >= miniter:
                 if abs(qoi - qoi_old) < qoi_rtol * abs(qoi_old):

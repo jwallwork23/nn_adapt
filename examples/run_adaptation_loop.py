@@ -69,8 +69,9 @@ for i in range(num_refinements + 1):
             kwargs["target_complexity"] = target_ramp
 
             # Compute goal-oriented metric
-            p0metric, dwr, fwd_sol, adj_sol = go_metric(mesh, setup, **kwargs)
-            # TODO: break this up for optimising timings
+            out = go_metric(mesh, setup, **kwargs)
+            qoi, fwd_sol = out["qoi"], out["forward"]
+            adj_sol, dwr, p0metric = out["adjoint"], out["dwr"], out["metric"]
             dof = sum(fwd_sol.function_space().dof_count)
             print(f"      DoF count            = {dof}")
 
@@ -92,7 +93,6 @@ for i in range(num_refinements + 1):
                 kwargs["init"] = proj
 
             # Check for QoI convergence
-            qoi = assemble(setup.get_qoi(mesh)(fwd_sol))
             print(f"      Quantity of Interest = {qoi} {unit}")
             if qoi_old is not None and fp_iteration >= miniter:
                 if abs(qoi - qoi_old) < qoi_rtol * abs(qoi_old):

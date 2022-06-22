@@ -43,7 +43,8 @@ for i, mesh in enumerate(mh):
     start_time = perf_counter()
     print_output(f"  Mesh {i}")
     print_output(f"    Element count        = {mesh.num_cells()}")
-    fwd_sol = get_solutions(mesh, setup, solve_adjoint=False, **kwargs)
+    out = get_solutions(mesh, setup, solve_adjoint=False, **kwargs)
+    qoi, fwd_sol = out["qoi"], out["forward"]
 
     def prolong(V):
         """
@@ -57,7 +58,6 @@ for i, mesh in enumerate(mh):
     if parsed_args.prolong:
         kwargs["init"] = prolong
     fs = fwd_sol.function_space()
-    qoi = assemble(setup.get_qoi(mesh)(fwd_sol))
     time = perf_counter() - start_time
     print_output(f"    Quantity of Interest = {qoi} {unit}")
     print_output(f"    Runtime: {time:.2f} seconds")

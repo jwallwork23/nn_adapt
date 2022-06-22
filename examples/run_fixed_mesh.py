@@ -32,12 +32,10 @@ if parsed_args.num_refinements > 0:
         mesh = MeshHierarchy(mesh, parsed_args.num_refinements)[-1]
 
 # Solve and evaluate QoI
-sols = get_solutions(mesh, setup, solve_adjoint=not parsed_args.optimise)
-msg = f"QoI for test case {test_case}"
-if parsed_args.optimise:
-    print_output(f"{msg} = {assemble(setup.get_qoi(mesh)(sols)):.8f} {unit}")
-else:
-    print_output(f"{msg} = {assemble(setup.get_qoi(mesh)(sols[0])):.8f} {unit}")
-    File(f"{model}/outputs/{test_case}/fixed/forward.pvd").write(*sols[0].split())
-    File(f"{model}/outputs/{test_case}/fixed/adjoint.pvd").write(*sols[1].split())
+out = get_solutions(mesh, setup, solve_adjoint=not parsed_args.optimise)
+qoi = out["qoi"]
+print_output(f"QoI for test case {test_case} = {qoi:.8f} {unit}")
+if not parsed_args.optimise:
+    File(f"{model}/outputs/{test_case}/fixed/forward.pvd").write(*out["forward"].split())
+    File(f"{model}/outputs/{test_case}/fixed/adjoint.pvd").write(*out["adjoint"].split())
 print_output(f"  Total time taken: {perf_counter() - start_time:.2f} seconds")
