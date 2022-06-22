@@ -113,17 +113,21 @@ def get_values_at_centroids(f):
             continue
         g = firedrake.project(ufl.grad(func), P0_vec)
         values.dat.data[:, i] = g.dat.data_ro[:, 0]
-        values.dat.data[:, i+1] = g.dat.data_ro[:, 1]
+        values.dat.data[:, i + 1] = g.dat.data_ro[:, 1]
         i += 2
         if p == 1:
             continue
         H = firedrake.project(ufl.grad(ufl.grad(func)), P0_ten)
         values.dat.data[:, i] = H.dat.data_ro[:, 0, 0]
-        values.dat.data[:, i+1] = 0.5 * (H.dat.data_ro[:, 0, 1] + H.dat.data_ro[:, 1, 0])
-        values.dat.data[:, i+2] = H.dat.data_ro[:, 1, 1]
+        values.dat.data[:, i + 1] = 0.5 * (
+            H.dat.data_ro[:, 0, 1] + H.dat.data_ro[:, 1, 0]
+        )
+        values.dat.data[:, i + 2] = H.dat.data_ro[:, 1, 1]
         i += 3
         if p > 2:
-            raise NotImplementedError("Polynomial degrees greater than 2 not yet considered")
+            raise NotImplementedError(
+                "Polynomial degrees greater than 2 not yet considered"
+            )
     return values
 
 
@@ -208,10 +212,7 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
 
     # Features describing the mesh element
     with PETSc.Log.Event("Analyse element"):
-        P0_vec = firedrake.VectorFunctionSpace(mesh, "DG", 0)
         P0_ten = firedrake.TensorFunctionSpace(mesh, "DG", 0)
-        P1DG = firedrake.FunctionSpace(mesh, "DG", 1)
-        P1DG_vec = firedrake.VectorFunctionSpace(mesh, "DG", 1)
 
         # Element size, orientation and shape
         J = ufl.Jacobian(mesh)
@@ -221,12 +222,6 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
         # Is the element on the boundary?
         p0test = firedrake.TestFunction(dwr.function_space())
         bnd = firedrake.assemble(p0test * ufl.ds).dat.data
-
-        # Local arguments of each vertex
-        coords = firedrake.project(mesh.coordinates, P1DG_vec)
-        centroid = firedrake.project(mesh.coordinates, P0_vec)
-        x, y = coords - centroid
-        theta = firedrake.interpolate(ufl.atan(y / x), P1DG)
 
     # Combine the features together
     features = {
@@ -269,5 +264,5 @@ def collect_features(feature_dict, preproc="none"):
 
     # Stack appropriately
     dofs = [feature for key, feature in feature_dict.items() if "dofs" in key]
-    nodofs = [feature for key, feature in feature_dict.items() if not "dofs" in key]
+    nodofs = [feature for key, feature in feature_dict.items() if "dofs" not in key]
     return np.hstack((np.vstack(nodofs).transpose(), np.hstack(dofs)))
