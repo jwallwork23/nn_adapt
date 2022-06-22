@@ -45,7 +45,6 @@ xlim = {
     "dofs": [3.0e03, 3.0e06],
     "times": [1.0e0, 2.0e03],
 }
-conv_approach = "uniform"
 
 # Load configuration
 setup = importlib.import_module(f"{model}.config")
@@ -66,20 +65,20 @@ for approach in approaches.copy():
         print(f"Cannot load {approach} data for test case {test_case}")
         approaches.pop(approach)
         continue
-
-    # Drop first iteration because timings include compilation   # FIXME: Why?
-    dofs[approach] = dofs[approach][1:]
-    qois[approach] = qois[approach][1:]
-    times[approach] = times[approach][1:]
-    niter[approach] = niter[approach][1:]
 if len(approaches.keys()) == 0:
     print("Nothing to plot.")
     sys.exit(0)
 
+# Drop first iteration because timings include compilation   # FIXME: Why?
+dofs["uniform"] = dofs["uniform"][1:]
+qois["uniform"] = qois["uniform"][1:]
+times["uniform"] = times["uniform"][1:]
+niter["uniform"] = niter["uniform"][1:]
+
 # Plot QoI curves against DoF count
 fig, axes = plt.subplots()
 start = max(np.load(f"{model}/data/qois_uniform_{test_case}.npy"))
-conv = np.load(f"{model}/data/qois_{conv_approach}_{test_case}.npy")[-1]
+conv = np.load(f"{model}/data/qois_uniform_{test_case}.npy")[-1]
 axes.hlines(conv, *xlim["dofs"], "k", label="Converged QoI")
 for approach, metadata in approaches.items():
     axes.semilogx(dofs[approach], qois[approach], **metadata)
@@ -126,18 +125,20 @@ plt.tight_layout()
 plt.savefig(f"{model}/plots/cputime_vs_dofs_{test_case}.pdf")
 plt.close()
 
-if conv_approach is None:
-    sys.exit(0)
-qois[conv_approach] = qois[conv_approach][:-1]
-dofs[conv_approach] = dofs[conv_approach][:-1]
-times[conv_approach] = times[conv_approach][:-1]
+qois["uniform"] = qois["uniform"][:-1]
+dofs["uniform"] = dofs["uniform"][:-1]
+times["uniform"] = times["uniform"][:-1]
 
 # Plot QoI error curves against DoF count
 errors = {}
 fig, axes = plt.subplots()
 for approach, metadata in approaches.items():
     errors[approach] = np.abs((qois[approach] - conv) / conv)
-    axes.loglog(dofs[approach], errors[approach], **metadata)
+    x, y = dofs[approach], errors[approach]
+    a, b = np.polyfit(np.log(x), np.log(y), 1)
+    print(f"QoI error vs. DoFs {approach}: gradient {a:.2f}")
+    axes.scatter(x, y, **metadata)
+    axes.loglog(x, x ** a * np.exp(b), color=metadata["color"])
 axes.set_xlabel("DoF count")
 axes.set_ylabel(r"QoI error ($\%$)")
 axes.grid(True, which="both")
@@ -159,8 +160,13 @@ if not os.path.exists(fname):
 # Plot QoI error curves against CPU time
 fig, axes = plt.subplots()
 for approach, metadata in approaches.items():
-    axes.loglog(times[approach], errors[approach], **metadata)
-    for n, t, e in zip(niter[approach], times[approach], errors[approach]):
+    x, y = times[approach], errors[approach]
+    if approach == "uniform":
+        a, b = np.polyfit(np.log(x), np.log(y), 1)
+        print(f"QoI error vs. time {approach}: gradient {a:.2f}")
+        axes.loglog(x, x ** a * np.exp(b), color=metadata["color"])
+    axes.scatter(x, y, **metadata)
+    for n, t, e in zip(niter[approach], x, errors[approach]):
         axes.annotate(str(n), (1.1 * t, e), color=metadata["color"], fontsize=14)
 axes.set_xlabel(r"CPU time ($\mathrm{s}$)")
 axes.set_ylabel(r"QoI error ($\%$)")
