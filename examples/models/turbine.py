@@ -17,7 +17,7 @@ class Parameters(object):
     qoi_unit = "MW"
 
     # Adaptation parameters
-    h_min = 1.0e-05
+    h_min = 1.0e-08
     h_max = 500.0
 
     # Physical parameters
