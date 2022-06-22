@@ -67,6 +67,7 @@ if not optimise:
     adj_file = File(f"{output_dir}/adjoint.pvd")
     ee_file = File(f"{output_dir}/estimator.pvd")
     metric_file = File(f"{output_dir}/metric.pvd")
+kwargs = {}
 print(f"Test case {test_case}")
 print("  Mesh 0")
 print(f"    Element count        = {elements_old}")
@@ -76,7 +77,7 @@ for fp_iteration in range(maxiter + 1):
     target_ramp = ramp_complexity(200.0, target_complexity, fp_iteration)
 
     # Solve forward and adjoint and compute Hessians
-    fwd_sol, adj_sol = get_solutions(mesh, setup)
+    fwd_sol, adj_sol = get_solutions(mesh, setup, **kwargs)
     dof = sum(fwd_sol.function_space().dof_count)
     print(f"    DoF count            = {dof}")
     if not optimise:
@@ -84,6 +85,23 @@ for fp_iteration in range(maxiter + 1):
         adj_file.write(*adj_sol.split())
     P0 = FunctionSpace(mesh, "DG", 0)
     P0_ten = TensorFunctionSpace(mesh, "DG", 0)
+
+    def proj(V):
+        """
+        After the first iteration, project the previous
+        solution as the initial guess.
+        """
+        ic = Function(V)
+        try:
+            ic.project(fwd_sol)
+        except NotImplementedError:
+            for c_init, c in zip(ic.split(), fwd_sol.split()):
+                c_init.project(c)
+        return ic
+
+    # Use previous solution for initial guess
+    if parsed_args.transfer:
+        kwargs["init"] = proj
 
     # Check for QoI convergence
     qoi = assemble(setup.get_qoi(mesh)(fwd_sol))
