@@ -19,9 +19,9 @@ setup: dir mesh plot_config
 
 dir:
 	mkdir -p $(MODEL)
-	cd $$model && touch __init__.py && mkdir -p data outputs plots && cd ..; \
+	cd $(MODEL) && touch __init__.py && mkdir -p data outputs plots && cd ..; \
 	for test_case in $(TESTING_CASES); do \
-		mkdir -p $$model/outputs/$$test_case; \
+		mkdir -p $(MODEL)/outputs/$$test_case; \
 	done
 
 mesh:
