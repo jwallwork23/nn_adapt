@@ -68,11 +68,10 @@ for approach in approaches.copy():
         continue
 
     # Drop first iteration because timings include compilation   # FIXME: Why?
-    if approach != conv_approach:
-        dofs[approach] = dofs[approach][1:]
-        qois[approach] = qois[approach][1:]
-        times[approach] = times[approach][1:]
-        niter[approach] = niter[approach][1:]
+    dofs[approach] = dofs[approach][1:]
+    qois[approach] = qois[approach][1:]
+    times[approach] = times[approach][1:]
+    niter[approach] = niter[approach][1:]
 if len(approaches.keys()) == 0:
     print("Nothing to plot.")
     sys.exit(0)

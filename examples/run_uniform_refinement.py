@@ -30,7 +30,7 @@ setup = importlib.import_module(f"{model}.config")
 setup.initialise(test_case)
 unit = setup.parameters.qoi_unit
 mesh = Mesh(f"{model}/meshes/{test_case}.msh")
-mh = MeshHierarchy(mesh, num_refinements)
+mh = [mesh] + list(MeshHierarchy(mesh, num_refinements))
 tm = TransferManager()
 kwargs = {}
 
