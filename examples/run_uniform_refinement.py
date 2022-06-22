@@ -15,6 +15,7 @@ start_time = perf_counter()
 # Parse user input
 parser = Parser("run_uniform_refinement.py")
 parser.parse_num_refinements(default=3)
+parser.add_argument("--prolong", help="Use previous solution as initial guess", action="store_true")
 parsed_args = parser.parse_args()
 model = parsed_args.model
 try:
@@ -30,6 +31,8 @@ setup.initialise(test_case)
 unit = setup.parameters.qoi_unit
 mesh = Mesh(f"{model}/meshes/{test_case}.msh")
 mh = MeshHierarchy(mesh, num_refinements)
+tm = TransferManager()
+kwargs = {}
 
 # Run uniform refinement
 qois, dofs, elements, times, niter = [], [], [], [], []
@@ -40,7 +43,19 @@ for i, mesh in enumerate(mh):
     start_time = perf_counter()
     print_output(f"  Mesh {i}")
     print_output(f"    Element count        = {mesh.num_cells()}")
-    fwd_sol = get_solutions(mesh, setup, solve_adjoint=False)
+    fwd_sol = get_solutions(mesh, setup, solve_adjoint=False, **kwargs)
+
+    def prolong(V):
+        """
+        After the first iteration, prolong the previous
+        solution as the initial guess.
+        """
+        ic = Function(V)
+        tm.prolong(fwd_sol, ic)
+        return ic
+
+    if parsed_args.prolong:
+        kwargs["init"] = prolong
     fs = fwd_sol.function_space()
     qoi = assemble(setup.get_qoi(mesh)(fwd_sol))
     time = perf_counter() - start_time

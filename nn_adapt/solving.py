@@ -32,7 +32,11 @@ def get_solutions(mesh, config, solve_adjoint=True, refined_mesh=None, **kwargs)
     # Solve forward problem in base space
     V = config.get_function_space(mesh)
     with PETSc.Log.Event("Forward solve"):
-        ic = config.get_initial_condition(V)
+        init = kwargs.pop("init", None)
+        if init is None:
+            ic = config.get_initial_condition(V)
+        else:
+            ic = init(V)
         solver_obj = config.setup_solver(mesh, ic, **kwargs)
         solver_obj.iterate()
     q = solver_obj.fields.solution_2d
