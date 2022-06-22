@@ -1,28 +1,31 @@
 D = 18.0;
 dx_outer = 20.0;
 dx_inner = 20.0;
-xt0 = 500.0;  // x-location of turbine 0
-yt0 = 250.0;  // y-location of turbine 0
-xt1 = 700.0;  // x-location of turbine 1
-yt1 = 440.0;  // y-location of turbine 1
+xt0 = 450.0;  // x-location of turbine 0
+yt0 = 350.0;  // y-location of turbine 0
+xt1 = 650.0;  // x-location of turbine 1
+yt1 = 450.0;  // y-location of turbine 1
+W = 700;  // Width of domain
+w = 500;  // Width of channel
+
 sqrt2 = 1.414213562373095;
 
 // Lower points
 Point(1) = { 0, 0, 0, dx_outer};
 Point(2) = { 200, 0, 0, dx_outer}; // First spline point
 Point(3) = { 400, 0, 0, dx_outer};
-Point(4) = { 800, 500, 0, dx_outer};
-Point(5) = {1000, 500, 0, dx_outer};
-Point(6) = {1200, 500, 0, dx_outer}; // Last spline point
-Point(7) = {1500, 500, 0, dx_outer};
+Point(4) = { 500, W-w, 0, dx_outer};
+Point(5) = {700, W-w, 0, dx_outer};
+Point(6) = {900, W-w, 0, dx_outer}; // Last spline point
+Point(7) = {1200, W-w, 0, dx_outer};
 // Upper points
-Point( 8) = {1500, 700, 0, dx_outer};
-Point( 9) = {1200, 700, 0, dx_outer}; // First spline point
-Point(10) = {1000, 700, 0, dx_outer};
-Point(11) = { 800, 700, 0, dx_outer};
-Point(12) = { 400, 200, 0, dx_outer};
-Point(13) = { 200, 200, 0, dx_outer}; // Last spline point
-Point(14) = { 0, 200, 0, dx_outer};
+Point( 8) = {1200, W, 0, dx_outer};
+Point( 9) = {900, W, 0, dx_outer}; // First spline point
+Point(10) = {700, W, 0, dx_outer};
+Point(11) = { 500, W, 0, dx_outer};
+Point(12) = { 400, w, 0, dx_outer};
+Point(13) = { 200, w, 0, dx_outer}; // Last spline point
+Point(14) = { 0, w, 0, dx_outer};
 
 // Edges
 Line(1) = {1, 2};
