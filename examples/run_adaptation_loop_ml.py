@@ -8,6 +8,7 @@ from nn_adapt.features import *
 from nn_adapt.parse import Parser
 from nn_adapt.metric import *
 from nn_adapt.solving import *
+from nn_adapt.utility import ConvergenceTracker
 from firedrake.meshadapt import *
 
 import git
@@ -34,12 +35,6 @@ except ValueError:
     test_case = parsed_args.test_case
 approach = parsed_args.approach
 num_refinements = parsed_args.num_refinements
-miniter = parsed_args.miniter
-maxiter = parsed_args.maxiter
-assert maxiter >= miniter
-qoi_rtol = parsed_args.qoi_rtol
-element_rtol = parsed_args.element_rtol
-estimator_rtol = parsed_args.estimator_rtol
 preproc = parsed_args.preproc
 tag = parsed_args.tag or git.Repo(search_parent_directories=True).head.object.hexsha
 
@@ -55,29 +50,29 @@ nn.load_state_dict(torch.load(f"{model}/model_{tag}.pt"))
 nn.eval()
 
 # Run adaptation loop
-qois, dofs, elements, times, niter = [], [], [], [], []
+qois, dofs, elements, estimators, times, niter = [], [], [], [], [], []
 print(f"Test case {test_case}")
 for i in range(num_refinements + 1):
     try:
         target_complexity = 100.0 * 2**i
         mesh = Mesh(f"{model}/meshes/{test_case}.msh")
+        ct = ConvergenceTracker(mesh, parsed_args)
         kwargs = {}
-        qoi_old = None
-        elements_old = mesh.num_cells()
-        estimator_old = None
-        converged_reason = None
         print(f"  Target {target_complexity}\n    Mesh 0")
-        print(f"      Element count        = {elements_old}")
+        print(f"      Element count        = {ct.elements_old}")
         cpu_timestamp = perf_counter()
-        for fp_iteration in range(maxiter + 1):
+        for ct.fp_iteration in range(ct.maxiter + 1):
 
             # Ramp up the target complexity
-            target_ramp = ramp_complexity(200.0, target_complexity, fp_iteration)
+            target_ramp = ramp_complexity(200.0, target_complexity, ct.fp_iteration)
 
             # Solve forward and adjoint and compute Hessians
-            out = get_solutions(mesh, setup, **kwargs)
-            qoi, fwd_sol = out["qoi"], out["forward"]
-            adj_sol = out["adjoint"]
+            out = get_solutions(mesh, setup, convergence_checker=ct, **kwargs)
+            qoi = out["qoi"]
+            print(f"      Quantity of Interest = {qoi} {unit}")
+            if "adjoint" not in out:
+                break
+            fwd_sol, adj_sol = out["forward"], out["adjoint"]
             P0 = FunctionSpace(mesh, "DG", 0)
             P0_ten = TensorFunctionSpace(mesh, "DG", 0)
 
@@ -97,14 +92,6 @@ for i in range(num_refinements + 1):
             # Use previous solution for initial guess
             if parsed_args.transfer:
                 kwargs["init"] = proj
-
-            # Check for QoI convergence
-            print(f"      Quantity of Interest = {qoi} {unit}")
-            if qoi_old is not None and fp_iteration >= miniter:
-                if abs(qoi - qoi_old) < qoi_rtol * abs(qoi_old):
-                    converged_reason = "QoI convergence"
-                    break
-            qoi_old = qoi
 
             # Extract features
             features = collect_features(
@@ -126,11 +113,8 @@ for i in range(num_refinements + 1):
             # Check for error estimator convergence
             estimator = dwr.vector().gather().sum()
             print(f"      Error estimator      = {estimator}")
-            if estimator_old is not None and fp_iteration >= miniter:
-                if abs(estimator - estimator_old) < estimator_rtol * abs(estimator_old):
-                    converged_reason = "error estimator convergence"
-                    break
-            estimator_old = estimator
+            if ct.check_estimator(estimator):
+                break
 
             # Construct metric
             if approach == "anisotropic":
@@ -157,26 +141,25 @@ for i in range(num_refinements + 1):
             metric = RiemannianMetric(mesh)
             metric.assign(p1metric)
             mesh = adapt(mesh, metric)
-            print(f"    Mesh {fp_iteration+1}")
-            if fp_iteration >= miniter:
-                if abs(mesh.num_cells() - elements_old) < element_rtol * abs(elements_old):
-                    converged_reason = "element count convergence"
-                    break
-            elements_old = mesh.num_cells()
-            print(f"      Element count        = {elements_old}")
-
-            # Check for reaching maximum number of iterations
-            if fp_iteration == maxiter:
-                converged_reason = "reaching maximum iteration count"
-        print(f"    Terminated after {fp_iteration+1} iterations due to {converged_reason}")
+            print(f"    Mesh {ct.fp_iteration+1}")
+            cells = mesh.num_cells()
+            print(f"      Element count        = {cells}")
+            if ct.check_elements(cells):
+                break
+            ct.check_maxiter()
+        print(
+            f"    Terminated after {ct.fp_iteration+1} iterations due to {ct.converged_reason}"
+        )
         times.append(perf_counter() - cpu_timestamp)
         qois.append(qoi)
         dofs.append(sum(fwd_sol.function_space().dof_count))
-        elements.append(elements_old)
-        niter.append(fp_iteration + 1)
+        elements.append(cells)
+        estimators.append(estimator)
+        niter.append(ct.fp_iteration + 1)
         np.save(f"{model}/data/qois_ML{approach}_{test_case}", qois)
         np.save(f"{model}/data/dofs_ML{approach}_{test_case}", dofs)
         np.save(f"{model}/data/elements_ML{approach}_{test_case}", elements)
+        np.save(f"{model}/data/estimators_ML{approach}_{test_case}", estimators)
         np.save(f"{model}/data/times_ML{approach}_{test_case}", times)
         np.save(f"{model}/data/niter_ML{approach}_{test_case}", niter)
     except ConvergenceError:
