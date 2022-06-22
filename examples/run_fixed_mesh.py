@@ -3,6 +3,7 @@ Run a given ``test_case`` of a ``model`` on the initial mesh alone.
 """
 from nn_adapt.parse import Parser
 from nn_adapt.solving import *
+from thetis import print_output
 from firedrake.petsc import PETSc
 import importlib
 from time import perf_counter
@@ -34,9 +35,9 @@ if parsed_args.num_refinements > 0:
 sols = get_solutions(mesh, setup, solve_adjoint=not parsed_args.optimise)
 msg = f"QoI for test case {test_case}"
 if parsed_args.optimise:
-    print(f"{msg} = {assemble(setup.get_qoi(mesh)(sols)):.2f} {unit}")
+    print_output(f"{msg} = {assemble(setup.get_qoi(mesh)(sols)):.8f} {unit}")
 else:
-    print(f"{msg} = {assemble(setup.get_qoi(mesh)(sols[0])):.2f} {unit}")
+    print_output(f"{msg} = {assemble(setup.get_qoi(mesh)(sols[0])):.8f} {unit}")
     File(f"{model}/outputs/{test_case}/fixed/forward.pvd").write(*sols[0].split())
     File(f"{model}/outputs/{test_case}/fixed/adjoint.pvd").write(*sols[1].split())
-print(f"  Total time taken: {perf_counter() - start_time:.2f} seconds")
+print_output(f"  Total time taken: {perf_counter() - start_time:.2f} seconds")
