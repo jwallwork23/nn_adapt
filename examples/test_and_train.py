@@ -57,7 +57,7 @@ parser.add_argument(
     "--lr_adapt_num_steps",
     help="Adaptation frequency",
     type=positive_int,
-    default=1000,
+    default=2000,
 )
 parser.add_argument(
     "--lr_adapt_factor",
@@ -69,7 +69,7 @@ parser.add_argument(
     "--num_epochs",
     help="The number of iterations",
     type=positive_int,
-    default=4000,
+    default=2000,
 )
 parser.add_argument(
     "--preproc",
