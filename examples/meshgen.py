@@ -13,12 +13,13 @@ parser.add_argument("model", help="The model")
 parser.add_argument("case", help="The configuration file name")
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
+reverse = False
 try:
     case = int(parsed_args.case)
     assert case > 0
 except ValueError:
     case = parsed_args.case
-reverse = "reversed" in case
+    reverse = "reversed" in case
 
 # Load setup
 setup = importlib.import_module(f"{model}.config")
