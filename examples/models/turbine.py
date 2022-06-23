@@ -29,6 +29,7 @@ class Parameters(object):
 
     # Turbine parameters
     turbine_diameter = 18.0
+    turbine_width = None
     turbine_coords = []
     thrust_coefficient = 0.8
 
@@ -72,7 +73,9 @@ class Parameters(object):
         """
         Calculate the area of the turbine footprint in the horizontal.
         """
-        return self.turbine_diameter**2
+        d = self.turbine_diameter
+        w = self.turbine_width or d
+        return d * w
 
     @property
     def swept_area(self):
@@ -143,11 +146,12 @@ class Parameters(object):
         if self.discrete:
             return Constant(1.0 / self.footprint_area, domain=mesh)
         x, y = SpatialCoordinate(mesh)
-        r = self.turbine_diameter / 2
+        r2 = self.turbine_diameter / 2
+        r1 = r2 if self.turbine_width is None else self.turbine_width / 2
 
         def bump(x0, y0, scale=1.0):
-            qx = ((x - x0) / r) ** 2
-            qy = ((y - y0) / r) ** 2
+            qx = ((x - x0) / r1) ** 2
+            qy = ((y - y0) / r2) ** 2
             cond = And(qx < 1, qy < 1)
             b = exp(1 - 1 / (1 - qx)) * exp(1 - 1 / (1 - qy))
             return conditional(cond, Constant(scale) * b, 0)
