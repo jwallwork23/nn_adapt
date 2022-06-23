@@ -166,7 +166,7 @@ def split_into_scalars(f):
         return {0: [f]}
 
 
-def extract_array(f, mesh=None, centroid=False):
+def extract_array(f, mesh=None, centroid=False, project=False):
     r"""
     Extract a cell-wise data array from a :class:`Constant` or
     :class:`Function`.
@@ -177,6 +177,8 @@ def extract_array(f, mesh=None, centroid=False):
 
     :arg f: the :class:`Constant` or :class:`Function`
     :kwarg mesh: the underlying :class:`MeshGeometry`
+    :kwarg project: if ``True``, project the field into
+        :math:`\mathbb P0` space
     """
     mesh = mesh or f.ufl_domain()
     if isinstance(f, firedrake.Constant):
@@ -185,6 +187,13 @@ def extract_array(f, mesh=None, centroid=False):
         return f.values()[0] * ones
     elif not isinstance(f, firedrake.Function):
         raise ValueError(f"Unexpected input type {type(f)}")
+    if project:
+        if len(f.function_space().shape) > 0:
+            raise NotImplementedError("Can currently only project scalar fields")  # TODO
+        element = f.ufl_element()
+        if (element.family(), element.degree()) != ("Discontinuous Lagrange", 0):
+            P0 = FunctionSpace(mesh, "DG", 0)
+            f = project(f, P0)
     s = sum([fi for i, fi in split_into_scalars(f).items()], start=[])
     get = get_values_at_centroids if centroid else get_values_at_elements
     if len(s) == 1:
@@ -227,8 +236,8 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
     features = {
         "estimator_coarse": extract_array(dwr),
         "physics_drag": extract_array(config.parameters.drag(mesh)),
-        "physics_viscosity": extract_array(config.parameters.viscosity(mesh)),
-        "physics_bathymetry": extract_array(config.parameters.bathymetry(mesh)),
+        "physics_viscosity": extract_array(config.parameters.viscosity(mesh), project=True),
+        "physics_bathymetry": extract_array(config.parameters.bathymetry(mesh), project=True),
         "mesh_d": d,
         "mesh_h1": h1,
         "mesh_h2": h2,
