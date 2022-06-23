@@ -60,6 +60,8 @@ if not optimise:
     adj_file = File(f"{output_dir}/adjoint.pvd")
     ee_file = File(f"{output_dir}/estimator.pvd")
     metric_file = File(f"{output_dir}/metric.pvd")
+    mesh_file = File(f"{output_dir}/mesh.pvd")
+    mesh_file.write(mesh.coordinates)
 kwargs = {}
 print(f"Test case {test_case}")
 print("  Mesh 0")
@@ -159,6 +161,8 @@ for ct.fp_iteration in range(ct.maxiter + 1):
     # Adapt the mesh and check for element count convergence
     with PETSc.Log.Event("Mesh adaptation"):
         mesh = adapt(mesh, metric)
+    if not optimise:
+        mesh_file.write(mesh.coordinates)
     elements = mesh.num_cells()
     print(f"  Mesh {ct.fp_iteration+1}")
     print(f"    Element count        = {elements}")
