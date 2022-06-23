@@ -95,17 +95,19 @@ def initialise(case, discrete=False):
     elif "pipe" in case:
         u_in = Constant(5.0)
         parameters.inflow_speed = u_in
-        w = Constant(500.0)
+        w = Constant(200.0)
 
         def inflow(mesh):
             y = SpatialCoordinate(mesh)[1] / w
-            return as_vector([u_in * y**2 * (1 - y) ** 2, 0])
+            yy = ((y - 0.5) / 0.5) ** 2
+            u_expr = conditional(yy < 1, exp(1 - 1 / (1 - yy)), 0)
+            return as_vector([u_expr, 0])
 
         parameters.viscosity_coefficient = 20.0
         parameters.depth = 40.0
         parameters.u_inflow = inflow
         parameters.ic = lambda mesh: as_vector([u_in, 0.0])
-        parameters.turbine_coords = [(450, 350), (650, 450)]
+        parameters.turbine_coords = [(550, 300), (620, 390)]
         parameters.wall_boundary_type = "uv"
         parameters.qoi_unit = "kW"
         parameters.density = Constant(1030.0 * 1.0e-03)

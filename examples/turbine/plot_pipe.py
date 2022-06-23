@@ -23,11 +23,9 @@ tricontourf(footprints, axes=axes, cmap="Blues", levels=[0, 1])
 # Annotate with physical parameters
 txt = r"""$\nu = 100.0$
 $b = 50.0$
-$u_{\mathrm{in}} = \widetilde{y}^2(1-\widetilde{y})^2$
-"""
-xy = (1175, 10)
+$u_{\mathrm{in}} = \widetilde{y}^2(1-\widetilde{y})^2$"""
+xy = (940, 10)
 axes.annotate(txt, xy=xy, bbox={"fc": "w"})
-axes.annotate(r"($\widetilde{y}=y/200$)", xy=xy, color="grey")
 
 axes.axis(False)
 plt.tight_layout()
