@@ -77,8 +77,8 @@ def initialise(case, discrete=False):
         parameters.depth = 40.0
         parameters.inflow_speed = 5.0
         parameters.turbine_coords = [(456, 232), (744, 268)]
-    elif "unseen" in case:
-        bmin, bmax = Constant(100.0), Constant(200.0)
+    elif "trench" in case:
+        bmin, bmax = Constant(160.0), Constant(200.0)
         w = Constant(500.0)
 
         def bathy(mesh):
