@@ -118,7 +118,6 @@ def initialise(case, discrete=False):
         parameters.u_inflow = inflow
         parameters.ic = lambda mesh: as_vector([u_in, 0.0])
         parameters.turbine_coords = [(550, 300), (620, 390)]
-        parameters.wall_boundary_type = "uv"
         parameters.qoi_unit = "kW"
         parameters.density = Constant(1030.0 * 1.0e-03)
     else:

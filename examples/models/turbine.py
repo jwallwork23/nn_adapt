@@ -34,9 +34,6 @@ class Parameters(object):
     thrust_coefficient = 0.8
     correct_thrust = True
 
-    # Boundary condition parameters
-    wall_boundary_type = "un"
-
     # Solver parameters
     solver_parameters = {
         "mat_type": "aij",
@@ -267,12 +264,11 @@ def setup_solver(mesh, ic, **kwargs):
     # Apply boundary conditions
     P1v_2d = solver_obj.function_spaces.P1v_2d
     u_inflow = interpolate(parameters.u_inflow(mesh), P1v_2d)
-    wall = parameters.wall_boundary_type
-    zero = as_vector([0.0, 0.0]) if wall == "uv" else 0.0
     solver_obj.bnd_functions["shallow_water"] = {
-        1: {"uv": u_inflow},
-        2: {"elev": Constant(0.0)},
-        3: {wall: Constant(zero)},
+        1: {"uv": u_inflow},  # inflow
+        2: {"elev": Constant(0.0)},  # outflow
+        3: {"un": Constant(0.0)},  # free-slip
+        4: {"uv": Constant(as_vector([0.0, 0.0]))},  # no-slip
     }
 
     # Create tidal farm
