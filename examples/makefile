@@ -27,13 +27,13 @@ dir:
 mesh:
 	echo $(TESTING_CASES)
 	touch timing.log
-	d=$$(date +%s)
+	d=$$(date +%s) && \
 	for test_case in $(CASES); do \
 		python3 meshgen.py $(MODEL) $$test_case; \
 		cd $(MODEL)/meshes && gmsh -2 -algo pack $$test_case.geo && cd ../..; \
-	done
-	date >> timing.log
-	git log -n 1 --oneline >> timing.log
+	done && \
+	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Meshes built in $$(($$(date +%s)-d)) seconds" >> timing.log
 
 plot_config:
@@ -49,24 +49,24 @@ network: features train plot_progress plot_importance
 
 features:
 	touch timing.log
-	d=$$(date +%s)
+	d=$$(date +%s) && \
 	for test_case in $(TRAINING_CASES); do \
 		for approach in $(APPROACHES); do \
 			python3 run_adapt.py $(MODEL) $$test_case -a $$approach --no_outputs $(PETSC_OPTIONS); \
 		done; \
-	done
-	date >> timing.log
-	git log -n 1 --oneline >> timing.log
+	done && \
+	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Features generated in $$(($$(date +%s)-d)) seconds" >> timing.log
 	echo "" >> timing.log
 
 train:
 	touch timing.log
-	d=$$(date +%s)
-	python3 test_and_train.py -m $(MODEL) -n $(NUM_TRAINING_CASES) --tag all
-	date >> timing.log
-	git log -n 1 --oneline >> timing.log
-	echo "Training completed in $$(($$(date +%s)-d)) seconds" >> timing.log
+	d=$$(date +%s) && \
+	python3 test_and_train.py -m $(MODEL) -n $(NUM_TRAINING_CASES) --tag all && \
+	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
+	echo "Training completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \
 	echo "" >> timing.log
 
 plot_progress:
@@ -79,15 +79,15 @@ plot_importance:
 
 snapshot:
 	touch timing.log
-	d=$$(date +%s)
+	d=$$(date +%s) && \
 	for test_case in $(TESTING_CASES); do \
 		for approach in $(APPROACHES); do \
 			python3 run_adapt.py $(MODEL) $$test_case -a $$approach $(PETSC_OPTIONS); \
 			python3 run_adapt_ml.py $(MODEL) $$test_case -a $$approach --tag all $(PETSC_OPTIONS); \
 		done; \
-	done
-	date >> timing.log
-	git log -n 1 --oneline >> timing.log
+	done && \
+	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Snapshots generated in $$(($$(date +%s)-d)) seconds" >> timing.log
 	echo "" >> timing.log
 
@@ -100,35 +100,35 @@ uniform:
 	d=$$(date +%s) && \
 	for test_case in $(TESTING_CASES); do \
 		python3 run_uniform_refinement.py $(MODEL) $$test_case; \
-	done
-	date >> timing.log
-	git log -n 1 --oneline >> timing.log
+	done && \
+	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Uniform refinement completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 	echo "" >> timing.log
 
 go:
 	touch timing.log
-	d=$$(date +%s)
+	d=$$(date +%s) && \
 	for test_case in $(TESTING_CASES); do \
 		for approach in $(APPROACHES); do \
 			python3 run_adaptation_loop.py $(MODEL) $$test_case -a $$approach $(PETSC_OPTIONS); \
 		done; \
-	done
-	date >> timing.log
-	git log -n 1 --oneline >> timing.log
+	done && \
+	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Goal-oriented adaptation completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 	echo "" >> timing.log
 
 ml:
 	touch timing.log
-	d=$$(date +%s)
+	d=$$(date +%s) && \
 	for test_case in $(TESTING_CASES); do \
 		for approach in $(APPROACHES); do \
 			python3 run_adaptation_loop_ml.py $(MODEL) $$test_case -a $$approach --tag all $(PETSC_OPTIONS); \
 		done; \
-	done
-	date >> timing.log
-	git log -n 1 --oneline >> timing.log
+	done && \
+	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Data-driven adaptation completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 	echo "" >> timing.log
 
@@ -155,10 +155,10 @@ profile_uni:
 	d=$$(date +%s) && \
 	for test_case in $(TESTING_CASES); do \
 		python3 run_fixed_mesh.py $(MODEL) $$test_case --optimise --num_refinements 4 $(PETSC_OPTIONS) -log_view :$(MODEL)/outputs/$$test_case/logview_uni.txt:ascii_flamegraph; \
-	done
-	date >> timing.log
-	git log -n 1 --oneline >> timing.log
-	echo "Uniform refinement profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log
+	done && \
+	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
+	echo "Uniform refinement profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \
 	echo "" >> timing.log
 	for test_case in $(TESTING_CASES); do \
 		cd $(MODEL)/outputs/$$test_case && \
@@ -168,12 +168,12 @@ profile_uni:
 
 profile_go:
 	touch timing.log
-	d=$$(date +%s)
+	d=$$(date +%s) && \
 	for test_case in $(TESTING_CASES); do \
 		python3 run_adapt.py $(MODEL) $$test_case -a anisotropic --optimise --target_complexity 64000 $(PETSC_OPTIONS) -log_view :$(MODEL)/outputs/$$test_case/logview.txt:ascii_flamegraph; \
-	done
-	date >> timing.log
-	git log -n 1 --oneline >> timing.log
+	done && \
+	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Goal-oriented adaptation profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 	echo "" >> timing.log
 	for test_case in $(TESTING_CASES); do \
@@ -184,12 +184,12 @@ profile_go:
 
 profile_ml:
 	touch timing.log
-	d=$$(date +%s)
+	d=$$(date +%s) && \
 	for test_case in $(TESTING_CASES); do \
 		python3 run_adapt_ml.py $(MODEL) $$test_case -a anisotropic --optimise --target_complexity 64000 $(PETSC_OPTIONS) --tag all -log_view :$(MODEL)/outputs/$$test_case/logview.txt:ascii_flamegraph; \
-	done
-	date >> timing.log
-	git log -n 1 --oneline >> timing.log
+	done && \
+	date >> timing.log && \
+	git log -n 1 --oneline >> timing.log && \
 	echo "Data-driven adaptation profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 	echo "" >> timing.log
 	for test_case in $(TESTING_CASES); do \
