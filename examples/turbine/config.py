@@ -47,7 +47,7 @@ def initialise(case, discrete=False):
         # Random inflow speed from 0.5 m/s to 6 m/s
         parameters.inflow_speed = sample_uniform(0.5, 6.0)
 
-        # Random viscosity from 0.01 m^2/s to 10 m^2/s
+        # Random viscosity from 0.1 m^2/s to 1 m^2/s
         parameters.viscosity_coefficient = sample_uniform(0.1, 1.0)
 
         # Randomise turbine configuration such that all
@@ -78,8 +78,18 @@ def initialise(case, discrete=False):
         parameters.inflow_speed = 5.0
         parameters.turbine_coords = [(456, 232), (744, 268)]
     elif "unseen" in case:
+        bmin, bmax = Constant(100.0), Constant(200.0)
+        w = Constant(500.0)
+
+        def bathy(mesh):
+            y = SpatialCoordinate(mesh)[1] / w
+            P1 = FunctionSpace(mesh, "DG", 0)
+            b = Function(P1)
+            b.interpolate(bmin + (bmax - bmin) * y * (1 - y))
+            return b
+
         parameters.viscosity_coefficient = 2.0
-        parameters.depth = 200.0
+        parameters.bathymetry = bathy
         parameters.inflow_speed = 10.0
         parameters.turbine_coords = [(456, 232), (744, 268)]
     elif "pipe" in case:
