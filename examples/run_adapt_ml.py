@@ -32,6 +32,7 @@ try:
 except ValueError:
     test_case = parsed_args.test_case
 approach = parsed_args.approach
+base_complexity = parsed_args.base_complexity
 target_complexity = parsed_args.target_complexity
 preproc = parsed_args.preproc
 optimise = parsed_args.optimise
@@ -66,7 +67,7 @@ print(f"    Element count        = {ct.elements_old}")
 for ct.fp_iteration in range(ct.maxiter + 1):
 
     # Ramp up the target complexity
-    target_ramp = ramp_complexity(200.0, target_complexity, ct.fp_iteration)
+    target_ramp = ramp_complexity(base_complexity, target_complexity, ct.fp_iteration)
 
     # Solve forward and adjoint and compute Hessians
     out = get_solutions(mesh, setup, convergence_checker=ct, **kwargs)

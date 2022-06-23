@@ -22,6 +22,7 @@ parser = Parser("run_adaptation_loop.py")
 parser.parse_num_refinements(default=24)
 parser.parse_approach()
 parser.parse_convergence_criteria()
+parser.parse_target_complexity()
 parser.add_argument(
     "--factor",
     help="Power by which to increase target metric complexity",
@@ -37,6 +38,7 @@ except ValueError:
     test_case = parsed_args.test_case
 approach = parsed_args.approach
 num_refinements = parsed_args.num_refinements
+base_complexity = parsed_args.base_complexity
 f = parsed_args.factor
 
 # Setup
@@ -64,7 +66,7 @@ for i in range(num_refinements + 1):
         for ct.fp_iteration in range(ct.maxiter + 1):
 
             # Ramp up the target complexity
-            target_ramp = ramp_complexity(200.0, target_complexity, ct.fp_iteration)
+            target_ramp = ramp_complexity(base_complexity, target_complexity, ct.fp_iteration)
             kwargs["target_complexity"] = target_ramp
 
             # Compute goal-oriented metric

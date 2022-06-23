@@ -113,11 +113,18 @@ class Parser(argparse.ArgumentParser):
 
     def parse_target_complexity(self):
         self.add_argument(
+            "--base_complexity",
+            help="Base metric complexity",
+            type=positive_float,
+            default=200.0,
+        )
+        self.add_argument(
             "--target_complexity",
             help="Target metric complexity",
             type=positive_float,
             default=4000.0,
         )
+
 
     def parse_preproc(self):
         self.add_argument(

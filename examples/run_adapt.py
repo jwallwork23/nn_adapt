@@ -35,6 +35,7 @@ try:
 except ValueError:
     test_case = parsed_args.test_case
 approach = parsed_args.approach
+base_complexity = parsed_args.base_complexity
 target_complexity = parsed_args.target_complexity
 optimise = parsed_args.optimise
 no_outputs = parsed_args.no_outputs or optimise
@@ -71,7 +72,7 @@ for ct.fp_iteration in range(ct.maxiter + 1):
     suffix = f"{test_case}_GO{approach}_{ct.fp_iteration}"
 
     # Ramp up the target complexity
-    target_ramp = ramp_complexity(200.0, target_complexity, ct.fp_iteration)
+    target_ramp = ramp_complexity(base_complexity, target_complexity, ct.fp_iteration)
     kwargs["target_complexity"] = target_ramp
 
     # Compute goal-oriented metric
