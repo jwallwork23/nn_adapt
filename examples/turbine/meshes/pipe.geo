@@ -41,7 +41,7 @@ Line(8) = {14,  1};
 Curve Loop(9) = {1, 2, 3, 4, 5, 6, 7, 8};
 Physical Curve("Inflow", 1) = {8};
 Physical Curve("Outflow", 2) = {4};
-Physical Curve("Sides", 3) = {1, 2, 3, 5, 6, 7};
+Physical Curve("Sides", 4) = {1, 2, 3, 5, 6, 7};
 
 Point(15) = {xt0-D/sqrt2, yt0, 0., dx_inner};
 Point(16) = {xt0, yt0-D/sqrt2, 0., dx_inner};

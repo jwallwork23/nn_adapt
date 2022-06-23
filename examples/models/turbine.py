@@ -32,6 +32,7 @@ class Parameters(object):
     turbine_width = None
     turbine_coords = []
     thrust_coefficient = 0.8
+    correct_thrust = True
 
     # Boundary condition parameters
     wall_boundary_type = "un"
@@ -101,8 +102,10 @@ class Parameters(object):
 
         See [Kramer and Piggott 2016] for details.
         """
-        At = self.swept_area
         Ct = self.thrust_coefficient
+        if not self.correct_thrust:
+            return Ct
+        At = self.swept_area
         corr = 4.0 / (1.0 + sqrt(1.0 - Ct * At / self.cross_sectional_area)) ** 2
         return Ct * corr
 

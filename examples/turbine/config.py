@@ -92,6 +92,16 @@ def initialise(case, discrete=False):
         parameters.bathymetry = bathy
         parameters.inflow_speed = 10.0
         parameters.turbine_coords = [(456, 232), (744, 268)]
+    elif "headland" in case:
+        parameters.viscosity_coefficient = 100.0
+        parameters.depth = 40.0
+        parameters.inflow_speed = 5.0
+        parameters.turbine_diameter = 1000.0
+        parameters.turbine_width = 1600.0
+        parameters.turbine_coords = [(10000, 3000)]
+        parameters.correct_thrust = False
+        parameters.h_min = 20.0
+        parameters.h_max = 1000.0
     elif "pipe" in case:
         u_in = Constant(5.0)
         parameters.inflow_speed = u_in

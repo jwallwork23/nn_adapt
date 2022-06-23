@@ -6,7 +6,7 @@ APPROACHES			= anisotropic
 MODEL				= turbine
 NUM_TRAINING_CASES	= 100
 TESTING_CASES		= $(shell cat $(MODEL)/testing_cases.txt)
-PETSC_OPTIONS		= -dm_plex_metric_hausdorff_number 1
+PETSC_OPTIONS		= -dm_plex_metric_hausdorff_number 10
 
 # --- Parameters that should not need modifying
 
