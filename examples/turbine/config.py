@@ -102,6 +102,18 @@ def initialise(case, discrete=False):
         parameters.correct_thrust = False
         parameters.h_min = 20.0
         parameters.h_max = 1000.0
+        parameters.solver_parameters = {
+            "mat_type": "aij",
+            "snes_type": "newtonls",
+            "snes_linesearch_type": "bt",
+            "snes_rtol": 1.0e-08,
+            "snes_max_it": 100,
+            "snes_monitor": None,
+            "ksp_type": "preonly",
+            "ksp_converged_reason": None,
+            "pc_type": "lu",
+            "pc_factor_mat_solver_type": "mumps",
+        }
     elif "pipe" in case:
         u_in = Constant(5.0)
         parameters.inflow_speed = u_in
