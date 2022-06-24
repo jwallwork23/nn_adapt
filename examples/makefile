@@ -25,16 +25,19 @@ dir:
 	done
 
 mesh:
-	echo $(TESTING_CASES)
 	touch timing.log
 	d=$$(date +%s) && \
-	for test_case in $(CASES); do \
+	for test_case in $(TRAINING_CASES); do \
 		python3 meshgen.py $(MODEL) $$test_case; \
 		cd $(MODEL)/meshes && gmsh -2 -algo pack $$test_case.geo && cd ../..; \
 	done && \
 	date >> timing.log && \
 	git log -n 1 --oneline >> timing.log && \
 	echo "Meshes built in $$(($$(date +%s)-d)) seconds" >> timing.log
+	for test_case in $(TESING_CASES); do \
+		python3 meshgen.py $(MODEL) $$test_case; \
+		cd $(MODEL)/meshes && gmsh -2 -algo pack $$test_case.geo && cd ../..; \
+	done
 
 plot_config:
 	python3 plot_config.py $(MODEL) 'train'
