@@ -5,6 +5,7 @@ fields.
 from pyroteus import *
 from nn_adapt.features import split_into_scalars
 from nn_adapt.solving import *
+from time import perf_counter
 
 
 def get_hessians(f, **kwargs):
@@ -78,6 +79,7 @@ def go_metric(
         if convergence_checker.check_estimator(out["estimator"]):
             return out
 
+    out["times"]["metric"] = -perf_counter()
     with PETSc.Log.Event("Metric construction"):
         if anisotropic:
             hessian = combine_metrics(*get_hessians(out["forward"]), average=average)
@@ -90,4 +92,5 @@ def go_metric(
             target_space=TensorFunctionSpace(mesh, "DG", 0),
             interpolant=interpolant,
         )
+    out["times"]["metric"] += perf_counter()
     return out if retall else out["metric"]
