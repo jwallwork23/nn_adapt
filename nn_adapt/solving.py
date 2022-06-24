@@ -6,6 +6,7 @@ from firedrake import *
 from firedrake.petsc import PETSc
 from firedrake.mg.embedded import TransferManager
 from pyroteus.error_estimation import get_dwr_indicator
+from time import perf_counter
 
 
 tm = TransferManager()
@@ -42,6 +43,7 @@ def get_solutions(
 
     # Solve forward problem in base space
     V = config.get_function_space(mesh)
+    out= {"times": {"forward": -perf_counter()}}
     with PETSc.Log.Event("Forward solve"):
         if init is None:
             ic = config.get_initial_condition(V)
@@ -52,7 +54,9 @@ def get_solutions(
         q = solver_obj.fields.solution_2d
         J = config.get_qoi(mesh)(q)
         qoi = assemble(J)
-    out = {"qoi": qoi, "forward": q}
+    out["times"]["forward"] += perf_counter()
+    out["qoi"] = qoi
+    out["forward"] = q
     if convergence_checker is not None:
         if convergence_checker.check_qoi(qoi):
             return out
@@ -60,6 +64,7 @@ def get_solutions(
         return out
 
     # Solve adjoint problem in base space
+    out["times"]["adjoint"] = -perf_counter()
     with PETSc.Log.Event("Adjoint solve"):
         sp = config.parameters.adjoint_solver_parameters
         q_star = Function(V)
@@ -69,10 +74,12 @@ def get_solutions(
         dJdq = derivative(J, q, TestFunction(V))
         solve(dFdq_transpose == dJdq, q_star, solver_parameters=sp)
         out["adjoint"] = q_star
+    out["times"]["adjoint"] += perf_counter()
     if refined_mesh is None:
         return out
 
     # Solve adjoint problem in enriched space
+    out["times"]["estimator"] = -perf_counter()
     with PETSc.Log.Event("Enrichment"):
         V = config.get_function_space(refined_mesh)
         q_plus = Function(V)
@@ -87,6 +94,7 @@ def get_solutions(
         dJdq = derivative(J, q_plus, TestFunction(V))
         solve(dFdq_transpose == dJdq, q_star_plus, solver_parameters=sp)
         out["enriched_adjoint"] = q_star_plus
+    out["times"]["estimator"] += perf_counter()
     return out
 
 
@@ -122,6 +130,7 @@ def indicate_errors(mesh, config, enrichment_method="h", retall=False, **kwargs)
     if retall and "adjoint" not in out:
         return out
 
+    out["times"]["estimator"] -= perf_counter()
     with PETSc.Log.Event("Enrichment"):
         adj_sol_plus = out["enriched_adjoint"]
 
@@ -141,6 +150,7 @@ def indicate_errors(mesh, config, enrichment_method="h", retall=False, **kwargs)
 
         # Evaluate errors
         out["dwr"] = dwr_indicator(config, mesh, fwd_sol_plg, adj_error)
+    out["times"]["estimator"] += perf_counter()
 
     return out if retall else out["dwr"]
 
