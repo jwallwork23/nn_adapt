@@ -58,7 +58,7 @@ for approach in approaches.copy():
     try:
         dofs[approach] = np.load(f"{model}/data/dofs_{approach}_{test_case}.npy")
         qois[approach] = np.load(f"{model}/data/qois_{approach}_{test_case}.npy")
-        times[approach] = np.load(f"{model}/data/times_{approach}_{test_case}.npy")
+        times[approach] = np.load(f"{model}/data/times_all_{approach}_{test_case}.npy")
         niter[approach] = np.load(f"{model}/data/niter_{approach}_{test_case}.npy")
         print(f"Iteration count for {approach}: {niter[approach]}")
     except IOError:

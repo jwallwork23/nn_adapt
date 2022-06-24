@@ -71,6 +71,6 @@ for i, mesh in enumerate(mh):
     np.save(f"{model}/data/qois_uniform_{test_case}", qois)
     np.save(f"{model}/data/dofs_uniform_{test_case}", dofs)
     np.save(f"{model}/data/elements_uniform_{test_case}", elements)
-    np.save(f"{model}/data/times_uniform_{test_case}", times)
+    np.save(f"{model}/data/times_all_uniform_{test_case}", times)
     np.save(f"{model}/data/niter_uniform_{test_case}", niter)
 print_output(f"Setup time: {setup_time:.2f} seconds")

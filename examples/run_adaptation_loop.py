@@ -47,7 +47,10 @@ setup.initialise(test_case)
 unit = setup.parameters.qoi_unit
 
 # Run adaptation loop
-qois, dofs, elements, estimators, times, niter = [], [], [], [], [], []
+qois, dofs, elements, estimators, niter = [], [], [], [], []
+components = ("forward", "adjoint", "estimator", "metric", "adapt")
+times = {c: [] for c in components}
+times["all"] = []
 print(f"Test case {test_case}")
 for i in range(num_refinements + 1):
     try:
@@ -62,7 +65,9 @@ for i in range(num_refinements + 1):
         ct = ConvergenceTracker(mesh, parsed_args)
         print(f"  Target {target_complexity}\n    Mesh 0")
         print(f"      Element count        = {ct.elements_old}")
-        cpu_timestamp = perf_counter()
+        times["all"].append(-perf_counter())
+        for c in components:
+            times[c].append(0.0)
         for ct.fp_iteration in range(ct.maxiter + 1):
 
             # Ramp up the target complexity
@@ -72,10 +77,13 @@ for i in range(num_refinements + 1):
             # Compute goal-oriented metric
             out = go_metric(mesh, setup, convergence_checker=ct, **kwargs)
             qoi = out["qoi"]
+            times["forward"][-1] += out["times"]["forward"]
             print(f"      Quantity of Interest = {qoi} {unit}")
             if "adjoint" not in out:
                 break
             estimator = out["estimator"]
+            times["adjoint"][-1] += out["times"]["adjoint"]
+            times["estimator"][-1] += out["times"]["estimator"]
             print(f"      Error estimator      = {estimator}")
             if "metric" not in out:
                 break
@@ -102,6 +110,7 @@ for i in range(num_refinements + 1):
                 kwargs["init"] = proj
 
             # Process metric
+            out["times"]["metric"] -= perf_counter()
             P1_ten = TensorFunctionSpace(mesh, "CG", 1)
             p1metric = hessian_metric(clement_interpolant(p0metric))
             space_normalise(p1metric, target_ramp, "inf")
@@ -112,7 +121,12 @@ for i in range(num_refinements + 1):
             # Adapt the mesh and check for element count convergence
             metric = RiemannianMetric(mesh)
             metric.assign(p1metric)
+            out["times"]["metric"] += perf_counter()
+            times["metric"][-1] += out["times"]["metric"]
+            out["times"]["adapt"] = -perf_counter()
             mesh = adapt(mesh, metric)
+            out["times"]["adapt"] += perf_counter()
+            times["adapt"][-1] += out["times"]["adapt"]
             print(f"    Mesh {ct.fp_iteration+1}")
             cells = mesh.num_cells()
             print(f"      Element count        = {cells}")
@@ -122,7 +136,7 @@ for i in range(num_refinements + 1):
         print(
             f"    Terminated after {ct.fp_iteration+1} iterations due to {ct.converged_reason}"
         )
-        times.append(perf_counter() - cpu_timestamp)
+        times["all"][-1] += perf_counter()
         qois.append(qoi)
         dofs.append(dof)
         elements.append(cells)
@@ -132,8 +146,10 @@ for i in range(num_refinements + 1):
         np.save(f"{model}/data/dofs_GO{approach}_{test_case}", dofs)
         np.save(f"{model}/data/elements_GO{approach}_{test_case}", elements)
         np.save(f"{model}/data/estimators_GO{approach}_{test_case}", estimators)
-        np.save(f"{model}/data/times_GO{approach}_{test_case}", times)
         np.save(f"{model}/data/niter_GO{approach}_{test_case}", niter)
+        np.save(f"{model}/data/times_all_GO{approach}_{test_case}", times["all"])
+        for c in components:
+            np.save(f"{model}/data/times_{c}_GO{approach}_{test_case}", times[c])
     except ConvergenceError:
         print("Skipping due to convergence error")
         continue

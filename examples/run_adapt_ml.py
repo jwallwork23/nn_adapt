@@ -15,8 +15,6 @@ import importlib
 from time import perf_counter
 
 
-start_time = perf_counter()
-
 # Parse user input
 parser = Parser("run_adapt_ml.py")
 parser.parse_approach()
@@ -41,6 +39,7 @@ if not optimise:
 tag = parsed_args.tag or git.Repo(search_parent_directories=True).head.object.hexsha
 
 # Setup
+start_time = perf_counter()
 setup = importlib.import_module(f"{model}.config")
 setup.initialise(test_case)
 unit = setup.parameters.qoi_unit
@@ -73,13 +72,13 @@ for ct.fp_iteration in range(ct.maxiter + 1):
 
     # Solve forward and adjoint and compute Hessians
     out = get_solutions(mesh, setup, convergence_checker=ct, **kwargs)
-    qoi = out["qoi"]
+    qoi, fwd_sol = out["qoi"], out["forward"]
     print(f"    Quantity of Interest = {qoi} {unit}")
-    if "adjoint" not in out:
-        break
-    fwd_sol, adj_sol = out["forward"], out["adjoint"]
     dof = sum(fwd_sol.function_space().dof_count)
     print(f"    DoF count            = {dof}")
+    if "adjoint" not in out:
+        break
+    adj_sol = out["adjoint"]
     if not optimise:
         fwd_file.write(*fwd_sol.split())
         adj_file.write(*adj_sol.split())
@@ -104,22 +103,23 @@ for ct.fp_iteration in range(ct.maxiter + 1):
         kwargs["init"] = proj
 
     # Extract features
-    features = collect_features(
-        extract_features(setup, fwd_sol, adj_sol, preproc=preproc)
-    )
+    with PETSc.Log.Event("Network"):
+        features = collect_features(
+            extract_features(setup, fwd_sol, adj_sol, preproc=preproc)
+        )
 
-    # Run model
-    with PETSc.Log.Event("Network propagate"):
-        test_targets = np.array([])
-        with torch.no_grad():
-            for i in range(features.shape[0]):
-                test_x = torch.Tensor(features[i]).to(device)
-                test_prediction = nn(test_x)
-                test_targets = np.concatenate(
-                    (test_targets, np.array(test_prediction.cpu()))
-                )
-        dwr = Function(P0)
-        dwr.dat.data[:] = np.abs(test_targets)
+        # Run model
+        with PETSc.Log.Event("Propagate"):
+            test_targets = np.array([])
+            with torch.no_grad():
+                for i in range(features.shape[0]):
+                    test_x = torch.Tensor(features[i]).to(device)
+                    test_prediction = nn(test_x)
+                    test_targets = np.concatenate(
+                        (test_targets, np.array(test_prediction.cpu()))
+                    )
+            dwr = Function(P0)
+            dwr.dat.data[:] = np.abs(test_targets)
 
     # Check for error estimator convergence
     with PETSc.Log.Event("Error estimation"):

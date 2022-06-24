@@ -18,7 +18,6 @@ import numpy as np
 from time import perf_counter
 
 
-start_time = perf_counter()
 set_log_level(ERROR)
 
 # Parse for test case and number of refinements
@@ -43,12 +42,11 @@ if not no_outputs:
     from pyroteus.utility import File
 
 # Setup
+start_time = perf_counter()
 setup = importlib.import_module(f"{model}.config")
 setup.initialise(test_case)
 unit = setup.parameters.qoi_unit
 mesh = Mesh(f"{model}/meshes/{test_case}.msh")
-dim = mesh.topological_dimension()
-Nd = dim**2
 
 # Run adaptation loop
 kwargs = {
@@ -79,18 +77,17 @@ for ct.fp_iteration in range(ct.maxiter + 1):
 
     # Compute goal-oriented metric
     out = go_metric(mesh, setup, convergence_checker=ct, **kwargs)
-    qoi = out["qoi"]
+    qoi, fwd_sol = out["qoi"], out["forward"]
     print(f"    Quantity of Interest = {qoi} {unit}")
+    dof = sum(fwd_sol.function_space().dof_count)
+    print(f"    DoF count            = {dof}")
     if "adjoint" not in out:
         break
     estimator = out["estimator"]
     print(f"    Error estimator      = {estimator}")
     if "metric" not in out:
         break
-    fwd_sol, adj_sol = out["forward"], out["adjoint"],
-    dwr, p0metric = out["dwr"], out["metric"]
-    dof = sum(fwd_sol.function_space().dof_count)
-    print(f"    DoF count            = {dof}")
+    adj_sol, dwr, p0metric = out["adjoint"], out["dwr"], out["metric"]
     if not no_outputs:
         fwd_file.write(*fwd_sol.split())
         adj_file.write(*adj_sol.split())

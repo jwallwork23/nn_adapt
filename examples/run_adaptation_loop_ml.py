@@ -59,7 +59,10 @@ nn.load_state_dict(torch.load(f"{model}/model_{tag}.pt"))
 nn.eval()
 
 # Run adaptation loop
-qois, dofs, elements, estimators, times, niter = [], [], [], [], [], []
+qois, dofs, elements, estimators, niter = [], [], [], [], []
+components = ("forward", "adjoint", "estimator", "metric", "adapt")
+times = {c: [] for c in components}
+times["all"] = []
 print(f"Test case {test_case}")
 for i in range(num_refinements + 1):
     try:
@@ -69,7 +72,9 @@ for i in range(num_refinements + 1):
         kwargs = {}
         print(f"  Target {target_complexity}\n    Mesh 0")
         print(f"      Element count        = {ct.elements_old}")
-        cpu_timestamp = perf_counter()
+        times["all"].append(-perf_counter())
+        for c in components:
+            times[c].append(0.0)
         for ct.fp_iteration in range(ct.maxiter + 1):
 
             # Ramp up the target complexity
@@ -78,12 +83,12 @@ for i in range(num_refinements + 1):
             # Solve forward and adjoint and compute Hessians
             out = get_solutions(mesh, setup, convergence_checker=ct, **kwargs)
             qoi = out["qoi"]
+            times["forward"][-1] += out["times"]["forward"]
             print(f"      Quantity of Interest = {qoi} {unit}")
             if "adjoint" not in out:
                 break
+            times["adjoint"][-1] += out["times"]["adjoint"]
             fwd_sol, adj_sol = out["forward"], out["adjoint"]
-            P0 = FunctionSpace(mesh, "DG", 0)
-            P0_ten = TensorFunctionSpace(mesh, "DG", 0)
 
             def proj(V):
                 """
@@ -103,6 +108,7 @@ for i in range(num_refinements + 1):
                 kwargs["init"] = proj
 
             # Extract features
+            out["times"]["estimator"] = -perf_counter()
             features = collect_features(
                 extract_features(setup, fwd_sol, adj_sol, preproc=preproc)
             )
@@ -116,20 +122,25 @@ for i in range(num_refinements + 1):
                     test_targets = np.concatenate(
                         (test_targets, np.array(test_prediction.cpu()))
                     )
+            P0 = FunctionSpace(mesh, "DG", 0)
             dwr = Function(P0)
             dwr.dat.data[:] = np.abs(test_targets)
 
             # Check for error estimator convergence
             estimator = dwr.vector().gather().sum()
+            out["times"]["estimator"] += perf_counter()
+            times["estimator"][-1] += out["times"]["estimator"]
             print(f"      Error estimator      = {estimator}")
             if ct.check_estimator(estimator):
                 break
 
             # Construct metric
+            out["times"]["metric"] = -perf_counter()
             if approach == "anisotropic":
                 hessian = combine_metrics(*get_hessians(fwd_sol), average=False)
             else:
                 hessian = None
+            P0_ten = TensorFunctionSpace(mesh, "DG", 0)
             p0metric = anisotropic_metric(
                 dwr,
                 hessian,
@@ -149,7 +160,12 @@ for i in range(num_refinements + 1):
             # Adapt the mesh and check for element count convergence
             metric = RiemannianMetric(mesh)
             metric.assign(p1metric)
+            out["times"]["metric"] += perf_counter()
+            times["metric"][-1] += out["times"]["metric"]
+            out["times"]["adapt"] = -perf_counter()
             mesh = adapt(mesh, metric)
+            out["times"]["adapt"] += perf_counter()
+            times["adapt"][-1] += out["times"]["adapt"]
             print(f"    Mesh {ct.fp_iteration+1}")
             cells = mesh.num_cells()
             print(f"      Element count        = {cells}")
@@ -159,7 +175,7 @@ for i in range(num_refinements + 1):
         print(
             f"    Terminated after {ct.fp_iteration+1} iterations due to {ct.converged_reason}"
         )
-        times.append(perf_counter() - cpu_timestamp)
+        times["all"][-1] += perf_counter()
         qois.append(qoi)
         dofs.append(sum(fwd_sol.function_space().dof_count))
         elements.append(cells)
@@ -169,8 +185,10 @@ for i in range(num_refinements + 1):
         np.save(f"{model}/data/dofs_ML{approach}_{test_case}", dofs)
         np.save(f"{model}/data/elements_ML{approach}_{test_case}", elements)
         np.save(f"{model}/data/estimators_ML{approach}_{test_case}", estimators)
-        np.save(f"{model}/data/times_ML{approach}_{test_case}", times)
         np.save(f"{model}/data/niter_ML{approach}_{test_case}", niter)
+        np.save(f"{model}/data/times_all_ML{approach}_{test_case}", times["all"])
+        for c in components:
+            np.save(f"{model}/data/times_{c}_ML{approach}_{test_case}", times[c])
     except ConvergenceError:
         print("Skipping due to convergence error")
         continue
