@@ -192,8 +192,8 @@ def extract_array(f, mesh=None, centroid=False, project=False):
             raise NotImplementedError("Can currently only project scalar fields")  # TODO
         element = f.ufl_element()
         if (element.family(), element.degree()) != ("Discontinuous Lagrange", 0):
-            P0 = FunctionSpace(mesh, "DG", 0)
-            f = project(f, P0)
+            P0 = firedrake.FunctionSpace(mesh, "DG", 0)
+            f = firedrake.project(f, P0)
     s = sum([fi for i, fi in split_into_scalars(f).items()], start=[])
     get = get_values_at_centroids if centroid else get_values_at_elements
     if len(s) == 1:
