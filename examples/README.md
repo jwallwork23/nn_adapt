@@ -10,7 +10,7 @@ Adding a new model `foo` would require a few things:
 * A problem configuration file `foo/config.py`, which reads from `models/foo.py` and initialises parameter classes as required.
 * A `foo/meshgen.py` file for generating gmsh geometry files associated with the initial meshes, driven by a function ``generate_geo``.
 * A `foo/network.py` file for setting up the neural network architecture.
-* A `foo/plotting.py` file for specifying how the problem setups should be plotted.
+* A `foo/plotting.py` file for specifying how the problem setups should be plotted and variables should be separated by importance.
 * Add test cases in a file `foo/testing_cases.txt`.
 * Set the `MODEL` environment variable in the makefile to `foo`.
 * You can also modify `NUM_TRAINING_CASES` as desired.

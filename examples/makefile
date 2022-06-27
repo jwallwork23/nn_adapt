@@ -76,6 +76,7 @@ plot_progress:
 	python3 plot_progress.py $(MODEL) --tag all
 
 plot_importance:
+	python3 compute_importance.py $(MODEL) $(NUM_TRAINING_CASES) --tag all
 	python3 plot_importance.py $(MODEL) $(NUM_TRAINING_CASES) --tag all
 
 # --- Snapshots

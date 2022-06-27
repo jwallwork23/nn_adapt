@@ -1,5 +1,6 @@
 from firedrake import *
 import matplotlib
+import numpy as np
 
 
 matplotlib.rcParams["font.size"] = 12
@@ -48,3 +49,35 @@ def plot_config(config, mesh, axes):
     axes.annotate(
         txt, xy=(0.025 * L, -0.25 * W), bbox={"fc": "w"}, annotation_clip=False
     )
+
+
+def process_sensitivities(data, layout):
+    """
+    Separate sensitivity experiment data by variable.
+
+    :arg data: the output of `compute_importance.py`
+    :arg layout: the :class:`NetLayout` instance
+    """
+    i = 0
+    sensitivities = {}
+    dofs = {"u": 3, "v": 3, r"\eta": 6}
+    for label in ("estimator", "physics", "mesh", "forward", "adjoint"):
+        n = layout.count_inputs(label)
+        if n == 0:
+            continue
+        if label in ("forward", "adjoint"):
+            assert n == sum(dofs.values())
+            for key, dof in dofs.items():
+                S = np.zeros(6)
+                for j in range(dof):
+                    S[j] = data[i + j]
+                l = (r"$%s$" if label == "forward" else r"$%s^*$") % key
+                sensitivities[l] = S
+                i += dof
+        else:
+            S = np.zeros(6)
+            for j in range(n):
+                S[j] = data[i + j]
+            i += n
+            sensitivities[label.capitalize()] = S
+    return sensitivities
