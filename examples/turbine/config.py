@@ -83,7 +83,7 @@ def initialise(case, discrete=False):
 
         def bathy(mesh):
             y = SpatialCoordinate(mesh)[1] / w
-            P1 = FunctionSpace(mesh, "DG", 0)
+            P1 = FunctionSpace(mesh, "CG", 1)
             b = Function(P1)
             b.interpolate(bmin + (bmax - bmin) * y * (1 - y))
             return b
