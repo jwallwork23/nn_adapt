@@ -96,12 +96,10 @@ def initialise(case, discrete=False):
         parameters.viscosity_coefficient = 100.0
         parameters.depth = 40.0
         parameters.inflow_speed = 5.0
-        parameters.turbine_diameter = 1000.0
-        parameters.turbine_width = 1600.0
-        parameters.turbine_coords = [(10000, 3000)]
+        parameters.turbine_diameter = 80.0
+        parameters.turbine_width = 100.0
+        parameters.turbine_coords = [(600, 250)]
         parameters.correct_thrust = False
-        parameters.h_min = 20.0
-        parameters.h_max = 1000.0
         parameters.solver_parameters = {
             "mat_type": "aij",
             "snes_type": "newtonls",
