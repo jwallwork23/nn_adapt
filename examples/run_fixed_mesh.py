@@ -6,7 +6,6 @@ from nn_adapt.solving import *
 from thetis import print_output
 from firedrake.petsc import PETSc
 import importlib
-import os
 from time import perf_counter
 
 

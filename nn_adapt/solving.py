@@ -43,7 +43,7 @@ def get_solutions(
 
     # Solve forward problem in base space
     V = config.get_function_space(mesh)
-    out= {"times": {"forward": -perf_counter()}}
+    out = {"times": {"forward": -perf_counter()}}
     with PETSc.Log.Event("Forward solve"):
         if init is None:
             ic = config.get_initial_condition(V)

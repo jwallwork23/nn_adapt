@@ -125,7 +125,6 @@ class Parser(argparse.ArgumentParser):
             default=4000.0,
         )
 
-
     def parse_preproc(self):
         self.add_argument(
             "--preproc",
