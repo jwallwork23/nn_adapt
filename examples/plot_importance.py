@@ -38,7 +38,7 @@ parser.add_argument(
     "--adaptation_steps",
     help="Steps to learn from",
     type=positive_int,
-    default=4,
+    default=3,
 )
 parser.add_argument(
     "--preproc",
