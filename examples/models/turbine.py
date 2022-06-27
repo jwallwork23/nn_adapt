@@ -269,6 +269,7 @@ def setup_solver(mesh, ic, **kwargs):
         2: {"elev": Constant(0.0)},  # outflow
         3: {"un": Constant(0.0)},  # free-slip
         4: {"uv": Constant(as_vector([0.0, 0.0]))},  # no-slip
+        5: {"elev": Constant(0.0), "un": Constant(0.0)}  # weakly reflective
     }
 
     # Create tidal farm
