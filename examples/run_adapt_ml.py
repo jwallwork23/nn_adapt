@@ -10,7 +10,6 @@ from nn_adapt.solving import *
 from nn_adapt.utility import ConvergenceTracker
 from firedrake.meshadapt import *
 
-import git
 import importlib
 from time import perf_counter
 
@@ -34,9 +33,9 @@ base_complexity = parsed_args.base_complexity
 target_complexity = parsed_args.target_complexity
 preproc = parsed_args.preproc
 optimise = parsed_args.optimise
+tag = parsed_args.tag
 if not optimise:
     from pyroteus.utility import File
-tag = parsed_args.tag or git.Repo(search_parent_directories=True).head.object.hexsha
 
 # Setup
 start_time = perf_counter()

@@ -1,4 +1,5 @@
 import argparse
+import git
 import numpy as np
 
 
@@ -137,5 +138,5 @@ class Parser(argparse.ArgumentParser):
         self.add_argument(
             "--tag",
             help="Model tag (defaults to current git commit sha)",
-            default=None,
+            default=git.Repo(search_parent_directories=True).head.object.hexsha,
         )

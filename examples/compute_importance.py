@@ -14,7 +14,7 @@ import numpy as np
 
 # Parse model
 parser = argparse.ArgumentParser(
-    prog="plot_importance.py",
+    prog="compute_importance.py",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser.add_argument(
@@ -52,12 +52,12 @@ parser.add_argument(
 parser.add_argument(
     "--tag",
     help="Model tag (defaults to current git commit sha)",
-    default=None,
+    default=git.Repo(search_parent_directories=True).head.object.hexsha,
 )
 parsed_args = parser.parse_args()
 model = parsed_args.model
 preproc = parsed_args.preproc
-tag = parsed_args.tag or git.Repo(search_parent_directories=True).head.object.hexsha
+tag = parsed_args.tag
 
 # Load the model
 layout = importlib.import_module(f"{model}.network").NetLayout()
@@ -83,10 +83,9 @@ for step in range(parsed_args.adaptation_steps):
                 key: np.load(f"{data_dir}/feature_{key}_{suffix}.npy")
                 for key in layout.inputs
             }
+            target = np.load(f"{data_dir}/target_{suffix}.npy")
             features = torch.from_numpy(collect_features(data)).type(torch.float32)
-            expected = torch.from_numpy(
-                np.load(f"{data_dir}/target_{suffix}.npy")
-            ).type(torch.float32)
+            expected = torch.from_numpy(target).type(torch.float32)
             features.requires_grad_(True)
 
             # Evaluate the loss
