@@ -9,12 +9,18 @@ from nn_adapt.parse import argparse, bounded_float, nonnegative_int, positive_fl
 import git
 import importlib
 import numpy as np
+import os
 from sklearn import model_selection
 from time import perf_counter
 from torch.optim.lr_scheduler import StepLR
 
 
 # Configuration
+pwd = os.path.abspath(os.path.dirname(__file__))
+models = [
+    name for name in os.listdir(pwd)
+    if os.path.isdir(name) and name not in ("__pycache__", "models")
+]
 parser = argparse.ArgumentParser(
     prog="test_and_train.py",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -24,7 +30,7 @@ parser.add_argument(
     "--model",
     help="The equation set being solved",
     type=str,
-    choices=["turbine"],
+    choices=models,
     default="turbine",
 )
 parser.add_argument(
@@ -105,9 +111,9 @@ parser.add_argument(
 )
 parser.add_argument(
     "--tag",
-    help="Tag for the model",
+    help="Tag for labelling the model (defaults to current git sha)",
     type=str,
-    default=None,
+    default=git.Repo(search_parent_directories=True).head.object.hexsha,
 )
 parsed_args = parser.parse_args()
 model = parsed_args.model
@@ -118,6 +124,7 @@ lr = parsed_args.lr
 lr_adapt_num_steps = parsed_args.lr_adapt_num_steps
 lr_adapt_factor = parsed_args.lr_adapt_factor
 seed = parsed_args.seed
+tag = parsed_args.tag
 
 # Load network layout
 layout = importlib.import_module(f"{model}.network").NetLayout()
@@ -147,7 +154,7 @@ targets = torch.from_numpy(targets).type(torch.float32)
 
 # Get train and validation datasets
 xtrain, xval, ytrain, yval = model_selection.train_test_split(
-    features, targets, test_size=parsed_args.test_size, random_state=parsed_args.seed
+    features, targets, test_size=parsed_args.test_size, random_state=seed
 )
 train_data = torch.utils.data.TensorDataset(torch.Tensor(xtrain), torch.Tensor(ytrain))
 train_loader = torch.utils.data.DataLoader(
@@ -174,12 +181,9 @@ cuda = all(p.is_cuda for p in nn.parameters())
 print(f"Model parameters are{'' if cuda else ' not'} using GPU cores.")
 
 # Train
-train_losses = []
-validation_losses = []
-adapt_steps = []
-set_seed(parsed_args.seed)
-tag = parsed_args.tag or git.Repo(search_parent_directories=True).head.object.hexsha
-for epoch in range(parsed_args.num_epochs):
+train_losses, validation_losses, lr_adapt_steps = [], [], []
+set_seed(seed)
+for epoch in range(num_epochs):
 
     # Training step
     start_time = perf_counter()
@@ -192,14 +196,15 @@ for epoch in range(parsed_args.num_epochs):
     validation_time = perf_counter() - mid_time
 
     # Adapt learning rate
-    scheduler.step()
-    if epoch % parsed_args.lr_adapt_num_steps == 0:
-        adapt_steps.append(epoch)
-        np.save(f"{model}/data/adapt_steps", adapt_steps)
+    if scheduler is not None:
+        scheduler.step()
+        if epoch % lr_adapt_num_steps == 0:
+            lr_adapt_steps.append(epoch)
+            np.save(f"{model}/data/lr_adapt_steps_{tag}", lr_adapt_steps)
 
-    # Stash progreess
+    # Stash progress
     print(
-        f"Epoch {epoch:4d}/{parsed_args.num_epochs:d}"
+        f"Epoch {epoch:4d}/{num_epochs:d}"
         f"  avg loss: {train:.4e} / {val:.4e}"
         f"  wallclock: {train_time:.2f}s / {validation_time:.2f}s"
     )
