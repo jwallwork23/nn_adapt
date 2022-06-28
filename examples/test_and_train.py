@@ -4,10 +4,11 @@ specifications of a given ``model``.
 """
 from nn_adapt.ann import *
 from nn_adapt.features import collect_features
-from nn_adapt.parse import argparse, bounded_float, positive_float, positive_int
+from nn_adapt.parse import argparse, bounded_float, nonnegative_int, positive_float, positive_int
 
 import git
 import importlib
+import numpy as np
 from sklearn import model_selection
 from time import perf_counter
 from torch.optim.lr_scheduler import StepLR
@@ -55,9 +56,9 @@ parser.add_argument(
 )
 parser.add_argument(
     "--lr_adapt_num_steps",
-    help="Adaptation frequency",
-    type=positive_int,
-    default=2000,
+    help="Frequency of learning rate adaptation",
+    type=nonnegative_int,
+    default=0,
 )
 parser.add_argument(
     "--lr_adapt_factor",
@@ -112,6 +113,11 @@ parsed_args = parser.parse_args()
 model = parsed_args.model
 approaches = parsed_args.approaches
 preproc = parsed_args.preproc
+num_epochs = parsed_args.num_epochs
+lr = parsed_args.lr
+lr_adapt_num_steps = parsed_args.lr_adapt_num_steps
+lr_adapt_factor = parsed_args.lr_adapt_factor
+seed = parsed_args.seed
 
 # Load network layout
 layout = importlib.import_module(f"{model}.network").NetLayout()
@@ -154,10 +160,15 @@ validate_loader = torch.utils.data.DataLoader(
 
 # Setup model
 nn = SimpleNet(layout).to(device)
-optimizer = torch.optim.Adam(nn.parameters(), lr=parsed_args.lr)
-scheduler = StepLR(
-    optimizer, parsed_args.lr_adapt_num_steps, gamma=parsed_args.lr_adapt_factor
-)
+optimizer = torch.optim.Adam(nn.parameters(), lr=lr)
+if lr_adapt_num_steps > 0:
+    scheduler = StepLR(
+        optimizer,
+        lr_adapt_num_steps,
+        gamma=lr_adapt_factor
+    )
+else:
+    scheduler = None
 criterion = Loss()
 cuda = all(p.is_cuda for p in nn.parameters())
 print(f"Model parameters are{'' if cuda else ' not'} using GPU cores.")
