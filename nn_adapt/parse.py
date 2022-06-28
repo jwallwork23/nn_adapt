@@ -1,41 +1,40 @@
 import argparse
+import numpy as np
 
 
 __all__ = ["Parser"]
 
 
-def _check_positive(value, typ):
-    tvalue = typ(value)
-    if tvalue <= 0:
-        raise argparse.ArgumentTypeError(f"{value} is an invalid positive {typ} value")
-    return tvalue
-
-
-positive_float = lambda value: _check_positive(value, float)
-positive_int = lambda value: _check_positive(value, int)
-
-
-def _check_nonnegative(value, typ):
-    tvalue = typ(value)
-    if tvalue < 0:
-        raise argparse.ArgumentTypeError(f"{value} is an invalid positive {typ} value")
-    return tvalue
-
-
-nonnegative_float = lambda value: _check_nonnegative(value, float)
-nonnegative_int = lambda value: _check_nonnegative(value, int)
-
-
 def _check_in_range(value, typ, l, u):
     tvalue = typ(value)
     if not (tvalue >= l and tvalue <= u):
-        raise argparse.ArgumentTypeError(f"{value} is not bounded by {(l, u)}")
+        raise argparse.ArgumentTypeError(f"{value} is not in [{l}, {u}]")
     return tvalue
+
+
+def _check_strictly_in_range(value, typ, l, u):
+    tvalue = typ(value)
+    if not (tvalue >= l and tvalue <= u):
+        raise argparse.ArgumentTypeError(f"{value} is not in ({l}, {u})")
+    return tvalue
+
+
+nonnegative_float = lambda value: _check_in_range(value, float, 0, np.inf)
+nonnegative_int = lambda value: _check_in_range(value, int, 0, np.inf)
+positive_float = lambda value: _check_strictly_in_range(value, float, 0, np.inf)
+positive_int = lambda value: _check_strictly_in_range(value, int, 0, np.inf)
 
 
 def bounded_float(l, u):
     def chk(value):
         return _check_in_range(value, float, l, u)
+
+    return chk
+
+
+def bounded_int(l, u):
+    def chk(value):
+        return _check_in_range(value, int, l, u)
 
     return chk
 
