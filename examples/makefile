@@ -7,6 +7,7 @@ MODEL				= turbine
 NUM_TRAINING_CASES	= 100
 TESTING_CASES		= $(shell cat $(MODEL)/testing_cases.txt)
 PETSC_OPTIONS		= -dm_plex_metric_hausdorff_number 1
+TAG					= all
 
 # --- Parameters that should not need modifying
 
@@ -67,18 +68,18 @@ features:
 train:
 	touch timing.log
 	d=$$(date +%s) && \
-	python3 test_and_train.py -m $(MODEL) -n $(NUM_TRAINING_CASES) --tag all && \
+	python3 test_and_train.py -m $(MODEL) -n $(NUM_TRAINING_CASES) --tag $(TAG) && \
 	date >> timing.log && \
 	git log -n 1 --oneline >> timing.log && \
 	echo "Training completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \
 	echo "" >> timing.log
 
 plot_progress:
-	python3 plot_progress.py $(MODEL) --tag all
+	python3 plot_progress.py $(MODEL) --tag $(TAG)
 
 plot_importance:
-	python3 compute_importance.py $(MODEL) $(NUM_TRAINING_CASES) --tag all
-	python3 plot_importance.py $(MODEL) $(NUM_TRAINING_CASES) --tag all
+	python3 compute_importance.py $(MODEL) $(NUM_TRAINING_CASES) --tag $(TAG)
+	python3 plot_importance.py $(MODEL) $(NUM_TRAINING_CASES) --tag $(TAG)
 
 # --- Snapshots
 
@@ -88,7 +89,7 @@ snapshot:
 	for test_case in $(TESTING_CASES); do \
 		for approach in $(APPROACHES); do \
 			python3 run_adapt.py $(MODEL) $$test_case -a $$approach $(PETSC_OPTIONS); \
-			python3 run_adapt_ml.py $(MODEL) $$test_case -a $$approach --tag all $(PETSC_OPTIONS); \
+			python3 run_adapt_ml.py $(MODEL) $$test_case -a $$approach --tag $(TAG) $(PETSC_OPTIONS); \
 		done; \
 	done && \
 	date >> timing.log && \
@@ -129,7 +130,7 @@ ml:
 	d=$$(date +%s) && \
 	for test_case in $(TESTING_CASES); do \
 		for approach in $(APPROACHES); do \
-			python3 run_adaptation_loop_ml.py $(MODEL) $$test_case -a $$approach --tag all $(PETSC_OPTIONS); \
+			python3 run_adaptation_loop_ml.py $(MODEL) $$test_case -a $$approach --tag $(TAG) $(PETSC_OPTIONS); \
 		done; \
 	done && \
 	date >> timing.log && \
@@ -139,7 +140,7 @@ ml:
 
 plot_convergence:
 	for test_case in $(TESTING_CASES); do \
-		python3 plot_convergence.py $(MODEL) $$test_case; \
+		python3 plot_convergence.py $(MODEL) $$test_case --tag $(TAG); \
 	done
 
 # --- Do profiling experiments

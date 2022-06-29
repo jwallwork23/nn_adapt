@@ -53,7 +53,7 @@ nn.eval()
 # Run adaptation loop
 ct = ConvergenceTracker(mesh, parsed_args)
 if not optimise:
-    output_dir = f"{model}/outputs/{test_case}/ML/{approach}"
+    output_dir = f"{model}/outputs/{test_case}/ML/{approach}/{tag}"
     fwd_file = File(f"{output_dir}/forward.pvd")
     adj_file = File(f"{output_dir}/adjoint.pvd")
     ee_file = File(f"{output_dir}/estimator.pvd")

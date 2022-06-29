@@ -15,9 +15,11 @@ import sys
 
 # Parse user input
 parser = Parser("plot_convergence.py")
+parser.parse_tag()
 parsed_args = parser.parse_args()
 model = parsed_args.model
 test_case = parsed_args.test_case
+tag = parsed_args.tag
 
 # Formatting
 matplotlib.rcParams["font.size"] = 20
@@ -55,11 +57,12 @@ qoi_name = setup.parameters.qoi_name.capitalize()
 # Load outputs
 dofs, qois, times, niter = {}, {}, {}, {}
 for approach in approaches.copy():
+    ext = f"_{tag}" if approach[:2] == "ML" else ""
     try:
-        dofs[approach] = np.load(f"{model}/data/dofs_{approach}_{test_case}.npy")
-        qois[approach] = np.load(f"{model}/data/qois_{approach}_{test_case}.npy")
-        times[approach] = np.load(f"{model}/data/times_all_{approach}_{test_case}.npy")
-        niter[approach] = np.load(f"{model}/data/niter_{approach}_{test_case}.npy")
+        dofs[approach] = np.load(f"{model}/data/dofs_{approach}_{test_case}{ext}.npy")
+        qois[approach] = np.load(f"{model}/data/qois_{approach}_{test_case}{ext}.npy")
+        times[approach] = np.load(f"{model}/data/times_all_{approach}_{test_case}{ext}.npy")
+        niter[approach] = np.load(f"{model}/data/niter_{approach}_{test_case}{ext}.npy")
         print(f"Iteration count for {approach}: {niter[approach]}")
     except IOError:
         print(f"Cannot load {approach} data for test case {test_case}")
@@ -90,7 +93,7 @@ axes.set_xlabel("DoF count")
 axes.set_ylabel(qoi_name + r" ($\mathrm{" + unit + r"}$)")
 axes.grid(True)
 plt.tight_layout()
-plt.savefig(f"{model}/plots/qoi_vs_dofs_{test_case}.pdf")
+plt.savefig(f"{model}/plots/qoi_vs_dofs_{test_case}_{tag}.pdf")
 
 # Plot QoI curves against CPU time
 fig, axes = plt.subplots()
@@ -107,7 +110,7 @@ axes.set_xlabel(r"CPU time ($\mathrm{s}$)")
 axes.set_ylabel(qoi_name + r" ($\mathrm{" + unit + "}$)")
 axes.grid(True)
 plt.tight_layout()
-plt.savefig(f"{model}/plots/qoi_vs_cputime_{test_case}.pdf")
+plt.savefig(f"{model}/plots/qoi_vs_cputime_{test_case}_{tag}.pdf")
 plt.close()
 
 # Plot CPU time curves against DoF count
@@ -122,7 +125,7 @@ axes.set_xlim(xlim["dofs"])
 axes.set_ylim(xlim["times"])
 axes.grid(True, which="both")
 plt.tight_layout()
-plt.savefig(f"{model}/plots/cputime_vs_dofs_{test_case}.pdf")
+plt.savefig(f"{model}/plots/cputime_vs_dofs_{test_case}_{tag}.pdf")
 plt.close()
 
 qois["uniform"] = qois["uniform"][:-1]
@@ -143,7 +146,7 @@ axes.set_xlabel("DoF count")
 axes.set_ylabel(r"QoI error ($\%$)")
 axes.grid(True, which="both")
 plt.tight_layout()
-plt.savefig(f"{model}/plots/qoi_error_vs_dofs_{test_case}.pdf")
+plt.savefig(f"{model}/plots/qoi_error_vs_dofs_{test_case}_{tag}.pdf")
 plt.close()
 
 # Plot legend
@@ -172,5 +175,5 @@ axes.set_xlabel(r"CPU time ($\mathrm{s}$)")
 axes.set_ylabel(r"QoI error ($\%$)")
 axes.grid(True, which="both")
 plt.tight_layout()
-plt.savefig(f"{model}/plots/qoi_error_vs_cputime_{test_case}.pdf")
+plt.savefig(f"{model}/plots/qoi_error_vs_cputime_{test_case}_{tag}.pdf")
 plt.close()
