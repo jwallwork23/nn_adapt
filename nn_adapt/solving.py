@@ -6,6 +6,7 @@ from firedrake import *
 from firedrake.petsc import PETSc
 from firedrake.mg.embedded import TransferManager
 from pyroteus.error_estimation import get_dwr_indicator
+import numpy as np
 from time import perf_counter
 
 
@@ -170,6 +171,11 @@ def dwr_indicator(config, mesh, q, q_star):
     F = solver_obj.timestepper.F
     V = solver_obj.function_spaces.V_2d
     dwr_plus = get_dwr_indicator(F, q_star, test_space=V)
+
+    # Replace any NaNs with the maximum non-NaN value in the array
+    if np.isnan(dwr_plus.dat.data).any():
+        maximum = np.nan_to_num(dwr_plus.dat.data).max()
+        dwr_plus.dat.data[:] = np.nan_to_num(dwr_plus.dat.data, nan=maximum)
 
     # Project down to base space
     P0 = FunctionSpace(mesh, "DG", 0)
