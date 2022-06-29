@@ -12,7 +12,7 @@ import numpy as np
 import os
 from sklearn import model_selection
 from time import perf_counter
-from torch.optim.lr_scheduler import StepLR
+import torch.optim.lr_scheduler as lr_scheduler
 
 
 # Configuration
@@ -168,14 +168,21 @@ validate_loader = torch.utils.data.DataLoader(
 # Setup model
 nn = SimpleNet(layout).to(device)
 optimizer = torch.optim.Adam(nn.parameters(), lr=lr)
+scheduler1 = lr_scheduler.ReduceLROnPlateau(
+    optimizer,
+    factor=lr_adapt_factor,
+    threshold=1.0e-04,
+    patience=50,
+    verbose=True,
+)
 if lr_adapt_num_steps > 0:
-    scheduler = StepLR(
+    scheduler2 = lr_scheduler.StepLR(
         optimizer,
         lr_adapt_num_steps,
         gamma=lr_adapt_factor
     )
 else:
-    scheduler = None
+    scheduler2 = None
 criterion = Loss()
 cuda = all(p.is_cuda for p in nn.parameters())
 print(f"Model parameters are{'' if cuda else ' not'} using GPU cores.")
@@ -196,8 +203,9 @@ for epoch in range(num_epochs):
     validation_time = perf_counter() - mid_time
 
     # Adapt learning rate
-    if scheduler is not None:
-        scheduler.step()
+    scheduler1.step(val)
+    if scheduler2 is not None:
+        scheduler2.step()
         if epoch % lr_adapt_num_steps == 0:
             lr_adapt_steps.append(epoch)
             np.save(f"{model}/data/lr_adapt_steps_{tag}", lr_adapt_steps)
