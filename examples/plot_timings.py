@@ -13,15 +13,16 @@ def get_times(model, approach, case, it):
     :arg case: the test case name or number
     :arg it: the run
     """
-    qoi = np.load(f"{model}/data/qois_{approach}_{case}.npy")[it]
+    ext = f"_{tag}" if approach[:2] == "ML" else ""
+    qoi = np.load(f"{model}/data/qois_{approach}_{case}{ext}.npy")[it]
     conv = np.load(f"{model}/data/qois_uniform_{case}.npy")[-1]
     print(f"{approach} QoI error: {abs((qoi-conv)/conv)*100:.3f} %")
     split = {
-        "Forward solve": np.load(f"{model}/data/times_forward_{approach}_{case}.npy")[it],
-        "Adjoint solve": np.load(f"{model}/data/times_adjoint_{approach}_{case}.npy")[it],
-        "Error estimation": np.load(f"{model}/data/times_estimator_{approach}_{case}.npy")[it],
-        "Metric construction": np.load(f"{model}/data/times_metric_{approach}_{case}.npy")[it],
-        "Mesh adaptation": np.load(f"{model}/data/times_adapt_{approach}_{case}.npy")[it],
+        "Forward solve": np.load(f"{model}/data/times_forward_{approach}_{case}{ext}.npy")[it],
+        "Adjoint solve": np.load(f"{model}/data/times_adjoint_{approach}_{case}{ext}.npy")[it],
+        "Error estimation": np.load(f"{model}/data/times_estimator_{approach}_{case}{ext}.npy")[it],
+        "Metric construction": np.load(f"{model}/data/times_metric_{approach}_{case}{ext}.npy")[it],
+        "Mesh adaptation": np.load(f"{model}/data/times_adapt_{approach}_{case}{ext}.npy")[it],
     }
     total = sum(split.values())
     for key, value in split.items():
@@ -31,6 +32,7 @@ def get_times(model, approach, case, it):
 
 # Parse user input
 parser = Parser(prog="plot_timings.py")
+parser.parse_tag()
 parser.add_argument(
     "--iter",
     help="Iteration",
@@ -44,6 +46,7 @@ try:
     assert test_case > 0
 except ValueError:
     test_case = parsed_args.test_case
+tag = parsed_args.tag
 it = parsed_args.iter
 approaches = ["GOanisotropic", "MLanisotropic"]
 
@@ -63,4 +66,4 @@ axes.bar_label(axes.containers[-1])
 axes.legend(loc="upper right")
 axes.set_ylabel("Runtime [seconds]")
 plt.tight_layout()
-plt.savefig(f"{model}/plots/timings_{test_case}_{it}.pdf")
+plt.savefig(f"{model}/plots/timings_{test_case}_{it}_{tag}.pdf")
