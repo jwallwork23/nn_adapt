@@ -18,8 +18,10 @@ CASES			= ${TRAINING_CASES} ${TESTING_CASES}
 setup: dir mesh plot_config
 
 dir:
-	mkdir -p $(MODEL)
-	cd $(MODEL) && touch __init__.py && mkdir -p data outputs plots && cd ..; \
+	mkdir -p $(MODEL)/data
+	mkdir -p $(MODEL)/outputs
+	mkdir -p $(MODEL)/plots
+	touch $(MODEL)/__init__.py
 	for test_case in $(TESTING_CASES); do \
 		mkdir -p $(MODEL)/outputs/$$test_case; \
 	done
@@ -29,7 +31,7 @@ mesh:
 	d=$$(date +%s) && \
 	for test_case in $(CASES); do \
 		python3 meshgen.py $(MODEL) $$test_case; \
-		cd $(MODEL)/meshes && gmsh -2 -algo pack $$test_case.geo && cd ../..; \
+		gmsh -2 -algo pack $(MODEL)/meshes/$$test_case.geo -o $(MODEL)/meshes/$$test_case.msh; \
 	done && \
 	date >> timing.log && \
 	git log -n 1 --oneline >> timing.log && \
@@ -40,7 +42,10 @@ plot_config:
 	python3 plot_config.py $(MODEL) 'test'
 
 clean:
-	cd $(MODEL) && rm -rf data outputs plots __pycache__ && cd ..
+	rm -rf $(MODEL)/data
+	rm -rf $(MODEL)/outputs
+	rm -rf $(MODEL)/plots
+	rm -rf $(MODEL)/__pycache__
 
 # --- Train the neural network
 
@@ -154,46 +159,43 @@ profile_uni:
 	touch timing.log
 	d=$$(date +%s) && \
 	for test_case in $(TESTING_CASES); do \
-		python3 run_fixed_mesh.py $(MODEL) $$test_case --optimise --num_refinements 4 $(PETSC_OPTIONS) -log_view :$(MODEL)/outputs/$$test_case/logview_uni.txt:ascii_flamegraph; \
+		python3 run_fixed_mesh.py $(MODEL) $$test_case --optimise --num_refinements 4 $(PETSC_OPTIONS) -log_view :logview.txt:ascii_flamegraph; \
 	done && \
 	date >> timing.log && \
 	git log -n 1 --oneline >> timing.log && \
 	echo "Uniform refinement profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log && \
 	echo "" >> timing.log
 	for test_case in $(TESTING_CASES); do \
-		cd $(MODEL)/outputs/$$test_case && \
-		flamegraph.pl --title "Uniform refinement ($$test_case)" logview.txt > uni.svg && \
-		rm logview.txt && cd ../../..; \
+		flamegraph.pl --title "Uniform refinement ($$test_case)" logview.txt > $(MODEL)/outputs/$$test_case/uni.svg && \
+		rm logview.txt; \
 	done
 
 profile_go:
 	touch timing.log
 	d=$$(date +%s) && \
 	for test_case in $(TESTING_CASES); do \
-		python3 run_adapt.py $(MODEL) $$test_case -a anisotropic --optimise --target_complexity 64000 $(PETSC_OPTIONS) -log_view :$(MODEL)/outputs/$$test_case/logview.txt:ascii_flamegraph; \
+		python3 run_adapt.py $(MODEL) $$test_case -a anisotropic --optimise --target_complexity 64000 $(PETSC_OPTIONS) -log_view :logview.txt:ascii_flamegraph; \
 	done && \
 	date >> timing.log && \
 	git log -n 1 --oneline >> timing.log && \
 	echo "Goal-oriented adaptation profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 	echo "" >> timing.log
 	for test_case in $(TESTING_CASES); do \
-		cd $(MODEL)/outputs/$$test_case && \
-		flamegraph.pl --title "Goal-oriented adaptation ($$test_case)" logview.txt > go.svg && \
-		rm logview.txt && cd ../../..; \
+		flamegraph.pl --title "Goal-oriented adaptation ($$test_case)" logview.txt > $(MODEL)/outputs/$$test_case/go.svg && \
+		rm logview.txt; \
 	done
 
 profile_ml:
 	touch timing.log
 	d=$$(date +%s) && \
 	for test_case in $(TESTING_CASES); do \
-		python3 run_adapt_ml.py $(MODEL) $$test_case -a anisotropic --optimise --target_complexity 64000 $(PETSC_OPTIONS) --tag all -log_view :$(MODEL)/outputs/$$test_case/logview.txt:ascii_flamegraph; \
+		python3 run_adapt_ml.py $(MODEL) $$test_case -a anisotropic --optimise --target_complexity 64000 $(PETSC_OPTIONS) --tag all -log_view :logview.txt:ascii_flamegraph; \
 	done && \
 	date >> timing.log && \
 	git log -n 1 --oneline >> timing.log && \
 	echo "Data-driven adaptation profiling run completed in $$(($$(date +%s)-d)) seconds" >> timing.log
 	echo "" >> timing.log
 	for test_case in $(TESTING_CASES); do \
-		cd $(MODEL)/outputs/$$test_case && \
-		flamegraph.pl --title "Data-driven adaptation ($$test_case)" logview.txt > ml.svg && \
-		rm logview.txt && cd ../../..; \
+		flamegraph.pl --title "Data-driven adaptation ($$test_case)" logview.txt > $(MODEL)/outputs/$$test_case/ml.svg && \
+		rm logview.txt; \
 	done
