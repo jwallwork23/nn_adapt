@@ -79,6 +79,12 @@ parser.add_argument(
     default=2000,
 )
 parser.add_argument(
+    "--patience",
+    help="The number of iterations before early stopping",
+    type=positive_int,
+    default=100,
+)
+parser.add_argument(
     "--preproc",
     help="Data preprocess function",
     type=str,
@@ -123,6 +129,7 @@ num_epochs = parsed_args.num_epochs
 lr = parsed_args.lr
 lr_adapt_num_steps = parsed_args.lr_adapt_num_steps
 lr_adapt_factor = parsed_args.lr_adapt_factor
+patience = parsed_args.patience
 seed = parsed_args.seed
 tag = parsed_args.tag
 
@@ -190,6 +197,8 @@ print(f"Model parameters are{'' if cuda else ' not'} using GPU cores.")
 # Train
 train_losses, validation_losses, lr_adapt_steps = [], [], []
 set_seed(seed)
+previous_loss = np.inf
+trigger_times = 0
 for epoch in range(num_epochs):
 
     # Training step
@@ -221,3 +230,13 @@ for epoch in range(num_epochs):
     np.save(f"{model}/data/train_losses_{tag}", train_losses)
     np.save(f"{model}/data/validation_losses_{tag}", validation_losses)
     torch.save(nn.state_dict(), f"{model}/model_{tag}.pt")
+
+    # Test for convergence
+    if val > previous_loss:
+        trigger_times += 1
+        if trigger_times >= patience:
+            print("Early stopping")
+            break
+    else:
+        trigger_times = 0
+        previous_loss = val
