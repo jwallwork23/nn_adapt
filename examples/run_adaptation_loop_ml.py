@@ -11,7 +11,6 @@ from nn_adapt.solving import *
 from nn_adapt.utility import ConvergenceTracker
 from firedrake.meshadapt import *
 
-import git
 import importlib
 import numpy as np
 from time import perf_counter
@@ -43,7 +42,7 @@ except ValueError:
 approach = parsed_args.approach
 num_refinements = parsed_args.num_refinements
 preproc = parsed_args.preproc
-tag = parsed_args.tag or git.Repo(search_parent_directories=True).head.object.hexsha
+tag = parsed_args.tag
 base_complexity = parsed_args.base_complexity
 f = parsed_args.factor
 
