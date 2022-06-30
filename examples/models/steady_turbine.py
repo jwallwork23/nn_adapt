@@ -1,15 +1,13 @@
 from thetis import *
+import nn_adapt.model
 import numpy as np
 
 
-# TODO: Write a base class
-class Parameters(object):
+class Parameters(nn_adapt.model.Parameters):
     """
     Class encapsulating all parameters required for the tidal
     farm modelling test case.
     """
-
-    case = None
 
     discrete = False
 
@@ -126,18 +124,6 @@ class Parameters(object):
         Initial condition.
         """
         return self.u_inflow(mesh)
-
-    def Re(self, fwd_sol):
-        """
-        Compute the mesh Reynolds number based on the current
-        forward solution, `fwd_sol`.
-        """
-        u = fwd_sol.split()[0]
-        unorm = sqrt(dot(u, u))
-        mesh = u.function_space().mesh()
-        P0_2d = get_functionspace(mesh, "DG", 0)
-        h = CellSize(mesh)
-        return interpolate(0.5 * h * unorm / self.viscosity(mesh), P0_2d)
 
     def turbine_density(self, mesh):
         """
