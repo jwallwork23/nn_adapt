@@ -31,11 +31,11 @@ def set_seed(seed):
     torch.cuda.manual_seed_all(seed)
 
 
-class SimpleNet(nn.Module):
+class SingleLayerFCNN(nn.Module):
     """
     Fully Connected Neural Network (FCNN)
     for goal-oriented metric-based mesh
-    adaptation.
+    adaptation with a single hidden layer.
     """
 
     def __init__(self, layout):
@@ -45,10 +45,14 @@ class SimpleNet(nn.Module):
             inputs, hidden neurons and outputs
             specified.
         """
-        super(SimpleNet, self).__init__()
+        super().__init__()
+
+        # Define layers
         self.linear1 = nn.Linear(layout.num_inputs, layout.num_hidden_neurons)
-        self.activate1 = nn.Sigmoid()
         self.linear2 = nn.Linear(layout.num_hidden_neurons, 1)
+
+        # Define activation functions
+        self.activate1 = nn.Sigmoid()
 
     def forward(self, x):
         z1 = self.linear1(x)

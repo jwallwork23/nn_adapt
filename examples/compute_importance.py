@@ -60,7 +60,7 @@ tag = parsed_args.tag
 
 # Load the model
 layout = importlib.import_module(f"{model}.network").NetLayout()
-nn = SimpleNet(layout).to(device)
+nn = SingleLayerFCNN(layout).to(device)
 nn.load_state_dict(torch.load(f"{model}/model_{tag}.pt"))
 nn.eval()
 loss_fn = Loss()
