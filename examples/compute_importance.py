@@ -3,7 +3,6 @@ Compute the sensitivities of a network trained on a
 particular ``model`` to its input parameters.
 """
 from nn_adapt.ann import *
-from nn_adapt.features import collect_features
 from nn_adapt.parse import argparse, positive_int
 from nn_adapt.plotting import *
 

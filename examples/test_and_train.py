@@ -3,7 +3,6 @@ Train a network on ``num_training_cases`` problem
 specifications of a given ``model``.
 """
 from nn_adapt.ann import *
-from nn_adapt.features import collect_features
 from nn_adapt.parse import argparse, bounded_float, nonnegative_int, positive_float, positive_int
 
 import git
