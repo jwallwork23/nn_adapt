@@ -1,4 +1,4 @@
-from models.turbine import *
+from models.steady_turbine import *
 
 
 testing_cases = ["aligned", "offset"]

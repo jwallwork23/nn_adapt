@@ -19,7 +19,7 @@ parser.add_argument(
     "model",
     help="The model",
     type=str,
-    choices=["turbine"],
+    choices=["steady_turbine"],
 )
 parser.add_argument(
     "num_training_cases",
