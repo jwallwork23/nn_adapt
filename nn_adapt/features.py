@@ -11,7 +11,7 @@ import ufl
 from nn_adapt.solving import dwr_indicator
 
 
-__all__ = ["extract_features", "get_values_at_elements", "collect_features"]
+__all__ = ["extract_features", "get_values_at_elements"]
 
 
 @PETSc.Log.EventDecorator("Extract components")
@@ -254,24 +254,3 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
 
         features = preprocess_features(features, preproc=preproc)
     return features
-
-
-def collect_features(feature_dict, preproc="none"):
-    """
-    Given a dictionary of feature arrays, stack their
-    data appropriately to be fed into a neural network.
-
-    :arg feature_dict: dictionary containing feature data
-    :kwarg preproc: preprocessor function
-    """
-
-    # Pre-process, if requested
-    if preproc != "none":
-        from nn_adapt.ann import preprocess_features
-
-        feature_dict = preprocess_features(feature_dict, preproc=preproc)
-
-    # Stack appropriately
-    dofs = [feature for key, feature in feature_dict.items() if "dofs" in key]
-    nodofs = [feature for key, feature in feature_dict.items() if "dofs" not in key]
-    return np.hstack((np.vstack(nodofs).transpose(), np.hstack(dofs)))

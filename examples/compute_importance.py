@@ -3,7 +3,6 @@ Compute the sensitivities of a network trained on a
 particular ``model`` to its input parameters.
 """
 from nn_adapt.ann import *
-from nn_adapt.features import collect_features
 from nn_adapt.parse import argparse, positive_int
 from nn_adapt.plotting import *
 
@@ -61,7 +60,7 @@ tag = parsed_args.tag
 
 # Load the model
 layout = importlib.import_module(f"{model}.network").NetLayout()
-nn = SimpleNet(layout).to(device)
+nn = SingleLayerFCNN(layout).to(device)
 nn.load_state_dict(torch.load(f"{model}/model_{tag}.pt"))
 nn.eval()
 loss_fn = Loss()

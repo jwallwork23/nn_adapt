@@ -31,11 +31,11 @@ def set_seed(seed):
     torch.cuda.manual_seed_all(seed)
 
 
-class SimpleNet(nn.Module):
+class SingleLayerFCNN(nn.Module):
     """
     Fully Connected Neural Network (FCNN)
     for goal-oriented metric-based mesh
-    adaptation.
+    adaptation with a single hidden layer.
     """
 
     def __init__(self, layout):
@@ -45,10 +45,14 @@ class SimpleNet(nn.Module):
             inputs, hidden neurons and outputs
             specified.
         """
-        super(SimpleNet, self).__init__()
+        super().__init__()
+
+        # Define layers
         self.linear1 = nn.Linear(layout.num_inputs, layout.num_hidden_neurons)
-        self.activate1 = nn.Sigmoid()
         self.linear2 = nn.Linear(layout.num_hidden_neurons, 1)
+
+        # Define activation functions
+        self.activate1 = nn.Sigmoid()
 
     def forward(self, x):
         z1 = self.linear1(x)
@@ -110,6 +114,25 @@ def preprocess_features(features, preproc="none"):
     for i, feature in features.items():
         features[i] = f(feature.flatten()).reshape(*feature.shape)
     return features
+
+
+def collect_features(feature_dict, preproc="none"):
+    """
+    Given a dictionary of feature arrays, stack their
+    data appropriately to be fed into a neural network.
+
+    :arg feature_dict: dictionary containing feature data
+    :kwarg preproc: preprocessor function
+    """
+
+    # Pre-process, if requested
+    if preproc != "none":
+        feature_dict = preprocess_features(feature_dict, preproc=preproc)
+
+    # Stack appropriately
+    dofs = [feature for key, feature in feature_dict.items() if "dofs" in key]
+    nodofs = [feature for key, feature in feature_dict.items() if "dofs" not in key]
+    return np.hstack((np.vstack(nodofs).transpose(), np.hstack(dofs)))
 
 
 def Loss():
