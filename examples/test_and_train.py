@@ -69,7 +69,19 @@ parser.add_argument(
     "--lr_adapt_factor",
     help="Learning rate reduction factor",
     type=bounded_float(0, 1),
-    default=0.9,
+    default=0.99,
+)
+parser.add_argument(
+    "--lr_adapt_threshold",
+    help="Learning rate threshold",
+    type=bounded_float(0, 1),
+    default=1.0e-04,
+)
+parser.add_argument(
+    "--lr_adapt_patience",
+    help="The number of iterations before early adapting the learning rate",
+    type=positive_int,
+    default=np.inf,
 )
 parser.add_argument(
     "--num_epochs",
@@ -78,10 +90,10 @@ parser.add_argument(
     default=2000,
 )
 parser.add_argument(
-    "--patience",
+    "--stopping_patience",
     help="The number of iterations before early stopping",
     type=positive_int,
-    default=100,
+    default=np.inf,
 )
 parser.add_argument(
     "--preproc",
@@ -128,57 +140,26 @@ num_epochs = parsed_args.num_epochs
 lr = parsed_args.lr
 lr_adapt_num_steps = parsed_args.lr_adapt_num_steps
 lr_adapt_factor = parsed_args.lr_adapt_factor
-patience = parsed_args.patience
+lr_adapt_threshold = parsed_args.lr_adapt_threshold
+lr_adapt_patience = parsed_args.lr_adapt_patience
+stopping_patience = parsed_args.stopping_patience
+test_size = parsed_args.test_size
+batch_size = parsed_args.batch_size
+test_batch_size = parsed_args.test_batch_size
 seed = parsed_args.seed
 tag = parsed_args.tag
 
 # Load network layout
 layout = importlib.import_module(f"{model}.network").NetLayout()
 
-# Load data
-concat = lambda a, b: b if a is None else np.concatenate((a, b), axis=0)
-features = None
-targets = None
-data_dir = f"{model}/data"
-for step in range(parsed_args.adaptation_steps):
-    for approach in approaches:
-        for test_case in range(1, parsed_args.num_training_cases + 1):
-            if test_case == 1 and approach != approaches[0]:
-                continue
-            suffix = f"{test_case}_GO{approach}_{step}"
-            data = {
-                key: np.load(f"{data_dir}/feature_{key}_{suffix}.npy")
-                for key in layout.inputs
-            }
-            features = concat(features, collect_features(data, preproc=preproc))
-            target = np.load(f"{data_dir}/target_{suffix}.npy")
-            targets = concat(targets, target)
-print(f"Total number of features: {len(features.flatten())}")
-print(f"Total number of targets: {len(targets)}")
-features = torch.from_numpy(features).type(torch.float32)
-targets = torch.from_numpy(targets).type(torch.float32)
-
-# Get train and validation datasets
-xtrain, xval, ytrain, yval = model_selection.train_test_split(
-    features, targets, test_size=parsed_args.test_size, random_state=seed
-)
-train_data = torch.utils.data.TensorDataset(torch.Tensor(xtrain), torch.Tensor(ytrain))
-train_loader = torch.utils.data.DataLoader(
-    train_data, batch_size=parsed_args.batch_size, shuffle=True, num_workers=0
-)
-validate_data = torch.utils.data.TensorDataset(torch.Tensor(xval), torch.Tensor(yval))
-validate_loader = torch.utils.data.DataLoader(
-    validate_data, batch_size=parsed_args.test_batch_size, shuffle=False, num_workers=0
-)
-
 # Setup model
-nn = SimpleNet(layout).to(device)
+nn = SingleLayerFCNN(layout).to(device)
 optimizer = torch.optim.Adam(nn.parameters(), lr=lr)
 scheduler1 = lr_scheduler.ReduceLROnPlateau(
     optimizer,
     factor=lr_adapt_factor,
-    threshold=1.0e-04,
-    patience=50,
+    threshold=lr_adapt_threshold,
+    patience=lr_adapt_patience,
     verbose=True,
 )
 if lr_adapt_num_steps > 0:
@@ -190,8 +171,52 @@ if lr_adapt_num_steps > 0:
 else:
     scheduler2 = None
 criterion = Loss()
+
+# Increase batch size if running on GPU
 cuda = all(p.is_cuda for p in nn.parameters())
 print(f"Model parameters are{'' if cuda else ' not'} using GPU cores.")
+if cuda:
+    dtype = torch.float32
+    batch_size *= 4
+    test_batch_size *= 4
+else:
+    dtype = torch.double
+
+# Load data
+concat = lambda a, b: b if a is None else np.concatenate((a, b), axis=0)
+features = None
+targets = None
+data_dir = f"{model}/data"
+for step in range(parsed_args.adaptation_steps):
+    for approach in approaches:
+        for case in range(1, parsed_args.num_training_cases + 1):
+            if case == 1 and approach != approaches[0]:
+                continue
+            suffix = f"{case}_GO{approach}_{step}"
+            feature = {
+                key: np.load(f"{data_dir}/feature_{key}_{suffix}.npy")
+                for key in layout.inputs
+            }
+            features = concat(features, collect_features(feature, preproc=preproc))
+            target = np.load(f"{data_dir}/target_{suffix}.npy")
+            targets = concat(targets, target)
+print(f"Total number of features: {len(features.flatten())}")
+print(f"Total number of targets: {len(targets)}")
+features = torch.from_numpy(features).type(dtype)
+targets = torch.from_numpy(targets).type(dtype)
+
+# Get train and validation datasets
+xtrain, xval, ytrain, yval = model_selection.train_test_split(
+    features, targets, test_size=test_size, random_state=seed
+)
+train_data = torch.utils.data.TensorDataset(torch.Tensor(xtrain), torch.Tensor(ytrain))
+train_loader = torch.utils.data.DataLoader(
+    train_data, batch_size=batch_size, shuffle=True, num_workers=0
+)
+validate_data = torch.utils.data.TensorDataset(torch.Tensor(xval), torch.Tensor(yval))
+validate_loader = torch.utils.data.DataLoader(
+    validate_data, batch_size=test_batch_size, shuffle=False, num_workers=0
+)
 
 # Train
 train_losses, validation_losses, lr_adapt_steps = [], [], []
@@ -233,7 +258,7 @@ for epoch in range(num_epochs):
     # Test for convergence
     if val > previous_loss:
         trigger_times += 1
-        if trigger_times >= patience:
+        if trigger_times >= stopping_patience:
             print("Early stopping")
             break
     else:
