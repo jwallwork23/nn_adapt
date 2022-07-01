@@ -3,7 +3,7 @@ from nn_adapt.plotting import *
 import numpy as np
 
 
-def get_times(model, approach, case, it):
+def get_times(model, approach, case, it, tag=None):
     """
     Gather the timing data for some approach applied
     to a given test case.
@@ -12,6 +12,7 @@ def get_times(model, approach, case, it):
     :arg approach: the mesh adaptation approach
     :arg case: the test case name or number
     :arg it: the run
+    :kwarg tag: the tag for the network
     """
     ext = f"_{tag}" if approach[:2] == "ML" else ""
     qoi = np.load(f"{model}/data/qois_{approach}_{case}{ext}.npy")[it]
@@ -54,8 +55,8 @@ approaches = ["GOanisotropic", "MLanisotropic"]
 fig, axes = plt.subplots(figsize=(6, 4.5))
 colours = ["C0", "deepskyblue", "mediumturquoise", "mediumseagreen", "darkgreen", "0.3"]
 data = {
-    "Goal-oriented": get_times(model, "GOanisotropic", test_case, it),
-    "Data-driven": get_times(model, "MLanisotropic", test_case, it),
+    "Goal-oriented": get_times(model, "GOanisotropic", test_case, it, tag=tag),
+    "Data-driven": get_times(model, "MLanisotropic", test_case, it, tag=tag),
 }
 bottom = np.zeros(len(data.keys()))
 for i, key in enumerate(data["Goal-oriented"].keys()):
