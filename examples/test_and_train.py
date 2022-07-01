@@ -31,7 +31,7 @@ parser.add_argument(
     help="The equation set being solved",
     type=str,
     choices=models,
-    default="turbine",
+    default="steady_turbine",
 )
 parser.add_argument(
     "-n",
