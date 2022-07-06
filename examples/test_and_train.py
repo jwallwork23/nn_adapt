@@ -153,7 +153,7 @@ tag = parsed_args.tag
 layout = importlib.import_module(f"{model}.network").NetLayout()
 
 # Setup model
-nn = SingleLayerFCNN(layout).to(device)
+nn = SingleLayerFCNN(layout, preproc=preproc).to(device)
 optimizer = torch.optim.Adam(nn.parameters(), lr=lr)
 scheduler1 = lr_scheduler.ReduceLROnPlateau(
     optimizer,
@@ -180,7 +180,7 @@ if cuda:
     batch_size *= 4
     test_batch_size *= 4
 else:
-    dtype = torch.double
+    dtype = torch.float
 
 # Load data
 concat = lambda a, b: b if a is None else np.concatenate((a, b), axis=0)
@@ -197,7 +197,7 @@ for step in range(parsed_args.adaptation_steps):
                 key: np.load(f"{data_dir}/feature_{key}_{suffix}.npy")
                 for key in layout.inputs
             }
-            features = concat(features, collect_features(feature, preproc=preproc))
+            features = concat(features, collect_features(feature))
             target = np.load(f"{data_dir}/target_{suffix}.npy")
             targets = concat(targets, target)
 print(f"Total number of features: {len(features.flatten())}")

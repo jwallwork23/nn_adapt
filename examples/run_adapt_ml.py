@@ -46,7 +46,7 @@ mesh = Mesh(f"{model}/meshes/{test_case}.msh")
 
 # Load the model
 layout = importlib.import_module(f"{model}.network").NetLayout()
-nn = SingleLayerFCNN(layout).to(device)
+nn = SingleLayerFCNN(layout, preproc=preproc).to(device)
 nn.load_state_dict(torch.load(f"{model}/model_{tag}.pt"))
 nn.eval()
 
@@ -103,9 +103,7 @@ for ct.fp_iteration in range(ct.maxiter + 1):
 
     # Extract features
     with PETSc.Log.Event("Network"):
-        features = collect_features(
-            extract_features(setup, fwd_sol, adj_sol, preproc=preproc)
-        )
+        features = collect_features(extract_features(setup, fwd_sol, adj_sol))
 
         # Run model
         with PETSc.Log.Event("Propagate"):
