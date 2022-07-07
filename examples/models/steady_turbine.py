@@ -1,5 +1,6 @@
 from thetis import *
 import nn_adapt.model
+import nn_adapt.solving
 import numpy as np
 
 
@@ -217,54 +218,83 @@ def get_function_space(mesh):
     return P1v_2d * P2_2d
 
 
-def setup_solver(mesh, ic, **kwargs):
+class Solver(nn_adapt.solving.Solver):
     """
-    Set up the Thetis :class:`FlowSolver2d` object, based on
+    Set up a Thetis :class:`FlowSolver2d` object, based on
     the current mesh and initial condition.
     """
-    bathymetry = parameters.bathymetry(mesh)
-    Cd = parameters.drag_coefficient
-    sp = kwargs.pop("solver_parameters", None)
 
-    # Create solver object
-    solver_obj = solver2d.FlowSolver2d(mesh, bathymetry)
-    options = solver_obj.options
-    options.element_family = "dg-cg"
-    options.timestep = 20.0
-    options.simulation_export_time = 20.0
-    options.simulation_end_time = 18.0
-    options.swe_timestepper_type = "SteadyState"
-    options.swe_timestepper_options.solver_parameters = (
-        sp or parameters.solver_parameters
-    )
-    options.use_grad_div_viscosity_term = False
-    options.horizontal_viscosity = parameters.viscosity(mesh)
-    options.quadratic_drag_coefficient = Cd
-    options.use_lax_friedrichs_velocity = True
-    options.lax_friedrichs_velocity_scaling_factor = Constant(1.0)
-    options.use_grad_depth_viscosity_term = False
-    options.no_exports = True
-    options.update(kwargs)
-    solver_obj.create_equations()
+    def __init__(self, mesh, ic, **kwargs):
+        """
+        :arg mesh: the mesh to define the solver on
+        :arg ic: the initial condition
+        """
+        bathymetry = parameters.bathymetry(mesh)
+        Cd = parameters.drag_coefficient
+        sp = kwargs.pop("solver_parameters", None)
 
-    # Apply boundary conditions
-    P1v_2d = solver_obj.function_spaces.P1v_2d
-    u_inflow = interpolate(parameters.u_inflow(mesh), P1v_2d)
-    solver_obj.bnd_functions["shallow_water"] = {
-        1: {"uv": u_inflow},  # inflow
-        2: {"elev": Constant(0.0)},  # outflow
-        3: {"un": Constant(0.0)},  # free-slip
-        4: {"uv": Constant(as_vector([0.0, 0.0]))},  # no-slip
-        5: {"elev": Constant(0.0), "un": Constant(0.0)}  # weakly reflective
-    }
+        # Create solver object
+        self._thetis_solver = solver2d.FlowSolver2d(mesh, bathymetry)
+        options = self._thetis_solver.options
+        options.element_family = "dg-cg"
+        options.timestep = 20.0
+        options.simulation_export_time = 20.0
+        options.simulation_end_time = 18.0
+        options.swe_timestepper_type = "SteadyState"
+        options.swe_timestepper_options.solver_parameters = (
+            sp or parameters.solver_parameters
+        )
+        options.use_grad_div_viscosity_term = False
+        options.horizontal_viscosity = parameters.viscosity(mesh)
+        options.quadratic_drag_coefficient = Cd
+        options.use_lax_friedrichs_velocity = True
+        options.lax_friedrichs_velocity_scaling_factor = Constant(1.0)
+        options.use_grad_depth_viscosity_term = False
+        options.no_exports = True
+        options.update(kwargs)
+        self._thetis_solver.create_equations()
 
-    # Create tidal farm
-    options.tidal_turbine_farms = parameters.farm(mesh)
+        # Apply boundary conditions
+        P1v_2d = self._thetis_solver.function_spaces.P1v_2d
+        u_inflow = interpolate(parameters.u_inflow(mesh), P1v_2d)
+        self._thetis_solver.bnd_functions["shallow_water"] = {
+            1: {"uv": u_inflow},  # inflow
+            2: {"elev": Constant(0.0)},  # outflow
+            3: {"un": Constant(0.0)},  # free-slip
+            4: {"uv": Constant(as_vector([0.0, 0.0]))},  # no-slip
+            5: {"elev": Constant(0.0), "un": Constant(0.0)}  # weakly reflective
+        }
 
-    # Apply initial guess
-    u_init, eta_init = ic.split()
-    solver_obj.assign_initial_conditions(uv=u_init, elev=eta_init)
-    return solver_obj
+        # Create tidal farm
+        options.tidal_turbine_farms = parameters.farm(mesh)
+
+        # Apply initial guess
+        u_init, eta_init = ic.split()
+        self._thetis_solver.assign_initial_conditions(uv=u_init, elev=eta_init)
+
+    @property
+    def function_space(self):
+        r"""
+        The :math:`\mathbb P1_{DG}-\mathbb P2` function space.
+        """
+        return self._thetis_solver.function_spaces.V_2d
+
+    @property
+    def form(self):
+        """
+        The weak form of the shallow water equations.
+        """
+        return self._thetis_solver.timestepper.F
+
+    def iterate(self, **kwargs):
+        """
+        Solve the nonlinear shallow water equations.
+        """
+        self._thetis_solver.iterate(**kwargs)
+
+    @property
+    def solution(self):
+        return self._thetis_solver.fields.solution_2d
 
 
 def get_initial_condition(function_space):
