@@ -53,7 +53,7 @@ unit = setup.parameters.qoi_unit
 
 # Load the model
 layout = importlib.import_module(f"{model}.network").NetLayout()
-nn = SingleLayerFCNN(layout).to(device)
+nn = SingleLayerFCNN(layout, preproc=preproc).to(device)
 nn.load_state_dict(torch.load(f"{model}/model_{tag}.pt"))
 nn.eval()
 
@@ -108,9 +108,7 @@ for i in range(num_refinements + 1):
 
             # Extract features
             out["times"]["estimator"] = -perf_counter()
-            features = collect_features(
-                extract_features(setup, fwd_sol, adj_sol, preproc=preproc)
-            )
+            features = collect_features(extract_features(setup, fwd_sol, adj_sol))
 
             # Run model
             test_targets = np.array([])

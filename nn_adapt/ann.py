@@ -38,14 +38,28 @@ class SingleLayerFCNN(nn.Module):
     adaptation with a single hidden layer.
     """
 
-    def __init__(self, layout):
+    def __init__(self, layout, preproc="arctan"):
         """
         :arg layout: class instance inherited from
             :class:`NetLayoutBase`, with numbers of
             inputs, hidden neurons and outputs
             specified.
+        :kwarg preproc: pre-processing function to
+            apply to the input data
         """
         super().__init__()
+
+        # Define preprocessing function
+        if preproc == "none":
+            self.preproc1 = lambda x: x
+        if preproc == "arctan":
+            self.preproc1 = torch.arctan
+        elif preproc == "tanh":
+            self.preproc1 = torch.tanh
+        elif preproc == "logabs":
+            self.preproc1 = lambda x: torch.log(torch.abs(x))
+        else:
+            raise ValueError(f'Preprocessor "{preproc}" not recognised.')
 
         # Define layers
         self.linear1 = nn.Linear(layout.num_inputs, layout.num_hidden_neurons)
@@ -55,7 +69,8 @@ class SingleLayerFCNN(nn.Module):
         self.activate1 = nn.Sigmoid()
 
     def forward(self, x):
-        z1 = self.linear1(x)
+        p = self.preproc1(x)
+        z1 = self.linear1(p)
         a1 = self.activate1(z1)
         z2 = self.linear2(a1)
         return z2
@@ -93,43 +108,13 @@ def propagate(data_loader, model, loss_fn, optimizer=None):
     return cumulative_loss / num_batches
 
 
-def preprocess_features(features, preproc="none"):
-    """
-    Pre-process features so that they are
-    similarly scaled.
-
-    :arg features: the list of feature arrays
-    :kwarg preproc: preprocessor function
-    """
-    if preproc == "none":
-        return features
-    if preproc == "arctan":
-        f = np.arctan
-    elif preproc == "tanh":
-        f = np.tanh
-    elif preproc == "logabs":
-        f = lambda x: np.ln(np.abs(x))
-    else:
-        raise ValueError(f'Preprocessor "{preproc}" not recognised.')
-    for i, feature in features.items():
-        features[i] = f(feature.flatten()).reshape(*feature.shape)
-    return features
-
-
-def collect_features(feature_dict, preproc="none"):
+def collect_features(feature_dict):
     """
     Given a dictionary of feature arrays, stack their
     data appropriately to be fed into a neural network.
 
     :arg feature_dict: dictionary containing feature data
-    :kwarg preproc: preprocessor function
     """
-
-    # Pre-process, if requested
-    if preproc != "none":
-        feature_dict = preprocess_features(feature_dict, preproc=preproc)
-
-    # Stack appropriately
     dofs = [feature for key, feature in feature_dict.items() if "dofs" in key]
     nodofs = [feature for key, feature in feature_dict.items() if "dofs" not in key]
     return np.hstack((np.vstack(nodofs).transpose(), np.hstack(dofs)))
