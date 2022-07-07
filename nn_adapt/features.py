@@ -203,14 +203,13 @@ def extract_array(f, mesh=None, centroid=False, project=False):
 
 
 @PETSc.Log.EventDecorator("Extract features")
-def extract_features(config, fwd_sol, adj_sol, preproc="none"):
+def extract_features(config, fwd_sol, adj_sol):
     """
     Extract features from the outputs of a run.
 
     :arg config: the configuration file
     :arg fwd_sol: the forward solution
     :arg adj_sol: the adjoint solution
-    :kwarg preproc: preprocessor function
     :return: a list of feature arrays
     """
     mesh = fwd_sol.function_space().mesh()
@@ -247,10 +246,4 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
     }
     for key, value in features.items():
         assert not np.isnan(value).any()
-
-    # Pre-process, if requested
-    if preproc != "none":
-        from nn_adapt.ann import preprocess_features
-
-        features = preprocess_features(features, preproc=preproc)
     return features
