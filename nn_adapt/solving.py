@@ -6,10 +6,58 @@ from firedrake import *
 from firedrake.petsc import PETSc
 from firedrake.mg.embedded import TransferManager
 from pyroteus.error_estimation import get_dwr_indicator
+import abc
 from time import perf_counter
 
 
 tm = TransferManager()
+
+
+class Solver(abc.ABC):
+    """
+    Base class that defines the API for solver objects.
+    """
+
+    @abc.abstractmethod
+    def __init__(self, mesh, ic, **kwargs):
+        """
+        Setup the solver.
+
+        :arg mesh: the mesh to define the solver on
+        :arg ic: the initial condition
+        """
+        pass
+
+    @property
+    @abc.abstractmethod
+    def function_space(self):
+        """
+        The function space that the PDE is solved in.
+        """
+        pass
+
+    @property
+    @abc.abstractmethod
+    def form(self):
+        """
+        Return the weak form.
+        """
+        pass
+
+    @abc.abstractmethod
+    def iterate(self, **kwargs):
+        """
+        Solve the PDE.
+        """
+        pass
+
+    @property
+    @abc.abstractmethod
+    def solution(self):
+        """
+        Return the solution field.
+        """
+        pass
 
 
 def get_solutions(
@@ -49,9 +97,9 @@ def get_solutions(
             ic = config.get_initial_condition(V)
         else:
             ic = init(V)
-        solver_obj = config.setup_solver(mesh, ic, **kwargs)
+        solver_obj = config.Solver(mesh, ic, **kwargs)
         solver_obj.iterate()
-        q = solver_obj.fields.solution_2d
+        q = solver_obj.solution
         J = config.get_qoi(mesh)(q)
         qoi = assemble(J)
     out["times"]["forward"] += perf_counter()
@@ -68,7 +116,7 @@ def get_solutions(
     with PETSc.Log.Event("Adjoint solve"):
         sp = config.parameters.adjoint_solver_parameters
         q_star = Function(V)
-        F = solver_obj.timestepper.F
+        F = solver_obj.form
         dFdq = derivative(F, q, TrialFunction(V))
         dFdq_transpose = adjoint(dFdq)
         dJdq = derivative(J, q, TestFunction(V))
@@ -83,10 +131,10 @@ def get_solutions(
     with PETSc.Log.Event("Enrichment"):
         V = config.get_function_space(refined_mesh)
         q_plus = Function(V)
-        solver_obj = config.setup_solver(refined_mesh, q_plus, **kwargs)
-        q_plus = solver_obj.fields.solution_2d
+        solver_obj = config.Solver(refined_mesh, q_plus, **kwargs)
+        q_plus = solver_obj.solution
         J = config.get_qoi(refined_mesh)(q_plus)
-        F = solver_obj.timestepper.F
+        F = solver_obj.form
         tm.prolong(q, q_plus)
         q_star_plus = Function(V)
         dFdq = derivative(F, q_plus, TrialFunction(V))
@@ -166,9 +214,9 @@ def dwr_indicator(config, mesh, q, q_star):
     mesh_plus = q.function_space().mesh()
 
     # Extract indicator in enriched space
-    solver_obj = config.setup_solver(mesh_plus, q)
-    F = solver_obj.timestepper.F
-    V = solver_obj.function_spaces.V_2d
+    solver_obj = config.Solver(mesh_plus, q)
+    F = solver_obj.form
+    V = solver_obj.function_space
     dwr_plus = get_dwr_indicator(F, q_star, test_space=V)
 
     # Project down to base space
