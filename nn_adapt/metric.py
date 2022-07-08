@@ -34,7 +34,7 @@ def go_metric(
     enrichment_method="h",
     target_complexity=4000.0,
     average=False,
-    interpolant="L2",
+    interpolant="Clement",
     anisotropic=False,
     retall=False,
     convergence_checker=None,
@@ -89,7 +89,7 @@ def go_metric(
             out["dwr"],
             hessian=hessian,
             target_complexity=target_complexity,
-            target_space=TensorFunctionSpace(mesh, "DG", 0),
+            target_space=TensorFunctionSpace(mesh, "CG", 1),
             interpolant=interpolant,
         )
     out["times"]["metric"] += perf_counter()

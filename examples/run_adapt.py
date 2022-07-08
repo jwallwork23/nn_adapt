@@ -50,6 +50,7 @@ mesh = Mesh(f"{model}/meshes/{test_case}.msh")
 
 # Run adaptation loop
 kwargs = {
+    "interpolant": "Clement",
     "enrichment_method": "h",
     "average": False,
     "anisotropic": approach == "anisotropic",
@@ -87,12 +88,12 @@ for ct.fp_iteration in range(ct.maxiter + 1):
     print(f"    Error estimator      = {estimator}")
     if "metric" not in out:
         break
-    adj_sol, dwr, p0metric = out["adjoint"], out["dwr"], out["metric"]
+    adj_sol, dwr, p1metric = out["adjoint"], out["dwr"], out["metric"]
     if not no_outputs:
         fwd_file.write(*fwd_sol.split())
         adj_file.write(*adj_sol.split())
         ee_file.write(dwr)
-        metric_file.write(p0metric)
+        metric_file.write(p1metric)
 
     def proj(V):
         """
@@ -122,8 +123,6 @@ for ct.fp_iteration in range(ct.maxiter + 1):
 
     # Process metric
     with PETSc.Log.Event("Metric construction"):
-        P1_ten = TensorFunctionSpace(mesh, "CG", 1)
-        p1metric = hessian_metric(clement_interpolant(p0metric))
         space_normalise(p1metric, target_ramp, "inf")
         enforce_element_constraints(
             p1metric, setup.parameters.h_min, setup.parameters.h_max, 1.0e05

@@ -57,6 +57,7 @@ for i in range(num_refinements + 1):
         target_complexity = 100.0 * 2 ** (f * i)
         kwargs = {
             "enrichment_method": "h",
+            "interpolant": "Clement",
             "average": False,
             "anisotropic": approach == "anisotropic",
             "retall": True,
@@ -88,7 +89,7 @@ for i in range(num_refinements + 1):
             if "metric" not in out:
                 break
             fwd_sol, adj_sol = out["forward"], out["adjoint"],
-            dwr, p0metric = out["dwr"], out["metric"]
+            dwr, p1metric = out["dwr"], out["metric"]
             dof = sum(fwd_sol.function_space().dof_count)
             print(f"      DoF count            = {dof}")
 
@@ -111,8 +112,6 @@ for i in range(num_refinements + 1):
 
             # Process metric
             out["times"]["metric"] -= perf_counter()
-            P1_ten = TensorFunctionSpace(mesh, "CG", 1)
-            p1metric = hessian_metric(clement_interpolant(p0metric))
             space_normalise(p1metric, target_ramp, "inf")
             enforce_element_constraints(
                 p1metric, setup.parameters.h_min, setup.parameters.h_max, 1.0e05

@@ -82,7 +82,7 @@ for ct.fp_iteration in range(ct.maxiter + 1):
         fwd_file.write(*fwd_sol.split())
         adj_file.write(*adj_sol.split())
     P0 = FunctionSpace(mesh, "DG", 0)
-    P0_ten = TensorFunctionSpace(mesh, "DG", 0)
+    P1_ten = TensorFunctionSpace(mesh, "CG", 1)
 
     def proj(V):
         """
@@ -133,17 +133,15 @@ for ct.fp_iteration in range(ct.maxiter + 1):
             hessian = combine_metrics(*get_hessians(fwd_sol), average=False)
         else:
             hessian = None
-        p0metric = anisotropic_metric(
+        p1metric = anisotropic_metric(
             dwr,
-            hessian,
+            hessian=hessian,
             target_complexity=target_ramp,
-            target_space=P0_ten,
-            interpolant="L2",
+            target_space=P1_ten,
+            interpolant="Clement",
         )
 
         # Process metric
-        P1_ten = TensorFunctionSpace(mesh, "CG", 1)
-        p1metric = hessian_metric(clement_interpolant(p0metric))
         space_normalise(p1metric, target_ramp, "inf")
         enforce_element_constraints(
             p1metric, setup.parameters.h_min, setup.parameters.h_max, 1.0e05
@@ -153,7 +151,7 @@ for ct.fp_iteration in range(ct.maxiter + 1):
         metric = RiemannianMetric(mesh)
         metric.assign(p1metric)
     if not optimise:
-        metric_file.write(p0metric)
+        metric_file.write(p1metric)
 
     # Adapt the mesh and check for element count convergence
     with PETSc.Log.Event("Mesh adaptation"):
