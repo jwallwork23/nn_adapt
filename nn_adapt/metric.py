@@ -33,7 +33,7 @@ def go_metric(
     config,
     enrichment_method="h",
     target_complexity=4000.0,
-    average=False,
+    average=True,
     interpolant="Clement",
     anisotropic=False,
     retall=False,

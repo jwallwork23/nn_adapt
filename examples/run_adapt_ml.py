@@ -130,7 +130,7 @@ for ct.fp_iteration in range(ct.maxiter + 1):
     # Construct metric
     with PETSc.Log.Event("Metric construction"):
         if approach == "anisotropic":
-            hessian = combine_metrics(*get_hessians(fwd_sol), average=False)
+            hessian = combine_metrics(*get_hessians(fwd_sol), average=True)
         else:
             hessian = None
         p1metric = anisotropic_metric(

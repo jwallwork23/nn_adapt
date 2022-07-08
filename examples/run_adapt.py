@@ -52,7 +52,7 @@ mesh = Mesh(f"{model}/meshes/{test_case}.msh")
 kwargs = {
     "interpolant": "Clement",
     "enrichment_method": "h",
-    "average": False,
+    "average": True,
     "anisotropic": approach == "anisotropic",
     "retall": True,
 }

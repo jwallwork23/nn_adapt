@@ -134,7 +134,7 @@ for i in range(num_refinements + 1):
             # Construct metric
             out["times"]["metric"] = -perf_counter()
             if approach == "anisotropic":
-                hessian = combine_metrics(*get_hessians(fwd_sol), average=False)
+                hessian = combine_metrics(*get_hessians(fwd_sol), average=True)
             else:
                 hessian = None
             P1_ten = TensorFunctionSpace(mesh, "CG", 1)

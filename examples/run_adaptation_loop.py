@@ -58,7 +58,7 @@ for i in range(num_refinements + 1):
         kwargs = {
             "enrichment_method": "h",
             "interpolant": "Clement",
-            "average": False,
+            "average": True,
             "anisotropic": approach == "anisotropic",
             "retall": True,
         }
