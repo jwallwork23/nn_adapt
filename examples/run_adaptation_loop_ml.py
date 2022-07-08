@@ -77,7 +77,9 @@ for i in range(num_refinements + 1):
         for ct.fp_iteration in range(ct.maxiter + 1):
 
             # Ramp up the target complexity
-            target_ramp = ramp_complexity(base_complexity, target_complexity, ct.fp_iteration)
+            target_ramp = ramp_complexity(
+                base_complexity, target_complexity, ct.fp_iteration
+            )
 
             # Solve forward and adjoint and compute Hessians
             out = get_solutions(mesh, setup, convergence_checker=ct, **kwargs)
@@ -138,25 +140,23 @@ for i in range(num_refinements + 1):
             else:
                 hessian = None
             P1_ten = TensorFunctionSpace(mesh, "CG", 1)
-            p1metric = anisotropic_metric(
+            M = anisotropic_metric(
                 dwr,
                 hessian=hessian,
                 target_complexity=target_ramp,
                 target_space=P1_ten,
                 interpolant="Clement",
             )
-
-            # Process metric
-            space_normalise(p1metric, target_ramp, "inf")
+            space_normalise(M, target_ramp, "inf")
             enforce_element_constraints(
-                p1metric, setup.parameters.h_min, setup.parameters.h_max, 1.0e05
+                M, setup.parameters.h_min, setup.parameters.h_max, 1.0e05
             )
-
-            # Adapt the mesh and check for element count convergence
             metric = RiemannianMetric(mesh)
-            metric.assign(p1metric)
+            metric.assign(M)
             out["times"]["metric"] += perf_counter()
             times["metric"][-1] += out["times"]["metric"]
+
+            # Adapt the mesh and check for element count convergence
             out["times"]["adapt"] = -perf_counter()
             mesh = adapt(mesh, metric)
             out["times"]["adapt"] += perf_counter()

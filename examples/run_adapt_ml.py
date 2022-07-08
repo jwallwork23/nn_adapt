@@ -133,25 +133,21 @@ for ct.fp_iteration in range(ct.maxiter + 1):
             hessian = combine_metrics(*get_hessians(fwd_sol), average=True)
         else:
             hessian = None
-        p1metric = anisotropic_metric(
+        M = anisotropic_metric(
             dwr,
             hessian=hessian,
             target_complexity=target_ramp,
             target_space=P1_ten,
             interpolant="Clement",
         )
-
-        # Process metric
-        space_normalise(p1metric, target_ramp, "inf")
+        space_normalise(M, target_ramp, "inf")
         enforce_element_constraints(
-            p1metric, setup.parameters.h_min, setup.parameters.h_max, 1.0e05
+            M, setup.parameters.h_min, setup.parameters.h_max, 1.0e05
         )
-
-        # Adapt the mesh and check for element count convergence
         metric = RiemannianMetric(mesh)
-        metric.assign(p1metric)
+        metric.assign(M)
     if not optimise:
-        metric_file.write(p1metric)
+        metric_file.write(M)
 
     # Adapt the mesh and check for element count convergence
     with PETSc.Log.Event("Mesh adaptation"):
