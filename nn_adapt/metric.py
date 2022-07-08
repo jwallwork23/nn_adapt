@@ -5,6 +5,7 @@ fields.
 from pyroteus import *
 from nn_adapt.features import split_into_scalars
 from nn_adapt.solving import *
+from firedrake.meshadapt import RiemannianMetric
 from time import perf_counter
 
 
@@ -33,8 +34,8 @@ def go_metric(
     config,
     enrichment_method="h",
     target_complexity=4000.0,
-    average=False,
-    interpolant="L2",
+    average=True,
+    interpolant="Clement",
     anisotropic=False,
     retall=False,
     convergence_checker=None,
@@ -58,12 +59,18 @@ def go_metric(
         interpolate into the target space?
     :kwarg anisotropic: toggle isotropic vs.
         anisotropic metric
+    :kwarg h_min: minimum magnitude
+    :kwarg h_max: maximum magnitude
+    :kwarg a_max: maximum anisotropy
     :kwarg retall: if ``True``, the error indicator,
         forward solution and adjoint solution
         are returned, in addition to the metric
     :kwarg convergence_checker: :class:`ConvergenceTracer`
         instance
     """
+    h_min = kwargs.pop("h_min", 1.0e-30)
+    h_max = kwargs.pop("h_max", 1.0e+30)
+    a_max = kwargs.pop("a_max", 1.0e+30)
     out = indicate_errors(
         mesh,
         config,
@@ -85,12 +92,16 @@ def go_metric(
             hessian = combine_metrics(*get_hessians(out["forward"]), average=average)
         else:
             hessian = None
-        out["metric"] = anisotropic_metric(
+        metric = anisotropic_metric(
             out["dwr"],
             hessian=hessian,
             target_complexity=target_complexity,
-            target_space=TensorFunctionSpace(mesh, "DG", 0),
+            target_space=TensorFunctionSpace(mesh, "CG", 1),
             interpolant=interpolant,
         )
+        space_normalise(metric, target_complexity, "inf")
+        enforce_element_constraints(metric, h_min, h_max, a_max)
+        out["metric"] = RiemannianMetric(mesh)
+        out["metric"].assign(metric)
     out["times"]["metric"] += perf_counter()
     return out if retall else out["metric"]

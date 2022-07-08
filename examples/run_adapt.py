@@ -10,7 +10,7 @@ from nn_adapt.metric import *
 from nn_adapt.parse import Parser
 from nn_adapt.solving import *
 from nn_adapt.utility import ConvergenceTracker
-from firedrake.meshadapt import *
+from firedrake.meshadapt import adapt
 from firedrake.petsc import PETSc
 
 import importlib
@@ -50,10 +50,14 @@ mesh = Mesh(f"{model}/meshes/{test_case}.msh")
 
 # Run adaptation loop
 kwargs = {
+    "interpolant": "Clement",
     "enrichment_method": "h",
-    "average": False,
+    "average": True,
     "anisotropic": approach == "anisotropic",
     "retall": True,
+    "h_min": setup.parameters.h_min,
+    "h_max": setup.parameters.h_max,
+    "a_max": 1.0e5,
 }
 ct = ConvergenceTracker(mesh, parsed_args)
 if not no_outputs:
@@ -72,8 +76,9 @@ for ct.fp_iteration in range(ct.maxiter + 1):
     suffix = f"{test_case}_GO{approach}_{ct.fp_iteration}"
 
     # Ramp up the target complexity
-    target_ramp = ramp_complexity(base_complexity, target_complexity, ct.fp_iteration)
-    kwargs["target_complexity"] = target_ramp
+    kwargs["target_complexity"] = ramp_complexity(
+        base_complexity, target_complexity, ct.fp_iteration
+    )
 
     # Compute goal-oriented metric
     out = go_metric(mesh, setup, convergence_checker=ct, **kwargs)
@@ -87,12 +92,12 @@ for ct.fp_iteration in range(ct.maxiter + 1):
     print(f"    Error estimator      = {estimator}")
     if "metric" not in out:
         break
-    adj_sol, dwr, p0metric = out["adjoint"], out["dwr"], out["metric"]
+    adj_sol, dwr, metric = out["adjoint"], out["dwr"], out["metric"]
     if not no_outputs:
         fwd_file.write(*fwd_sol.split())
         adj_file.write(*adj_sol.split())
         ee_file.write(dwr)
-        metric_file.write(p0metric)
+        metric_file.write(metric.function)
 
     def proj(V):
         """
@@ -119,17 +124,6 @@ for ct.fp_iteration in range(ct.maxiter + 1):
         for key, value in features.items():
             np.save(f"{data_dir}/feature_{key}_{suffix}", value)
         np.save(f"{data_dir}/target_{suffix}", target)
-
-    # Process metric
-    with PETSc.Log.Event("Metric construction"):
-        P1_ten = TensorFunctionSpace(mesh, "CG", 1)
-        p1metric = hessian_metric(clement_interpolant(p0metric))
-        space_normalise(p1metric, target_ramp, "inf")
-        enforce_element_constraints(
-            p1metric, setup.parameters.h_min, setup.parameters.h_max, 1.0e05
-        )
-        metric = RiemannianMetric(mesh)
-        metric.assign(p1metric)
 
     # Adapt the mesh and check for element count convergence
     with PETSc.Log.Event("Mesh adaptation"):

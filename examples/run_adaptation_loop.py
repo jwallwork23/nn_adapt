@@ -8,7 +8,7 @@ from nn_adapt.parse import Parser, positive_float
 from nn_adapt.metric import *
 from nn_adapt.solving import *
 from nn_adapt.utility import ConvergenceTracker
-from firedrake.meshadapt import *
+from firedrake.meshadapt import adapt
 
 import importlib
 import numpy as np
@@ -57,9 +57,13 @@ for i in range(num_refinements + 1):
         target_complexity = 100.0 * 2 ** (f * i)
         kwargs = {
             "enrichment_method": "h",
-            "average": False,
+            "interpolant": "Clement",
+            "average": True,
             "anisotropic": approach == "anisotropic",
             "retall": True,
+            "h_min": setup.parameters.h_min,
+            "h_max": setup.parameters.h_max,
+            "a_max": 1.0e5,
         }
         mesh = Mesh(f"{model}/meshes/{test_case}.msh")
         ct = ConvergenceTracker(mesh, parsed_args)
@@ -71,8 +75,9 @@ for i in range(num_refinements + 1):
         for ct.fp_iteration in range(ct.maxiter + 1):
 
             # Ramp up the target complexity
-            target_ramp = ramp_complexity(base_complexity, target_complexity, ct.fp_iteration)
-            kwargs["target_complexity"] = target_ramp
+            kwargs["target_complexity"] = ramp_complexity(
+                base_complexity, target_complexity, ct.fp_iteration
+            )
 
             # Compute goal-oriented metric
             out = go_metric(mesh, setup, convergence_checker=ct, **kwargs)
@@ -87,8 +92,12 @@ for i in range(num_refinements + 1):
             print(f"      Error estimator      = {estimator}")
             if "metric" not in out:
                 break
-            fwd_sol, adj_sol = out["forward"], out["adjoint"],
-            dwr, p0metric = out["dwr"], out["metric"]
+            times["metric"][-1] += out["times"]["metric"]
+            fwd_sol, adj_sol = (
+                out["forward"],
+                out["adjoint"],
+            )
+            dwr, metric = out["dwr"], out["metric"]
             dof = sum(fwd_sol.function_space().dof_count)
             print(f"      DoF count            = {dof}")
 
@@ -109,20 +118,7 @@ for i in range(num_refinements + 1):
             if parsed_args.transfer:
                 kwargs["init"] = proj
 
-            # Process metric
-            out["times"]["metric"] -= perf_counter()
-            P1_ten = TensorFunctionSpace(mesh, "CG", 1)
-            p1metric = hessian_metric(clement_interpolant(p0metric))
-            space_normalise(p1metric, target_ramp, "inf")
-            enforce_element_constraints(
-                p1metric, setup.parameters.h_min, setup.parameters.h_max, 1.0e05
-            )
-
-            # Adapt the mesh and check for element count convergence
-            metric = RiemannianMetric(mesh)
-            metric.assign(p1metric)
-            out["times"]["metric"] += perf_counter()
-            times["metric"][-1] += out["times"]["metric"]
+            # Adapt the mesh
             out["times"]["adapt"] = -perf_counter()
             mesh = adapt(mesh, metric)
             out["times"]["adapt"] += perf_counter()

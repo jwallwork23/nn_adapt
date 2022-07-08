@@ -28,6 +28,8 @@ def get_times(model, approach, case, it, tag=None):
     total = sum(split.values())
     for key, value in split.items():
         print(f"{approach} {key}: {value/total*100:.3f} %")
+    niter = np.load(f"{model}/data/niter_{approach}_{case}{ext}.npy")[it]
+    print(f"niter = {niter}")
     return split
 
 
