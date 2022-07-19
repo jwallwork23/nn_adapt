@@ -101,7 +101,7 @@ for i in range(num_refinements + 1):
                 out["adjoint"],
             )
             dwr, metric = out["dwr"], out["metric"]
-            dof = sum(fwd_sol.function_space().dof_count)
+            dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
             print(f"      DoF count            = {dof}")
 
             def proj(V):

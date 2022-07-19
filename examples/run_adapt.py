@@ -87,7 +87,7 @@ for ct.fp_iteration in range(ct.maxiter + 1):
     out = go_metric(mesh, setup, convergence_checker=ct, **kwargs)
     qoi, fwd_sol = out["qoi"], out["forward"]
     print(f"    Quantity of Interest = {qoi} {unit}")
-    dof = sum(fwd_sol.function_space().dof_count)
+    dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
     print(f"    DoF count            = {dof}")
     if "adjoint" not in out:
         break

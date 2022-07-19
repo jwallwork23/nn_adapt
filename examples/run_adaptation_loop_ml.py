@@ -93,6 +93,8 @@ for i in range(num_refinements + 1):
                 break
             times["adjoint"][-1] += out["times"]["adjoint"]
             fwd_sol, adj_sol = out["forward"], out["adjoint"]
+            dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
+            print(f"      DoF count            = {dof}")
 
             def proj(V):
                 """
@@ -175,7 +177,7 @@ for i in range(num_refinements + 1):
         )
         times["all"][-1] += perf_counter()
         qois.append(qoi)
-        dofs.append(sum(fwd_sol.function_space().dof_count))
+        dofs.append(dof)
         elements.append(cells)
         estimators.append(estimator)
         niter.append(ct.fp_iteration + 1)
