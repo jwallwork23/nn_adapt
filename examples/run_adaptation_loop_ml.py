@@ -66,7 +66,10 @@ print(f"Test case {test_case}")
 for i in range(num_refinements + 1):
     try:
         target_complexity = 100.0 * 2 ** (f * i)
-        mesh = Mesh(f"{model}/meshes/{test_case}.msh")
+        if hasattr(setup, "initial_mesh"):
+            mesh = setup.initial_mesh
+        else:
+            mesh = Mesh(f"{model}/meshes/{test_case}.msh")
         ct = ConvergenceTracker(mesh, parsed_args)
         kwargs = {}
         print(f"  Target {target_complexity}\n    Mesh 0")
