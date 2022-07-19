@@ -7,7 +7,6 @@ finite element method is used -- P1DG for velocity and P2 for free surface eleva
 Adding a new model `foo` would require a few things:
 
 * A `models/foo.py` model description file, which should mimic `models/turbine.py` and include all the same functions for setting up and solving the problem.
-* A `foo/__init__.py` initialisation file, which is probably empty.
 * A problem configuration file `foo/config.py`, which reads from `models/foo.py` and initialises parameter classes as required.
 * A `foo/meshgen.py` file for generating gmsh geometry files associated with the initial meshes, driven by a function ``generate_geo``.
 * A `foo/network.py` file for setting up the neural network architecture.
