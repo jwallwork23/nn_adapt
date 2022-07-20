@@ -31,6 +31,17 @@ def set_seed(seed):
     torch.cuda.manual_seed_all(seed)
 
 
+def sample_uniform(l, u):
+    """
+    Sample from the continuous uniform
+    distribution :math:`U(l, u)`.
+
+    :arg l: the lower bound
+    :arg u: the upper bound
+    """
+    return l + (u - l) * np.random.rand()
+
+
 class SingleLayerFCNN(nn.Module):
     """
     Fully Connected Neural Network (FCNN)

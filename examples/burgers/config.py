@@ -1,19 +1,9 @@
 from models.burgers import *
+from nn_adapt.ann import sample_uniform
 import numpy as np
 
 
 testing_cases = ["demo"]
-
-
-def sample_uniform(l, u):
-    """
-    Sample from the continuous uniform
-    distribution :math:`U(l, u)`.
-
-    :arg l: the lower bound
-    :arg u: the upper bound
-    """
-    return l + (u - l) * np.random.rand()
 
 
 def initialise(case, discrete=False):
