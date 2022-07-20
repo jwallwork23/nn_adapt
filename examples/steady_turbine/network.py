@@ -44,3 +44,4 @@ class NetLayout(NetLayoutBase):
         "adjoint_dofs",
     )
     num_hidden_neurons = 64
+    dofs_per_element = 12
