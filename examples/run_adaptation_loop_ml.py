@@ -115,7 +115,8 @@ for i in range(num_refinements + 1):
 
             # Extract features
             out["times"]["estimator"] = -perf_counter()
-            features = collect_features(extract_features(setup, fwd_sol, adj_sol))
+            features = extract_features(setup, fwd_sol, adj_sol)
+            features = collect_features(features, layout)
 
             # Run model
             test_targets = np.array([])

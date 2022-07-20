@@ -82,7 +82,7 @@ for step in range(parsed_args.adaptation_steps):
                 key: np.load(f"{data_dir}/feature_{key}_{suffix}.npy")
                 for key in layout.inputs
             }
-            features = collect_features(data)
+            features = collect_features(data, layout)
             values = np.vstack((values, features))
             features = torch.from_numpy(features).type(torch.float32)
             features.requires_grad_(True)

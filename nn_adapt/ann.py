@@ -119,15 +119,17 @@ def propagate(data_loader, model, loss_fn, optimizer=None):
     return cumulative_loss / num_batches
 
 
-def collect_features(feature_dict):
+def collect_features(feature_dict, layout):
     """
     Given a dictionary of feature arrays, stack their
     data appropriately to be fed into a neural network.
 
     :arg feature_dict: dictionary containing feature data
+    :arg layout: :class:`NetLayout` instance
     """
-    dofs = [feature for key, feature in feature_dict.items() if "dofs" in key]
-    nodofs = [feature for key, feature in feature_dict.items() if "dofs" not in key]
+    features = {key: val for key, val in feature_dict.items() if key in layout.inputs}
+    dofs = [feature for key, feature in features.items() if "dofs" in key]
+    nodofs = [feature for key, feature in features.items() if "dofs" not in key]
     return np.hstack((np.vstack(nodofs).transpose(), np.hstack(dofs)))
 
 

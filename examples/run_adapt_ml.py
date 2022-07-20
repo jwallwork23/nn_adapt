@@ -106,7 +106,7 @@ for ct.fp_iteration in range(ct.maxiter + 1):
 
     # Extract features
     with PETSc.Log.Event("Network"):
-        features = collect_features(extract_features(setup, fwd_sol, adj_sol))
+        features = collect_features(extract_features(setup, fwd_sol, adj_sol), layout)
 
         # Run model
         with PETSc.Log.Event("Propagate"):
