@@ -42,7 +42,10 @@ start_time = perf_counter()
 setup = importlib.import_module(f"{model}.config")
 setup.initialise(test_case)
 unit = setup.parameters.qoi_unit
-mesh = Mesh(f"{model}/meshes/{test_case}.msh")
+if hasattr(setup, "initial_mesh"):
+    mesh = setup.initial_mesh
+else:
+    mesh = Mesh(f"{model}/meshes/{test_case}.msh")
 
 # Load the model
 layout = importlib.import_module(f"{model}.network").NetLayout()
@@ -73,7 +76,7 @@ for ct.fp_iteration in range(ct.maxiter + 1):
     out = get_solutions(mesh, setup, convergence_checker=ct, **kwargs)
     qoi, fwd_sol = out["qoi"], out["forward"]
     print(f"    Quantity of Interest = {qoi} {unit}")
-    dof = sum(fwd_sol.function_space().dof_count)
+    dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
     print(f"    DoF count            = {dof}")
     if "adjoint" not in out:
         break
@@ -103,7 +106,7 @@ for ct.fp_iteration in range(ct.maxiter + 1):
 
     # Extract features
     with PETSc.Log.Event("Network"):
-        features = collect_features(extract_features(setup, fwd_sol, adj_sol))
+        features = collect_features(extract_features(setup, fwd_sol, adj_sol), layout)
 
         # Run model
         with PETSc.Log.Event("Propagate"):

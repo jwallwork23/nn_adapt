@@ -13,8 +13,6 @@ class NetLayoutBase(object):
     for each of these parameters.
     """
 
-    inputs = None
-    num_hidden_neurons = None
     # TODO: Allow more general networks
 
     colours = {
@@ -26,8 +24,8 @@ class NetLayoutBase(object):
     }
 
     def __init__(self):
-        if self.inputs is None:
-            raise ValueError("Need to set inputs")
+        if not hasattr(self, "inputs"):
+            raise ValueError("Need to set self.inputs")
         colours = set(self.colours.keys())
         for i in self.inputs:
             okay = False
@@ -37,8 +35,10 @@ class NetLayoutBase(object):
                     break
             if not okay:
                 raise ValueError("Input names must begin with one of {colours}")
-        if self.num_hidden_neurons is None:
-            raise ValueError("Need to set number of hidden neurons")
+        if not hasattr(self, "num_hidden_neurons"):
+            raise ValueError("Need to set self.num_hidden_neurons")
+        if not hasattr(self, "dofs_per_element"):
+            raise ValueError("Need to set self.dofs_per_element")
 
     def count_inputs(self, prefix):
         """
@@ -48,7 +48,7 @@ class NetLayoutBase(object):
         for i in self.inputs:
             if i.startswith(prefix):
                 if i in ("forward_dofs", "adjoint_dofs"):
-                    cnt += 12
+                    cnt += self.dofs_per_element
                 else:
                     cnt += 1
         return cnt

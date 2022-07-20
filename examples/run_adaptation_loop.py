@@ -65,7 +65,10 @@ for i in range(num_refinements + 1):
             "h_max": setup.parameters.h_max,
             "a_max": 1.0e5,
         }
-        mesh = Mesh(f"{model}/meshes/{test_case}.msh")
+        if hasattr(setup, "initial_mesh"):
+            mesh = setup.initial_mesh
+        else:
+            mesh = Mesh(f"{model}/meshes/{test_case}.msh")
         ct = ConvergenceTracker(mesh, parsed_args)
         print(f"  Target {target_complexity}\n    Mesh 0")
         print(f"      Element count        = {ct.elements_old}")
@@ -98,7 +101,7 @@ for i in range(num_refinements + 1):
                 out["adjoint"],
             )
             dwr, metric = out["dwr"], out["metric"]
-            dof = sum(fwd_sol.function_space().dof_count)
+            dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
             print(f"      DoF count            = {dof}")
 
             def proj(V):

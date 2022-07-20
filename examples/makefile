@@ -55,7 +55,9 @@ mesh:
 	d=$$(date +%s) && \
 	for case in $(CASES); do \
 		python3 meshgen.py $(MODEL) $$case; \
-		gmsh -2 -algo pack $(MODEL)/meshes/$$case.geo -o $(MODEL)/meshes/$$case.msh; \
+		if [ -e $(MODEL)/meshes/$$case.geo ]; then \
+			gmsh -2 -algo pack $(MODEL)/meshes/$$case.geo -o $(MODEL)/meshes/$$case.msh; \
+	    fi; \
 	done && \
 	date >> timing.log && \
 	git log -n 1 --oneline >> timing.log && \

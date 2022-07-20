@@ -9,6 +9,7 @@ import numpy as np
 from pyroteus.metric import *
 import ufl
 from nn_adapt.solving import dwr_indicator
+from collections import Iterable
 
 
 __all__ = ["extract_features", "get_values_at_elements"]
@@ -146,6 +147,11 @@ def split_into_scalars(f):
     """
     V = f.function_space()
     if V.value_size > 1:
+        if not isinstance(V.node_count, Iterable):
+            assert len(V.shape) == 1, "Tensor spaces not supported"
+            el = V.ufl_element()
+            fs = firedrake.FunctionSpace(V.mesh(), el.family(), el.degree())
+            return {0: [firedrake.interpolate(f[i], fs) for i in range(V.shape[0])]}
         subspaces = [V.sub(i) for i in range(len(V.node_count))]
         ret = {}
         for i, (Vi, fi) in enumerate(zip(subspaces, f.split())):
@@ -157,11 +163,6 @@ def split_into_scalars(f):
                 fs = firedrake.FunctionSpace(V.mesh(), el.family(), el.degree())
                 ret[i] = [firedrake.interpolate(fi[j], fs) for j in range(Vi.shape[0])]
         return ret
-    elif len(V.shape) > 0:
-        assert len(V.shape) == 1, "Tensor spaces not supported"
-        el = V.ufl_element()
-        fs = firedrake.FunctionSpace(V.mesh(), el.family(), el.degree())
-        return {0: [firedrake.interpolate(f[i], fs) for i in range(V.shape[0])]}
     else:
         return {0: [f]}
 

@@ -9,21 +9,19 @@ class NetLayout(NetLayoutBase):
     Input layer:
     ------------
         [coarse-grained DWR]
-          + [drag coefficient]
           + [viscosity coefficient]
-          + [bathymetry]
           + [element size]
           + [element orientation]
           + [element shape]
           + [boundary element?]
           + [12 forward DoFs per element]
           + [12 adjoint DoFs per element]
-          = 32
+          = 30
 
     Hidden layer:
     -------------
 
-        64 neurons
+        60 neurons
 
     Output layer:
     -------------
@@ -33,9 +31,7 @@ class NetLayout(NetLayoutBase):
 
     inputs = (
         "estimator_coarse",
-        "physics_drag",
         "physics_viscosity",
-        "physics_bathymetry",
         "mesh_d",
         "mesh_h1",
         "mesh_h2",
@@ -43,5 +39,5 @@ class NetLayout(NetLayoutBase):
         "forward_dofs",
         "adjoint_dofs",
     )
-    num_hidden_neurons = 64
+    num_hidden_neurons = 60
     dofs_per_element = 12
