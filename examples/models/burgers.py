@@ -95,21 +95,22 @@ class Solver(nn_adapt.solving.Solver):
 
         # Define variational formulation
         V = self.function_space
-        self.u = Function(V)
-        self.u_ = Function(V)
+        u = Function(V)
+        u_ = Function(V)
         v = TestFunction(V)
         self._form = (
-            inner((self.u - self.u_) / dt, v) * dx
-            + inner(dot(self.u, nabla_grad(self.u)), v) * dx
-            + nu * inner(grad(self.u), grad(v)) * dx
+            inner((u - u_) / dt, v) * dx
+            + inner(dot(u, nabla_grad(u)), v) * dx
+            + nu * inner(grad(u), grad(v)) * dx
         )
-        problem = NonlinearVariationalProblem(self._form, self.u)
+        problem = NonlinearVariationalProblem(self._form, u)
 
         # Set initial condition
-        self.u_.project(parameters.ic(mesh))
+        u_.project(parameters.ic(mesh))
 
         # Create solver
         self._solver = NonlinearVariationalSolver(problem)
+        self._solution = u
 
     @property
     def function_space(self):
@@ -127,14 +128,13 @@ class Solver(nn_adapt.solving.Solver):
 
     @property
     def solution(self):
-        return self.u
+        return self._solution
 
     def iterate(self, **kwargs):
         """
         Take a single timestep of Burgers equation
         """
         self._solver.solve()
-        self.u_.assign(self.u)
 
 
 def get_initial_condition(function_space):
@@ -163,11 +163,3 @@ def get_qoi(mesh):
 
 # Initial mesh for all test cases
 initial_mesh = UnitSquareMesh(30, 30)
-
-# a = Solver(mesh = initial_mesh, ic = 0, kwargs='0')
-# a.iterate()
-# b = a.solution
-# import matplotlib.pyplot as plt
-# fig, axes = plt.subplots()
-# tricontourf(b, axes=axes)
-# plt.show()

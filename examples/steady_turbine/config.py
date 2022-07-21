@@ -1,4 +1,5 @@
-from models.turbine import *
+from models.steady_turbine import *
+from nn_adapt.ann import sample_uniform
 
 
 testing_cases = ["aligned", "offset"]
@@ -11,17 +12,6 @@ def l2dist(xy, xyt):
     """
     diff = np.array(xy) - np.array(xyt)
     return np.sqrt(np.dot(diff, diff))
-
-
-def sample_uniform(l, u):
-    """
-    Sample from the continuous uniform
-    distribution :math:`U(l, u)`.
-
-    :arg l: the lower bound
-    :arg u: the upper bound
-    """
-    return l + (u - l) * np.random.rand()
 
 
 def initialise(case, discrete=False):

@@ -42,11 +42,14 @@ start_time = perf_counter()
 setup = importlib.import_module(f"{model}.config")
 setup.initialise(test_case)
 unit = setup.parameters.qoi_unit
-mesh = Mesh(f"{model}/meshes/{test_case}.msh")
+if hasattr(setup, "initial_mesh"):
+    mesh = setup.initial_mesh
+else:
+    mesh = Mesh(f"{model}/meshes/{test_case}.msh")
 
 # Load the model
 layout = importlib.import_module(f"{model}.network").NetLayout()
-nn = SimpleNet(layout).to(device)
+nn = SingleLayerFCNN(layout, preproc=preproc).to(device)
 nn.load_state_dict(torch.load(f"{model}/model_{tag}.pt"))
 nn.eval()
 
@@ -73,7 +76,7 @@ for ct.fp_iteration in range(ct.maxiter + 1):
     out = get_solutions(mesh, setup, convergence_checker=ct, **kwargs)
     qoi, fwd_sol = out["qoi"], out["forward"]
     print(f"    Quantity of Interest = {qoi} {unit}")
-    dof = sum(fwd_sol.function_space().dof_count)
+    dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
     print(f"    DoF count            = {dof}")
     if "adjoint" not in out:
         break
@@ -82,7 +85,7 @@ for ct.fp_iteration in range(ct.maxiter + 1):
         fwd_file.write(*fwd_sol.split())
         adj_file.write(*adj_sol.split())
     P0 = FunctionSpace(mesh, "DG", 0)
-    P0_ten = TensorFunctionSpace(mesh, "DG", 0)
+    P1_ten = TensorFunctionSpace(mesh, "CG", 1)
 
     def proj(V):
         """
@@ -103,9 +106,7 @@ for ct.fp_iteration in range(ct.maxiter + 1):
 
     # Extract features
     with PETSc.Log.Event("Network"):
-        features = collect_features(
-            extract_features(setup, fwd_sol, adj_sol, preproc=preproc)
-        )
+        features = collect_features(extract_features(setup, fwd_sol, adj_sol), layout)
 
         # Run model
         with PETSc.Log.Event("Propagate"):
@@ -132,30 +133,24 @@ for ct.fp_iteration in range(ct.maxiter + 1):
     # Construct metric
     with PETSc.Log.Event("Metric construction"):
         if approach == "anisotropic":
-            hessian = combine_metrics(*get_hessians(fwd_sol), average=False)
+            hessian = combine_metrics(*get_hessians(fwd_sol), average=True)
         else:
             hessian = None
-        p0metric = anisotropic_metric(
+        M = anisotropic_metric(
             dwr,
-            hessian,
+            hessian=hessian,
             target_complexity=target_ramp,
-            target_space=P0_ten,
-            interpolant="L2",
+            target_space=P1_ten,
+            interpolant="Clement",
         )
-
-        # Process metric
-        P1_ten = TensorFunctionSpace(mesh, "CG", 1)
-        p1metric = hessian_metric(clement_interpolant(p0metric))
-        space_normalise(p1metric, target_ramp, "inf")
+        space_normalise(M, target_ramp, "inf")
         enforce_element_constraints(
-            p1metric, setup.parameters.h_min, setup.parameters.h_max, 1.0e05
+            M, setup.parameters.h_min, setup.parameters.h_max, 1.0e05
         )
-
-        # Adapt the mesh and check for element count convergence
         metric = RiemannianMetric(mesh)
-        metric.assign(p1metric)
+        metric.assign(M)
     if not optimise:
-        metric_file.write(p0metric)
+        metric_file.write(M)
 
     # Adapt the mesh and check for element count convergence
     with PETSc.Log.Event("Mesh adaptation"):

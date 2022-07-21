@@ -9,9 +9,10 @@ import numpy as np
 from pyroteus.metric import *
 import ufl
 from nn_adapt.solving import dwr_indicator
+from collections import Iterable
 
 
-__all__ = ["extract_features", "get_values_at_elements", "collect_features"]
+__all__ = ["extract_features", "get_values_at_elements"]
 
 
 @PETSc.Log.EventDecorator("Extract components")
@@ -146,6 +147,11 @@ def split_into_scalars(f):
     """
     V = f.function_space()
     if V.value_size > 1:
+        if not isinstance(V.node_count, Iterable):
+            assert len(V.shape) == 1, "Tensor spaces not supported"
+            el = V.ufl_element()
+            fs = firedrake.FunctionSpace(V.mesh(), el.family(), el.degree())
+            return {0: [firedrake.interpolate(f[i], fs) for i in range(V.shape[0])]}
         subspaces = [V.sub(i) for i in range(len(V.node_count))]
         ret = {}
         for i, (Vi, fi) in enumerate(zip(subspaces, f.split())):
@@ -157,11 +163,6 @@ def split_into_scalars(f):
                 fs = firedrake.FunctionSpace(V.mesh(), el.family(), el.degree())
                 ret[i] = [firedrake.interpolate(fi[j], fs) for j in range(Vi.shape[0])]
         return ret
-    elif len(V.shape) > 0:
-        assert len(V.shape) == 1, "Tensor spaces not supported"
-        el = V.ufl_element()
-        fs = firedrake.FunctionSpace(V.mesh(), el.family(), el.degree())
-        return {0: [firedrake.interpolate(f[i], fs) for i in range(V.shape[0])]}
     else:
         return {0: [f]}
 
@@ -203,14 +204,13 @@ def extract_array(f, mesh=None, centroid=False, project=False):
 
 
 @PETSc.Log.EventDecorator("Extract features")
-def extract_features(config, fwd_sol, adj_sol, preproc="none"):
+def extract_features(config, fwd_sol, adj_sol):
     """
     Extract features from the outputs of a run.
 
     :arg config: the configuration file
     :arg fwd_sol: the forward solution
     :arg adj_sol: the adjoint solution
-    :kwarg preproc: preprocessor function
     :return: a list of feature arrays
     """
     mesh = fwd_sol.function_space().mesh()
@@ -247,31 +247,4 @@ def extract_features(config, fwd_sol, adj_sol, preproc="none"):
     }
     for key, value in features.items():
         assert not np.isnan(value).any()
-
-    # Pre-process, if requested
-    if preproc != "none":
-        from nn_adapt.ann import preprocess_features
-
-        features = preprocess_features(features, preproc=preproc)
     return features
-
-
-def collect_features(feature_dict, preproc="none"):
-    """
-    Given a dictionary of feature arrays, stack their
-    data appropriately to be fed into a neural network.
-
-    :arg feature_dict: dictionary containing feature data
-    :kwarg preproc: preprocessor function
-    """
-
-    # Pre-process, if requested
-    if preproc != "none":
-        from nn_adapt.ann import preprocess_features
-
-        feature_dict = preprocess_features(feature_dict, preproc=preproc)
-
-    # Stack appropriately
-    dofs = [feature for key, feature in feature_dict.items() if "dofs" in key]
-    nodofs = [feature for key, feature in feature_dict.items() if "dofs" not in key]
-    return np.hstack((np.vstack(nodofs).transpose(), np.hstack(dofs)))

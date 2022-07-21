@@ -49,7 +49,7 @@ class Parser(argparse.ArgumentParser):
         super().__init__(
             self, prog, formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
-        self.add_argument("model", help="The model", type=str, choices=["turbine"])
+        self.add_argument("model", help="The model", type=str)
         self.add_argument("test_case", help="The configuration file number or name")
         self.add_argument(
             "--optimise",

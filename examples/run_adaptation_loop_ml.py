@@ -53,7 +53,7 @@ unit = setup.parameters.qoi_unit
 
 # Load the model
 layout = importlib.import_module(f"{model}.network").NetLayout()
-nn = SimpleNet(layout).to(device)
+nn = SingleLayerFCNN(layout, preproc=preproc).to(device)
 nn.load_state_dict(torch.load(f"{model}/model_{tag}.pt"))
 nn.eval()
 
@@ -66,7 +66,10 @@ print(f"Test case {test_case}")
 for i in range(num_refinements + 1):
     try:
         target_complexity = 100.0 * 2 ** (f * i)
-        mesh = Mesh(f"{model}/meshes/{test_case}.msh")
+        if hasattr(setup, "initial_mesh"):
+            mesh = setup.initial_mesh
+        else:
+            mesh = Mesh(f"{model}/meshes/{test_case}.msh")
         ct = ConvergenceTracker(mesh, parsed_args)
         kwargs = {}
         print(f"  Target {target_complexity}\n    Mesh 0")
@@ -77,7 +80,9 @@ for i in range(num_refinements + 1):
         for ct.fp_iteration in range(ct.maxiter + 1):
 
             # Ramp up the target complexity
-            target_ramp = ramp_complexity(base_complexity, target_complexity, ct.fp_iteration)
+            target_ramp = ramp_complexity(
+                base_complexity, target_complexity, ct.fp_iteration
+            )
 
             # Solve forward and adjoint and compute Hessians
             out = get_solutions(mesh, setup, convergence_checker=ct, **kwargs)
@@ -88,6 +93,8 @@ for i in range(num_refinements + 1):
                 break
             times["adjoint"][-1] += out["times"]["adjoint"]
             fwd_sol, adj_sol = out["forward"], out["adjoint"]
+            dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
+            print(f"      DoF count            = {dof}")
 
             def proj(V):
                 """
@@ -108,9 +115,8 @@ for i in range(num_refinements + 1):
 
             # Extract features
             out["times"]["estimator"] = -perf_counter()
-            features = collect_features(
-                extract_features(setup, fwd_sol, adj_sol, preproc=preproc)
-            )
+            features = extract_features(setup, fwd_sol, adj_sol)
+            features = collect_features(features, layout)
 
             # Run model
             test_targets = np.array([])
@@ -136,31 +142,27 @@ for i in range(num_refinements + 1):
             # Construct metric
             out["times"]["metric"] = -perf_counter()
             if approach == "anisotropic":
-                hessian = combine_metrics(*get_hessians(fwd_sol), average=False)
+                hessian = combine_metrics(*get_hessians(fwd_sol), average=True)
             else:
                 hessian = None
-            P0_ten = TensorFunctionSpace(mesh, "DG", 0)
-            p0metric = anisotropic_metric(
-                dwr,
-                hessian,
-                target_complexity=target_ramp,
-                target_space=P0_ten,
-                interpolant="L2",
-            )
-
-            # Process metric
             P1_ten = TensorFunctionSpace(mesh, "CG", 1)
-            p1metric = hessian_metric(clement_interpolant(p0metric))
-            space_normalise(p1metric, target_ramp, "inf")
-            enforce_element_constraints(
-                p1metric, setup.parameters.h_min, setup.parameters.h_max, 1.0e05
+            M = anisotropic_metric(
+                dwr,
+                hessian=hessian,
+                target_complexity=target_ramp,
+                target_space=P1_ten,
+                interpolant="Clement",
             )
-
-            # Adapt the mesh and check for element count convergence
+            space_normalise(M, target_ramp, "inf")
+            enforce_element_constraints(
+                M, setup.parameters.h_min, setup.parameters.h_max, 1.0e05
+            )
             metric = RiemannianMetric(mesh)
-            metric.assign(p1metric)
+            metric.assign(M)
             out["times"]["metric"] += perf_counter()
             times["metric"][-1] += out["times"]["metric"]
+
+            # Adapt the mesh and check for element count convergence
             out["times"]["adapt"] = -perf_counter()
             mesh = adapt(mesh, metric)
             out["times"]["adapt"] += perf_counter()
@@ -176,7 +178,7 @@ for i in range(num_refinements + 1):
         )
         times["all"][-1] += perf_counter()
         qois.append(qoi)
-        dofs.append(sum(fwd_sol.function_space().dof_count))
+        dofs.append(dof)
         elements.append(cells)
         estimators.append(estimator)
         niter.append(ct.fp_iteration + 1)

@@ -26,7 +26,10 @@ except ValueError:
 setup = importlib.import_module(f"{model}.config")
 setup.initialise(test_case)
 unit = setup.parameters.qoi_unit
-mesh = Mesh(f"{model}/meshes/{test_case}.msh")
+if hasattr(setup, "initial_mesh"):
+    mesh = setup.initial_mesh
+else:
+    mesh = Mesh(f"{model}/meshes/{test_case}.msh")
 if parsed_args.num_refinements > 0:
     with PETSc.Log.Event("Hierarchy"):
         mesh = MeshHierarchy(mesh, parsed_args.num_refinements)[-1]

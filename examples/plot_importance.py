@@ -19,7 +19,7 @@ parser.add_argument(
     "model",
     help="The model",
     type=str,
-    choices=["turbine"],
+    choices=["steady_turbine"],
 )
 parser.add_argument(
     "num_training_cases",
@@ -41,20 +41,12 @@ parser.add_argument(
     default=3,
 )
 parser.add_argument(
-    "--preproc",
-    help="Data preprocess function",
-    type=str,
-    choices=["none", "arctan", "tanh", "logabs"],
-    default="arctan",
-)
-parser.add_argument(
     "--tag",
     help="Model tag (defaults to current git commit sha)",
     default=None,
 )
 parsed_args = parser.parse_args()
 model = parsed_args.model
-preproc = parsed_args.preproc
 tag = parsed_args.tag or git.Repo(search_parent_directories=True).head.object.hexsha
 
 # Separate sensitivity information by variable
