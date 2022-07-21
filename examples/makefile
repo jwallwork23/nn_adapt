@@ -3,8 +3,13 @@ all: setup network convergence profile snapshot
 # --- Configurable parameters
 
 APPROACHES			= anisotropic
+<<<<<<< Updated upstream
 MODEL				= turbine
 NUM_TRAINING_CASES	= 100
+=======
+MODEL				= burgers
+NUM_TRAINING_CASES	= 1
+>>>>>>> Stashed changes
 TESTING_CASES		= $(shell cat $(MODEL)/testing_cases.txt)
 PETSC_OPTIONS		= -dm_plex_metric_hausdorff_number 1
 TAG					= all
