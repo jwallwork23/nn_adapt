@@ -1,1 +1,1 @@
-aligned
+aligned offset aligned_reversed trench
