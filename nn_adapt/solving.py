@@ -123,6 +123,7 @@ def get_solutions(
         solve(dFdq_transpose == dJdq, q_star, solver_parameters=sp)
         out["adjoint"] = q_star
     out["times"]["adjoint"] += perf_counter()
+    
     if refined_mesh is None:
         return out
 

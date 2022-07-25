@@ -26,7 +26,7 @@ class Parameters(nn_adapt.model.Parameters):
 
     # Timestepping parameters
     timestep = 0.05
-    steps = 20
+    tt_steps = 10
 
     solver_parameters = {}
     adjoint_solver_parameters = {}
@@ -86,41 +86,42 @@ class Solver(nn_adapt.solving.Solver):
     Solver object based on current mesh and state.
     """
 
-    def __init__(self, meshes, ic, **kwargs):
+    def __init__(self, mesh, ic, **kwargs):
         """
         :arg mesh: the mesh to define the solver on
         :arg ic: the current state / initial condition
         """
-        self.meshes = meshes
+        self.mesh = mesh
 
         # Collect parameters
-        self._step = 0
-        self.total_steps = parameters.steps
-        self.dt = Constant(parameters.timestep)
-        assert len(meshes) == self.total_steps
-        
-        self.nu = [parameters.viscosity(meshes[i]) for i in range(self.total_steps)]
+        dt = Constant(parameters.timestep)
+        nu = parameters.viscosity(mesh)
 
         # Define variational formulation
         V = self.function_space
-        self.u = [Function(V[i]) for i in range(self.total_steps)]
-        self.u_ = [Function(V[i]) for i in range(self.total_steps)]
-        v = [TestFunction(V[i]) for i in range(self.total_steps)]
-        self._form = [(
-            inner((self.u[i] - self.u_[i]) / self.dt, v[i]) * dx
-            + inner(dot(self.u[i], nabla_grad(self.u[i])), v[i]) * dx
-            + self.nu[i] * inner(grad(self.u[i]), grad(v[i])) * dx
-        ) for i in range(self.total_steps)]
+        u = Function(V)
+        u_ = Function(V)
+        v = TestFunction(V)
+        self._form = (
+            inner((u - u_) / dt, v) * dx
+            + inner(dot(u, nabla_grad(u)), v) * dx
+            + nu * inner(grad(u), grad(v)) * dx
+        )
+        problem = NonlinearVariationalProblem(self._form, u)
 
         # Set initial condition
-        self.u_[0].project(parameters.ic(meshes[0]))
+        u_.project(parameters.ic(mesh))
+
+        # Create solver
+        self._solver = NonlinearVariationalSolver(problem)
+        self._solution = u
 
     @property
     def function_space(self):
         r"""
         The :math:`\mathbb P2` finite element space.
         """
-        return [get_function_space(self.meshes[i]) for i in range(self.total_steps)]
+        return get_function_space(self.mesh)
 
     @property
     def form(self):
@@ -131,31 +132,81 @@ class Solver(nn_adapt.solving.Solver):
 
     @property
     def solution(self):
-        return self.u
-    
-    @property
-    def step(self):
-        return self._step
+        return self._solution
 
     def iterate(self, **kwargs):
         """
         Take a single timestep of Burgers equation
         """
-        for i in range(self.total_steps):
-            print(f"iter {self._step}")
-            
-            # Set problem
-            problem = NonlinearVariationalProblem(self._form[self._step], self.u[self._step])
+        self._solver.solve()
+        
+        
+class time_dependent_Solver(nn_adapt.solving.Solver):
+    """
+    Solver object based on current mesh and state.
+    """
 
-            # Create solver
-            self._solver = NonlinearVariationalSolver(problem)
-            self._solver.solve()
+    def __init__(self, meshes, ic, **kwargs):
+        """
+        :arg mesh: the mesh to define the solver on
+        :arg ic: the current state / initial condition
+        """
+        self.meshes = meshes
+
+        # Collect parameters
+        self.tt_steps = parameters.tt_steps
+        dt = Constant(parameters.timestep)
+        assert self.tt_steps == len(self.meshes)
+        
+        nu = [parameters.viscosity(meshes[i]) for i in range(self.tt_steps)]
+
+        # Define variational formulation
+        V = self.function_space
+        self.u = [Function(V[i]) for i in range(self.tt_steps)]
+        self.u_ = [Function(V[i]) for i in range(self.tt_steps)]
+        self.v = [TestFunction(V[i]) for i in range(self.tt_steps)]
+        self._form = [(
+            inner((self.u[i] - self.u_[i]) / dt, self.v[i]) * dx
+            + inner(dot(self.u[i], nabla_grad(self.u[i])), self.v[i]) * dx
+            + nu[i] * inner(grad(self.u[i]), grad(self.v[i])) * dx
+        ) for i in range(self.tt_steps)]
+        
+        self._solution = []
+        
+        # Set initial condition
+        self.u_[0].project(parameters.ic(meshes[0]))
+
+    @property
+    def function_space(self):
+        r"""
+        The :math:`\mathbb P2` finite element space.
+        """
+        return [get_function_space(self.meshes[i]) for i in range(self.tt_steps)]
+
+    @property
+    def form(self):
+        """
+        The weak form of Burgers equation
+        """
+        return self._form
+
+    @property
+    def solution(self):
+        return self._solution
+
+    def iterate(self, **kwargs):
+        """
+        Take a single timestep of Burgers equation
+        """
+        solve(self._form[0] == 0, self.u[0])
+        self._solution.append(self.u[0])
+        
+        for step in range(1, self.tt_steps):
+            self.u_[step].project(self.u[step-1])
             
-            # Set timestep
-            self._step += 1
+            solve(self._form[step] == 0, self.u[step])
+            self._solution.append(self.u[step])
             
-            if self._step+1 < self.total_steps:
-                self.u_[self._step+1].assign(self.u[self._step])
 
 
 def get_initial_condition(function_space):
@@ -182,19 +233,22 @@ def get_qoi(mesh):
     return qoi
 
 
-# Initial mesh for all test cases
-initial_mesh = [UnitSquareMesh(30, 30) for _ in range(20)]
+# # Initial mesh for all test cases
+# initial_mesh = [UnitSquareMesh(30, 30), UnitSquareMesh(50, 30)]
 
 
+# # A simple pretest
+# a = time_dependent_Solver(meshes = initial_mesh, ic = 0, kwargs='0')
+# a.iterate()
+# b = a.solution
+# import matplotlib.pyplot as plt
 
-# A simple pretest
-a = Solver(meshes = initial_mesh, ic = 0, kwargs='0')
-a.iterate()
-b = a.solution
-import matplotlib.pyplot as plt
-# fig, axes = plt.subplots(20)
-# for i in range(20):
-#     tricontourf(b[i], axes=axes[i])
-fig, axes = plt.subplots()
-tricontourf(b[10], axes=axes)
-plt.show()
+# # fig, axes = plt.subplots(20)
+# # for i in range(20):
+# #     tricontourf(b[i], axes=axes[i])
+
+# fig, axes = plt.subplots(2)
+# tricontourf(b[0], axes=axes[0])
+# tricontourf(b[1], axes=axes[1])
+
+# plt.show()

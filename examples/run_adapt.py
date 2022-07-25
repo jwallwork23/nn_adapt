@@ -16,6 +16,7 @@ from firedrake.petsc import PETSc
 import importlib
 import numpy as np
 from time import perf_counter
+import matplotlib.pyplot as plt
 
 
 set_log_level(ERROR)
@@ -96,6 +97,12 @@ for ct.fp_iteration in range(ct.maxiter + 1):
     if "metric" not in out:
         break
     adj_sol, dwr, metric = out["adjoint"], out["dwr"], out["metric"]
+    
+    fig, axes = plt.subplots(1,2)
+    tricontourf(fwd_sol, axes=axes[0])
+    tricontourf(adj_sol, axes=axes[1])  
+    plt.savefig("out.jpg")
+    
     if not no_outputs:
         fwd_file.write(*fwd_sol.split())
         adj_file.write(*adj_sol.split())
