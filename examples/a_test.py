@@ -25,7 +25,7 @@ fig, axes = plt.subplots(10,2)
 for i in range(tt_steps):
     tricontourf(out['forward'][i], axes=axes[i][0])
     tricontourf(out['adjoint'][i], axes=axes[i][1])
-    
+
 plt.savefig("test1.jpg")
 
 # mesh = UnitSquareMesh(30, 30)

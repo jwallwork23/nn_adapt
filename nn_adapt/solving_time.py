@@ -8,6 +8,8 @@ files and performing goal-oriented error estimation.
 from firedrake import *
 from firedrake.petsc import PETSc
 from firedrake.mg.embedded import TransferManager
+from firedrake_adjoint import *
+from firedrake.adjoint import get_solve_blocks
 from pyroteus.error_estimation import get_dwr_indicator
 import abc
 from time import perf_counter
@@ -106,21 +108,14 @@ def get_time_solutions(
     solver_obj = config.time_dependent_Solver(meshes, ic=0, **kwargs)
     solver_obj.iterate()
     q = solver_obj.solution
-    qoi = []
-    j_list = []
-    for step in range(tt_steps):
-        J = config.get_qoi(meshes[step])(q[step])
-        j_list.append(J)
-        qoi.append(assemble(J))
+    J = config.get_qoi(V[tt_steps-1])(q[tt_steps-1])
+    qoi = assemble(J)
+        
     out["times"]["forward"] += perf_counter()
     out["qoi"] = qoi
     out["forward"] = q
     if convergence_checker is not None:
-        cirt = 0
-        for step in range(tt_steps):
-            if not convergence_checker.check_qoi(qoi[step]):
-                cirt = 1
-        if cirt == 1:
+        if not convergence_checker.check_qoi(qoi):
             return out
     if not solve_adjoint:
         return out
@@ -128,45 +123,27 @@ def get_time_solutions(
     # Solve adjoint problem in base space
     out["times"]["adjoint"] = -perf_counter()
     # with PETSc.Log.Event("Adjoint solve"):
-    sp = config.parameters.adjoint_solver_parameters
-    F = solver_obj.form
+    
     adj_solution = []
+    # sp = config.parameters.adjoint_solver_parameters
+    # tape = get_working_tape()
+    # nu = Constant(config.parameters.viscosity_coefficient)
+    # g = compute_gradient(qoi, Control(nu))
+    # solve_blocks = get_solve_blocks()
     
+    # # 'Initial condition' for both adjoint
+    # dJdu = assemble(derivative(J, q[-1]))
     
-    # q_star = Function(V[tt_steps-1])
-    # dFdq = derivative(F[tt_steps-1], q[tt_steps-1], TrialFunction(V[tt_steps-1]))
-    # dFdq_transpose = adjoint(dFdq)
-    # dJdq = derivative(j_list[tt_steps-1], q[tt_steps-1], TestFunction(V[tt_steps-1]))
-    # solve(dFdq_transpose == dJdq, q_star, solver_parameters=sp)
-    # adj_solution.append(q_star)
-        
-    # for step in range(tt_steps-2, -1, -1):
-    #     print(step)
-    #     q_star_next = Function(V[step])
-    #     q_star_next.project(q_star)
-        
-    #     q_star = Function(V[step])
-        
-    #     dFdq = derivative(F[step], q_star_next, TrialFunction(V[step]))
-    #     dFdq_transpose = adjoint(dFdq)
-    #     dJdq = derivative(j_list[step], q[step], TestFunction(V[step]))
-    #     solve(dFdq_transpose == dJdq, q_star, solver_parameters=sp)
-        
-    #     adj_solution.append(q_star)
+    # adj_solution = []
+    dJdu, solve_blocks = solver_obj.adjoint_setup()
     
-      
-    for step in range(tt_steps-1, -1, -1):
+    for step in range(tt_steps-1):
+        adjoint_solution = solve_blocks[step].adj_sol
+        adj_solution.append(adjoint_solution)
+    
+    adj_solution.append(dJdu)
         
-        q_star = Function(V[step])
-        
-        dFdq = derivative(F[step], q[step], TrialFunction(V[step]))
-        dFdq_transpose = adjoint(dFdq)
-        dJdq = derivative(j_list[step], q[step], TestFunction(V[step]))
-        solve(dFdq_transpose == dJdq, q_star, solver_parameters=sp)
-        
-        adj_solution.append(q_star)
-        
-    out["adjoint"] = adj_solution.reverse()
+    out["adjoint"] = adj_solution
     out["times"]["adjoint"] += perf_counter()
     if refined_mesh is None:
         return out

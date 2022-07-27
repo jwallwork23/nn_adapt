@@ -1,4 +1,7 @@
 """
+Time dependent goal-oriented error estimation
+"""
+"""
 Functions for solving problems defined by configuration
 files and performing goal-oriented error estimation.
 """
@@ -60,8 +63,8 @@ class Solver(abc.ABC):
         pass
 
 
-def get_solutions(
-    mesh,
+def get_time_solutions(
+    meshes,
     config,
     solve_adjoint=True,
     refined_mesh=None,
@@ -74,6 +77,7 @@ def get_solutions(
     given mesh.
 
     This works only for steady-state problems.
+    Trying to work it out.
 
     :arg mesh: input mesh
     :arg config: configuration file, which
@@ -88,42 +92,90 @@ def get_solutions(
     :return: forward solution, adjoint solution
         and enriched adjoint solution (if requested)
     """
+    
+    tt_steps = config.parameters.tt_steps
 
     # Solve forward problem in base space
-    V = config.get_function_space(mesh)
+    V = [config.get_function_space(meshes[step]) for step in range(tt_steps)]
     out = {"times": {"forward": -perf_counter()}}
-    with PETSc.Log.Event("Forward solve"):
-        if init is None:
-            ic = config.get_initial_condition(V)
-        else:
-            ic = init(V)
-        solver_obj = config.Solver(mesh, ic, **kwargs)
-        solver_obj.iterate()
-        q = solver_obj.solution
-        J = config.get_qoi(mesh)(q)
-        qoi = assemble(J)
+    # with PETSc.Log.Event("Forward solve"):
+        # if init is None:
+        #     ic = config.get_initial_condition(V)
+        # else:
+        #     ic = init(V)
+    solver_obj = config.time_dependent_Solver(meshes, ic=0, **kwargs)
+    solver_obj.iterate()
+    q = solver_obj.solution
+    qoi = []
+    j_list = []
+    for step in range(tt_steps):
+        J = config.get_qoi(meshes[step])(q[step])
+        j_list.append(J)
+        qoi.append(assemble(J))
+    # qoi.append(assemble(J))
     out["times"]["forward"] += perf_counter()
     out["qoi"] = qoi
     out["forward"] = q
     if convergence_checker is not None:
-        if convergence_checker.check_qoi(qoi):
+        cirt = 0
+        for step in range(tt_steps):
+            if not convergence_checker.check_qoi(qoi[step]):
+                cirt = 1
+        if cirt == 1:
             return out
     if not solve_adjoint:
         return out
 
     # Solve adjoint problem in base space
     out["times"]["adjoint"] = -perf_counter()
-    with PETSc.Log.Event("Adjoint solve"):
-        sp = config.parameters.adjoint_solver_parameters
-        q_star = Function(V)
-        F = solver_obj.form
-        dFdq = derivative(F, q, TrialFunction(V))
+    # with PETSc.Log.Event("Adjoint solve"):
+    sp = config.parameters.adjoint_solver_parameters
+    F = solver_obj.form
+    adj_solution = []
+    
+    
+    # q_star = Function(V[tt_steps-1])
+    # dFdq = derivative(F[tt_steps-1], q[tt_steps-1], TrialFunction(V[tt_steps-1]))
+    # dFdq_transpose = adjoint(dFdq)
+    # dJdq = derivative(j_list[tt_steps-1], q[tt_steps-1], TestFunction(V[tt_steps-1]))
+    # solve(dFdq_transpose == dJdq, q_star, solver_parameters=sp)
+    # adj_solution.append(q_star)
+        
+    # for step in range(tt_steps-2, -1, -1):
+    #     print(step)
+    #     q_star_next = Function(V[step])
+    #     q_star_next.project(q_star)
+        
+    #     q_star = Function(V[step])
+        
+    #     dFdq = derivative(F[step], q_star_next, TrialFunction(V[step]))
+    #     dFdq_transpose = adjoint(dFdq)
+    #     dJdq = derivative(j_list[step], q[step], TestFunction(V[step]))
+    #     solve(dFdq_transpose == dJdq, q_star, solver_parameters=sp)
+        
+    #     adj_solution.append(q_star)
+    
+      
+    for step in range(tt_steps-1, -1, -1):
+        
+        q_star = Function(V[step])
+        
+        q_mask = Function(V[step])
+        q_mask.project(q[tt_steps-1])
+        
+        dFdq = derivative(F[step], q[step], TrialFunction(V[step]))
         dFdq_transpose = adjoint(dFdq)
-        dJdq = derivative(J, q, TestFunction(V))
+        
+        J_cmesh = Function(V[step])
+        J_cmesh.project(J)
+        
+        dJdq = derivative(J_cmesh, q[step], TestFunction(V[step]))
         solve(dFdq_transpose == dJdq, q_star, solver_parameters=sp)
-        out["adjoint"] = q_star
+        
+        adj_solution.append(q_star)
+        
+    out["adjoint"] = adj_solution
     out["times"]["adjoint"] += perf_counter()
-
     if refined_mesh is None:
         return out
 

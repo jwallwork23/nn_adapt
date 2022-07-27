@@ -1,5 +1,8 @@
+from copy import deepcopy
 from firedrake import *
 from firedrake.petsc import PETSc
+from firedrake_adjoint import *
+from firedrake.adjoint import get_solve_blocks
 import nn_adapt.model
 import nn_adapt.solving
 
@@ -66,7 +69,9 @@ class Parameters(nn_adapt.model.Parameters):
         """
         x, y = SpatialCoordinate(mesh)
         expr = self.initial_speed * sin(pi * x)
-        return as_vector([expr, 0])
+        yside = self.initial_speed * sin(pi * y)
+        yside = 0
+        return as_vector([expr, yside])
 
 
 PETSc.Sys.popErrorHandler()
@@ -155,33 +160,18 @@ class time_dependent_Solver(nn_adapt.solving.Solver):
 
         # Collect parameters
         self.tt_steps = parameters.tt_steps
-        dt = Constant(parameters.timestep)
+        self.dt = Constant(parameters.timestep)
         assert self.tt_steps == len(self.meshes)
         
-        nu = [parameters.viscosity(meshes[i]) for i in range(self.tt_steps)]
-
-        # Define variational formulation
-        V = self.function_space
-        self.u = [Function(V[i]) for i in range(self.tt_steps)]
-        self.u_ = [Function(V[i]) for i in range(self.tt_steps)]
-        self.v = [TestFunction(V[i]) for i in range(self.tt_steps)]
-        self._form = [(
-            inner((self.u[i] - self.u_[i]) / dt, self.v[i]) * dx
-            + inner(dot(self.u[i], nabla_grad(self.u[i])), self.v[i]) * dx
-            + nu[i] * inner(grad(self.u[i]), grad(self.v[i])) * dx
-        ) for i in range(self.tt_steps)]
-        
-        self._solution = []
-        
-        # Set initial condition
-        self.u_[0].project(parameters.ic(meshes[0]))
+        # Physical parameters
+        self.nu = Constant(parameters.viscosity_coefficient)
 
     @property
     def function_space(self):
         r"""
         The :math:`\mathbb P2` finite element space.
         """
-        return [get_function_space(self.meshes[i]) for i in range(self.tt_steps)]
+        return get_function_space(self.meshes)
 
     @property
     def form(self):
@@ -192,21 +182,64 @@ class time_dependent_Solver(nn_adapt.solving.Solver):
 
     @property
     def solution(self):
-        return self._solution
+        return self._solutions
+    
+    def adjoint_setup(self):
+        J_form = inner(self._u, self._u)*ds(2)
+        J = assemble(J_form)
+
+        tape = get_working_tape()
+        g = compute_gradient(J, Control(self.nu))
+
+        solve_blocks = get_solve_blocks()
+            
+        # 'Initial condition' for both adjoint
+        dJdu = assemble(derivative(J_form, self._u))
+        
+        return dJdu, solve_blocks
 
     def iterate(self, **kwargs):
         """
-        Take a single timestep of Burgers equation
+        Get the final timestep of Burgers equation
         """
-        solve(self._form[0] == 0, self.u[0])
-        self._solution.append(self.u[0])
+        stop_annotating();
+
+        # Assign initial condition
+        V = get_function_space(self.meshes[0])
+        ic = parameters.ic(self.meshes[0])
+        u = Function(V)
+        u.project(ic)
+
+        _solutions = [u.copy(deepcopy=True)]
+
+        # solve forward
+        step = 0
+
+        for step in range(self.tt_steps):
+            # Define P2 function space and corresponding test function
+            V = get_function_space(self.meshes[step])
+            v = TestFunction(V)
+
+            # Create Functions for the solution and time-lagged solution
+            u_ = Function(V)
+            u_.project(u)
+            
+            u = Function(V, name="Velocity")
+
+            # Define nonlinear form
+            F = (inner((u - u_)/self.dt, v) + inner(dot(u, nabla_grad(u)), v) + self.nu*inner(grad(u), grad(v)))*dx
+
+            solve(F == 0, u)
+
+            # Store forward solution at exports so we can plot again later
+            _solutions.append(u.copy(deepcopy=True))
         
-        for step in range(1, self.tt_steps):
-            self.u_[step].project(self.u[step-1])
-            
-            solve(self._form[step] == 0, self.u[step])
-            self._solution.append(self.u[step])
-            
+        self._form = F
+        self._solutions = _solutions
+        self._u = u
+        
+        stop_annotating();
+        
 
 
 def get_initial_condition(function_space):
@@ -226,9 +259,11 @@ def get_qoi(mesh):
 
     It should have one argument - the prognostic solution.
     """
-
+    
     def qoi(sol):
-        return inner(sol, sol) * ds(2)
+        sol_temp = Function(mesh)
+        sol_temp.project(sol)
+        return inner(sol_temp, sol_temp) * ds(2)
 
     return qoi
 
