@@ -188,7 +188,6 @@ class time_dependent_Solver(nn_adapt.solving.Solver):
         J_form = inner(self._u, self._u)*ds(2)
         J = assemble(J_form)
 
-        tape = get_working_tape()
         g = compute_gradient(J, Control(self.nu))
 
         solve_blocks = get_solve_blocks()
@@ -202,7 +201,6 @@ class time_dependent_Solver(nn_adapt.solving.Solver):
         """
         Get the final timestep of Burgers equation
         """
-        stop_annotating();
 
         # Assign initial condition
         V = get_function_space(self.meshes[0])
@@ -210,7 +208,10 @@ class time_dependent_Solver(nn_adapt.solving.Solver):
         u = Function(V)
         u.project(ic)
 
-        _solutions = [u.copy(deepcopy=True)]
+        _solutions = []
+        
+        tape = get_working_tape()
+        tape.clear_tape()
 
         # solve forward
         step = 0
@@ -241,7 +242,6 @@ class time_dependent_Solver(nn_adapt.solving.Solver):
         stop_annotating();
         
 
-
 def get_initial_condition(function_space):
     """
     Compute an initial condition based on the initial
@@ -269,21 +269,12 @@ def get_qoi(mesh):
 
 
 # # Initial mesh for all test cases
-# initial_mesh = [UnitSquareMesh(30, 30), UnitSquareMesh(50, 30)]
+# initial_mesh = [UnitSquareMesh(30, 30) for i in range(parameters.tt_steps)]
 
 
 # # A simple pretest
 # a = time_dependent_Solver(meshes = initial_mesh, ic = 0, kwargs='0')
 # a.iterate()
 # b = a.solution
-# import matplotlib.pyplot as plt
 
-# # fig, axes = plt.subplots(20)
-# # for i in range(20):
-# #     tricontourf(b[i], axes=axes[i])
-
-# fig, axes = plt.subplots(2)
-# tricontourf(b[0], axes=axes[0])
-# tricontourf(b[1], axes=axes[1])
-
-# plt.show()
+# print(b[0].function_space())

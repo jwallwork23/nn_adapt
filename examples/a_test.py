@@ -16,17 +16,28 @@ import matplotlib.pyplot as plt
 tt_steps = 10
 
 setup1 = importlib.import_module(f"burgers_try.config")
-meshes = [UnitSquareMesh(30, 30) for _ in range(tt_steps)]
+meshes = [UnitSquareMesh(20, 20) for _ in range(tt_steps)]
 # meshes[5] = UnitSquareMesh(28, 30)
 
-out = get_time_solutions(meshes=meshes, config=setup1)
-fig, axes = plt.subplots(10,2)
+# mesh, ref_mesh = MeshHierarchy(meshes[1], 1)
+# print(mesh)
+# print(ref_mesh)
+# fig, axes = plt.subplots(2)
+# triplot(mesh, axes=axes[0])
+# triplot(ref_mesh, axes=axes[1])
+# plt.show()
 
-for i in range(tt_steps):
-    tricontourf(out['forward'][i], axes=axes[i][0])
-    tricontourf(out['adjoint'][i], axes=axes[i][1])
+out = indicate_time_errors(meshes=meshes, config=setup1)
+print(out)
 
-plt.savefig("test1.jpg")
+# fig, axes = plt.subplots(10,2)
+
+# for i in range(tt_steps):
+#     tricontourf(out['forward'][i], axes=axes[i][0])
+#     tricontourf(out['adjoint'][i], axes=axes[i][1])
+
+# plt.savefig("test1.jpg")
+
 
 # mesh = UnitSquareMesh(30, 30)
 # setup2 = importlib.import_module(f"burgers.config")

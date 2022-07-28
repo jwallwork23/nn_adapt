@@ -3,6 +3,9 @@ from firedrake.petsc import PETSc
 import nn_adapt.model
 import nn_adapt.solving
 
+from firedrake_adjoint import *
+from firedrake.adjoint import get_solve_blocks
+
 
 class Parameters(nn_adapt.model.Parameters):
     """
@@ -163,25 +166,3 @@ def get_qoi(mesh):
 
 # Initial mesh for all test cases
 initial_mesh = UnitSquareMesh(30, 30)
-
-# # A simple pretest
-# a = Solver(mesh = initial_mesh, ic = 0, kwargs='0')
-# b = []
-# a.iterate()
-# b.append(a.solution)
-# a.iterate()
-# b.append(a.solution)
-# a.iterate()
-# b.append(a.solution)
-
-# import matplotlib.pyplot as plt
-
-# # fig, axes = plt.subplots()
-# # tricontourf(b, axes=axes)
-
-# fig, axes = plt.subplots(3)
-# tricontourf(b[0], axes=axes[0])
-# tricontourf(b[1], axes=axes[1])
-# tricontourf(b[2], axes=axes[2])
-
-# plt.show()
