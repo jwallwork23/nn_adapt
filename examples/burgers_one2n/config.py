@@ -1,4 +1,4 @@
-from models.burgers_try import *
+from models.burgers_one2n import *
 from nn_adapt.ann import sample_uniform
 import numpy as np
 
@@ -32,7 +32,7 @@ def initialise(case, discrete=False):
         parameters.viscosity_coefficient = 0.0001
         parameters.initial_speed = 1.0
     else:
-        raise ValueError(f"Test case {case} not recognised")
+        raise ValueError(f"Test case {test_case} not recognised")
 
     if "reversed" in case:
         parameters.initial_speed *= -1

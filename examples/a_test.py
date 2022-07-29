@@ -1,7 +1,8 @@
 from nn_adapt.features import *
 from nn_adapt.metric import *
 from nn_adapt.parse import Parser
-from nn_adapt.solving_time import *
+from nn_adapt.solving_one2n import *
+from nn_adapt.solving_n2n import *
 from nn_adapt.solving import *
 from nn_adapt.utility import ConvergenceTracker
 from firedrake.meshadapt import adapt
@@ -15,20 +16,15 @@ import matplotlib.pyplot as plt
 
 tt_steps = 10
 
-setup1 = importlib.import_module(f"burgers_try.config")
+setup1 = importlib.import_module(f"burgers_n2n.config")
 meshes = [UnitSquareMesh(20, 20) for _ in range(tt_steps)]
-# meshes[5] = UnitSquareMesh(28, 30)
+out1 = indicate_errors_n2n(meshes=meshes, config=setup1)
+print(out1)
 
-# mesh, ref_mesh = MeshHierarchy(meshes[1], 1)
-# print(mesh)
-# print(ref_mesh)
-# fig, axes = plt.subplots(2)
-# triplot(mesh, axes=axes[0])
-# triplot(ref_mesh, axes=axes[1])
-# plt.show()
-
-out = indicate_time_errors(meshes=meshes, config=setup1)
-print(out)
+mesh = UnitSquareMesh(20, 20)
+setup2 = importlib.import_module(f"burgers_one2n.config")
+out2 = indicate_errors_one2n(mesh=mesh, config=setup2)
+print(out2)
 
 # fig, axes = plt.subplots(10,2)
 

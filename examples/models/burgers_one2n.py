@@ -146,32 +146,51 @@ class Solver(nn_adapt.solving.Solver):
         self._solver.solve()
         
         
-class time_dependent_Solver(nn_adapt.solving.Solver):
+class Solver_one2n(nn_adapt.solving.Solver):
     """
     Solver object based on current mesh and state.
     """
 
-    def __init__(self, meshes, ic, **kwargs):
+    def __init__(self, mesh, ic, **kwargs):
         """
         :arg mesh: the mesh to define the solver on
         :arg ic: the current state / initial condition
         """
-        self.meshes = meshes
+        self.mesh = mesh
 
         # Collect parameters
         self.tt_steps = parameters.tt_steps
-        self.dt = Constant(parameters.timestep)
-        assert self.tt_steps == len(self.meshes)
+        dt = Constant(parameters.timestep)
         
         # Physical parameters
-        self.nu = Constant(parameters.viscosity_coefficient)
+        nu = parameters.viscosity(mesh)
+        self.nu = nu
+        
+        # Define variational formulation
+        V = self.function_space
+        self.u = Function(V)
+        self.u_ = Function(V)
+        self.v = TestFunction(V)
+        
+        self._form = (
+            inner((self.u - self.u_) / dt, self.v) * dx
+            + inner(dot(self.u, nabla_grad(self.u)), self.v) * dx
+            + nu * inner(grad(self.u), grad(self.v)) * dx
+        )
+        
+        # Define initial conditions
+        ic = parameters.ic(self.mesh)
+        self.u.project(ic)
+        
+        # Set solutions
+        self._solutions = []
 
     @property
     def function_space(self):
         r"""
         The :math:`\mathbb P2` finite element space.
         """
-        return get_function_space(self.meshes)
+        return get_function_space(self.mesh)
 
     @property
     def form(self):
@@ -184,8 +203,15 @@ class time_dependent_Solver(nn_adapt.solving.Solver):
     def solution(self):
         return self._solutions
     
-    def adjoint_setup(self):
-        J_form = inner(self._u, self._u)*ds(2)
+    @property
+    def adj_solution(self):
+        return self._adj_solution
+    
+    def adjoint_iteration(self):
+        """
+        Get the forward solutions of Burgers equation
+        """
+        J_form = inner(self.u, self.u)*ds(2)
         J = assemble(J_form)
 
         g = compute_gradient(J, Control(self.nu))
@@ -193,52 +219,32 @@ class time_dependent_Solver(nn_adapt.solving.Solver):
         solve_blocks = get_solve_blocks()
             
         # 'Initial condition' for both adjoint
-        dJdu = assemble(derivative(J_form, self._u))
+        dJdu = assemble(derivative(J_form, self.u))
         
-        return dJdu, solve_blocks
+        self._adj_solution = []
+        for step in range(self.tt_steps-1):
+            adj_sol = solve_blocks[step].adj_sol
+            self._adj_solution.append(adj_sol)
+        self._adj_solution.append(dJdu)
 
     def iterate(self, **kwargs):
         """
-        Get the final timestep of Burgers equation
+        Get the forward solutions of Burgers equation
         """
-
-        # Assign initial condition
-        V = get_function_space(self.meshes[0])
-        ic = parameters.ic(self.meshes[0])
-        u = Function(V)
-        u.project(ic)
-
-        _solutions = []
-        
         tape = get_working_tape()
         tape.clear_tape()
 
         # solve forward
-        step = 0
-
-        for step in range(self.tt_steps):
-            # Define P2 function space and corresponding test function
-            V = get_function_space(self.meshes[step])
-            v = TestFunction(V)
+        for _ in range(self.tt_steps):
 
             # Create Functions for the solution and time-lagged solution
-            u_ = Function(V)
-            u_.project(u)
-            
-            u = Function(V, name="Velocity")
+            self.u_.project(self.u)
 
-            # Define nonlinear form
-            F = (inner((u - u_)/self.dt, v) + inner(dot(u, nabla_grad(u)), v) + self.nu*inner(grad(u), grad(v)))*dx
-
-            solve(F == 0, u)
+            solve(self._form == 0, self.u)
 
             # Store forward solution at exports so we can plot again later
-            _solutions.append(u.copy(deepcopy=True))
-        
-        self._form = F
-        self._solutions = _solutions
-        self._u = u
-        
+            self._solutions.append(self.u.copy(deepcopy=True))
+            
         stop_annotating();
         
 
@@ -261,20 +267,10 @@ def get_qoi(mesh):
     """
     
     def qoi(sol):
-        sol_temp = Function(mesh)
-        sol_temp.project(sol)
-        return inner(sol_temp, sol_temp) * ds(2)
+        return inner(sol, sol) * ds(2)
 
     return qoi
 
 
-# # Initial mesh for all test cases
-# initial_mesh = [UnitSquareMesh(30, 30) for i in range(parameters.tt_steps)]
-
-
-# # A simple pretest
-# a = time_dependent_Solver(meshes = initial_mesh, ic = 0, kwargs='0')
-# a.iterate()
-# b = a.solution
-
-# print(b[0].function_space())
+# Initial mesh for all test cases
+initial_mesh = UnitSquareMesh(30, 30)

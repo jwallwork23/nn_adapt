@@ -67,7 +67,7 @@ class Solver(abc.ABC):
         pass
 
 
-def get_time_solutions(
+def get_solutions_n2n(
     meshes,
     config,
     solve_adjoint=True,
@@ -107,11 +107,15 @@ def get_time_solutions(
             ic = config.get_initial_condition(V)
         else:
             ic = init(V)
-        solver_obj = config.time_dependent_Solver(meshes, ic=0, **kwargs)
+        solver_obj = config.Solver_n2n(meshes, ic=0, **kwargs)
         solver_obj.iterate()
         q = solver_obj.solution
-        J = config.get_qoi(V)(q[-1])
-        qoi = assemble(J)
+        # Calculate QoI
+        qoi = 0
+        for step in range(tt_steps):
+            J = config.get_qoi(V)(q[-1])
+            qoi += assemble(J)
+        qoi = qoi / tt_steps
         
     out["times"]["forward"] += perf_counter()
     out["qoi"] = qoi
@@ -135,8 +139,7 @@ def get_time_solutions(
         
         # initial condition for adjoint solution
         adj_solution.append(dJdu)
-        
-    out["adjoint"] = adj_solution
+        out["adjoint"] = adj_solution
     out["times"]["adjoint"] += perf_counter()
     if refined_meshes is None:
         return out
@@ -146,7 +149,7 @@ def get_time_solutions(
     with PETSc.Log.Event("Enrichment"):
         V = config.get_function_space(refined_meshes[-1])
         q_plus = Function(V)
-        solver_obj_plus = config.time_dependent_Solver(refined_meshes, q_plus, **kwargs)
+        solver_obj_plus = config.Solver_n2n(refined_meshes, q_plus, **kwargs)
         solver_obj_plus.iterate()
         q_plus = solver_obj_plus.solution
         # J = config.get_qoi(refined_mesh[-1])(q_plus[-1])
@@ -158,8 +161,7 @@ def get_time_solutions(
             adj_solution_plus.append(adjoint_solution_plus)
         
         adj_solution_plus.append(dJdu_plus)
-    
-    out["enriched_adjoint"] = adj_solution_plus
+        out["enriched_adjoint"] = adj_solution_plus
     out["times"]["estimator"] += perf_counter()
     
     return out
@@ -173,7 +175,7 @@ def split_into_components(f):
     return [f] if f.function_space().value_size == 1 else f.split()
 
 
-def indicate_time_errors(meshes, config, enrichment_method="h", retall=False, **kwargs):
+def indicate_errors_n2n(meshes, config, enrichment_method="h", retall=False, **kwargs):
     """
     Indicate errors according to ``dwr_indicator``,
     using the solver given in the configuration file.
@@ -199,7 +201,7 @@ def indicate_time_errors(meshes, config, enrichment_method="h", retall=False, **
         ref_mesh_list.append(ref_mesh)
 
     # Solve the forward and adjoint problems
-    out = get_time_solutions(meshes=mesh_list, config=config, refined_meshes=ref_mesh_list, **kwargs)
+    out = get_solutions_n2n(meshes=mesh_list, config=config, refined_meshes=ref_mesh_list, **kwargs)
     if retall and "adjoint" not in out:
         return out
 
