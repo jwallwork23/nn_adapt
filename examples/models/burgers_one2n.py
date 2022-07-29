@@ -1,11 +1,14 @@
+from copy import deepcopy
 from firedrake import *
 from firedrake.petsc import PETSc
+from firedrake_adjoint import *
+from firedrake.adjoint import get_solve_blocks
 import nn_adapt.model
 import nn_adapt.solving
 
-from firedrake_adjoint import *
-from firedrake.adjoint import get_solve_blocks
-
+'''
+A memory hungry method solving time dependent PDE.
+'''
 
 class Parameters(nn_adapt.model.Parameters):
     """
@@ -26,6 +29,7 @@ class Parameters(nn_adapt.model.Parameters):
 
     # Timestepping parameters
     timestep = 0.05
+    tt_steps = 10
 
     solver_parameters = {}
     adjoint_solver_parameters = {}
@@ -65,7 +69,9 @@ class Parameters(nn_adapt.model.Parameters):
         """
         x, y = SpatialCoordinate(mesh)
         expr = self.initial_speed * sin(pi * x)
-        return as_vector([expr, 0])
+        yside = self.initial_speed * sin(pi * y)
+        yside = 0
+        return as_vector([expr, yside])
 
 
 PETSc.Sys.popErrorHandler()
@@ -138,7 +144,109 @@ class Solver(nn_adapt.solving.Solver):
         Take a single timestep of Burgers equation
         """
         self._solver.solve()
+        
+        
+class Solver_one2n(nn_adapt.solving.Solver):
+    """
+    Solver object based on current mesh and state.
+    """
 
+    def __init__(self, mesh, ic, **kwargs):
+        """
+        :arg mesh: the mesh to define the solver on
+        :arg ic: the current state / initial condition
+        """
+        self.mesh = mesh
+
+        # Collect parameters
+        self.tt_steps = parameters.tt_steps
+        dt = Constant(parameters.timestep)
+        
+        # Physical parameters
+        nu = parameters.viscosity(mesh)
+        self.nu = nu
+        
+        # Define variational formulation
+        V = self.function_space
+        self.u = Function(V)
+        self.u_ = Function(V)
+        self.v = TestFunction(V)
+        
+        self._form = (
+            inner((self.u - self.u_) / dt, self.v) * dx
+            + inner(dot(self.u, nabla_grad(self.u)), self.v) * dx
+            + nu * inner(grad(self.u), grad(self.v)) * dx
+        )
+        
+        # Define initial conditions
+        ic = parameters.ic(self.mesh)
+        self.u.project(ic)
+        
+        # Set solutions
+        self._solutions = []
+
+    @property
+    def function_space(self):
+        r"""
+        The :math:`\mathbb P2` finite element space.
+        """
+        return get_function_space(self.mesh)
+
+    @property
+    def form(self):
+        """
+        The weak form of Burgers equation
+        """
+        return self._form
+
+    @property
+    def solution(self):
+        return self._solutions
+    
+    @property
+    def adj_solution(self):
+        return self._adj_solution
+    
+    def adjoint_iteration(self):
+        """
+        Get the forward solutions of Burgers equation
+        """
+        J_form = inner(self.u, self.u)*ds(2)
+        J = assemble(J_form)
+
+        g = compute_gradient(J, Control(self.nu))
+
+        solve_blocks = get_solve_blocks()
+            
+        # 'Initial condition' for both adjoint
+        dJdu = assemble(derivative(J_form, self.u))
+        
+        self._adj_solution = []
+        for step in range(self.tt_steps-1):
+            adj_sol = solve_blocks[step].adj_sol
+            self._adj_solution.append(adj_sol)
+        self._adj_solution.append(dJdu)
+
+    def iterate(self, **kwargs):
+        """
+        Get the forward solutions of Burgers equation
+        """
+        tape = get_working_tape()
+        tape.clear_tape()
+
+        # solve forward
+        for _ in range(self.tt_steps):
+
+            # Create Functions for the solution and time-lagged solution
+            self.u_.project(self.u)
+
+            solve(self._form == 0, self.u)
+
+            # Store forward solution at exports so we can plot again later
+            self._solutions.append(self.u.copy(deepcopy=True))
+            
+        stop_annotating();
+        
 
 def get_initial_condition(function_space):
     """
@@ -157,7 +265,7 @@ def get_qoi(mesh):
 
     It should have one argument - the prognostic solution.
     """
-
+    
     def qoi(sol):
         return inner(sol, sol) * ds(2)
 

@@ -1,11 +1,14 @@
+from copy import deepcopy
 from firedrake import *
 from firedrake.petsc import PETSc
+from firedrake_adjoint import *
+from firedrake.adjoint import get_solve_blocks
 import nn_adapt.model
 import nn_adapt.solving
 
-from firedrake_adjoint import *
-from firedrake.adjoint import get_solve_blocks
-
+'''
+A memory hungry method solving time dependent PDE.
+'''
 
 class Parameters(nn_adapt.model.Parameters):
     """
@@ -26,6 +29,7 @@ class Parameters(nn_adapt.model.Parameters):
 
     # Timestepping parameters
     timestep = 0.05
+    tt_steps = 10
 
     solver_parameters = {}
     adjoint_solver_parameters = {}
@@ -65,7 +69,9 @@ class Parameters(nn_adapt.model.Parameters):
         """
         x, y = SpatialCoordinate(mesh)
         expr = self.initial_speed * sin(pi * x)
-        return as_vector([expr, 0])
+        yside = self.initial_speed * sin(pi * y)
+        yside = 0
+        return as_vector([expr, yside])
 
 
 PETSc.Sys.popErrorHandler()
@@ -138,7 +144,101 @@ class Solver(nn_adapt.solving.Solver):
         Take a single timestep of Burgers equation
         """
         self._solver.solve()
+        
+        
+class Solver_n2n(nn_adapt.solving.Solver):
+    """
+    Solver object based on current mesh and state.
+    """
 
+    def __init__(self, meshes, ic, **kwargs):
+        """
+        :arg mesh: the mesh to define the solver on
+        :arg ic: the current state / initial condition
+        """
+        self.meshes = meshes
+
+        # Collect parameters
+        self.tt_steps = parameters.tt_steps
+        self.dt = Constant(parameters.timestep)
+        assert self.tt_steps == len(self.meshes)
+        
+        # Physical parameters
+        self.nu = Constant(parameters.viscosity_coefficient)
+
+    @property
+    def function_space(self):
+        r"""
+        The :math:`\mathbb P2` finite element space.
+        """
+        return get_function_space(self.meshes)
+
+    @property
+    def form(self):
+        """
+        The weak form of Burgers equation
+        """
+        return self._form
+
+    @property
+    def solution(self):
+        return self._solutions
+    
+    def adjoint_setup(self):
+        J_form = inner(self._u, self._u)*ds(2)
+        J = assemble(J_form)
+
+        g = compute_gradient(J, Control(self.nu))
+
+        solve_blocks = get_solve_blocks()
+            
+        # 'Initial condition' for both adjoint
+        dJdu = assemble(derivative(J_form, self._u))
+        
+        return dJdu, solve_blocks
+
+    def iterate(self, **kwargs):
+        """
+        Get the final timestep of Burgers equation
+        """
+
+        # Assign initial condition
+        V = get_function_space(self.meshes[0])
+        ic = parameters.ic(self.meshes[0])
+        u = Function(V)
+        u.project(ic)
+
+        _solutions = []
+        
+        tape = get_working_tape()
+        tape.clear_tape()
+
+        # solve forward
+        for step in range(self.tt_steps):
+            # Define P2 function space and corresponding test function
+            V = get_function_space(self.meshes[step])
+            v = TestFunction(V)
+
+            # Create Functions for the solution and time-lagged solution
+            u_ = Function(V)
+            u_.project(u)
+            
+            u = Function(V, name="Velocity")
+
+            # Define nonlinear form
+            F = (inner((u - u_)/self.dt, v) + inner(dot(u, nabla_grad(u)), v) + self.nu*inner(grad(u), grad(v)))*dx
+
+            solve(F == 0, u)
+
+            # Store forward solution at exports so we can plot again later
+            _solutions.append(u.copy(deepcopy=True))
+        
+        self._form = F
+        self._solutions = _solutions
+        self._u = u
+        
+        stop_annotating();
+        
 
 def get_initial_condition(function_space):
     """
@@ -157,7 +257,7 @@ def get_qoi(mesh):
 
     It should have one argument - the prognostic solution.
     """
-
+    
     def qoi(sol):
         return inner(sol, sol) * ds(2)
 
@@ -165,4 +265,12 @@ def get_qoi(mesh):
 
 
 # Initial mesh for all test cases
-initial_mesh = UnitSquareMesh(30, 30)
+initial_mesh = [UnitSquareMesh(30, 30) for i in range(parameters.tt_steps)]
+
+
+# # A simple pretest
+# a = time_dependent_Solver(meshes = initial_mesh, ic = 0, kwargs='0')
+# a.iterate()
+# b = a.solution
+
+# print(b[0].function_space())

@@ -3,8 +3,8 @@ all: setup network test
 # --- Configurable parameters
 
 APPROACHES			= anisotropic
-MODEL				= steady_turbine
-NUM_TRAINING_CASES	= 100
+MODEL				= burgers
+NUM_TRAINING_CASES	= 1
 TESTING_CASES		= $(shell cat $(MODEL)/testing_cases.txt)
 PETSC_OPTIONS		= -dm_plex_metric_hausdorff_number 1
 TAG					= all
