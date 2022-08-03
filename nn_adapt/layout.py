@@ -16,6 +16,7 @@ class NetLayoutBase(object):
     inputs = None
     num_hidden_neurons_1 = None
     num_hidden_neurons_2 = None
+    num_hidden_neurons_3 = None
     # TODO: Allow more general networks
 
     colours = {
@@ -42,6 +43,8 @@ class NetLayoutBase(object):
             raise ValueError("Need to set number of first hidden layer neurons ")
         if self.num_hidden_neurons_2 is None:
             raise ValueError("Need to set number of second hidden layer neurons")
+        if self.num_hidden_neurons_3 is None:
+            raise ValueError("Need to set number of third hidden layer neurons")
 
     def count_inputs(self, prefix):
         """

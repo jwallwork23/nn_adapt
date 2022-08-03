@@ -35,7 +35,7 @@ class SingleLayerFCNN(nn.Module):
     """
     Fully Connected Neural Network (FCNN)
     for goal-oriented metric-based mesh
-    adaptation with double hidden layers.
+    adaptation with single hidden layer.
     """
 
     def __init__(self, layout, preproc="arctan"):
@@ -64,11 +64,14 @@ class SingleLayerFCNN(nn.Module):
         # Define layers
         self.linear1 = nn.Linear(layout.num_inputs, layout.num_hidden_neurons_1)
         self.linear2 = nn.Linear(layout.num_hidden_neurons_1, layout.num_hidden_neurons_2)
-        self.linear3 = nn.Linear(layout.num_hidden_neurons_2, 1)
+        self.linear3 = nn.Linear(layout.num_hidden_neurons_2, layout.num_hidden_neurons_3)
+        self.linear4 = nn.Linear(layout.num_hidden_neurons_3, 1)
 
         # Define activation functions
+
         self.activate1 = nn.Sigmoid()
         self.activate2 = nn.Sigmoid()
+        self.activate3 = nn.Sigmoid()
 
     def forward(self, x):
         p = self.preproc1(x)
@@ -77,7 +80,9 @@ class SingleLayerFCNN(nn.Module):
         z2 = self.linear2(a1)
         a2 = self.activate2(z2)
         z3 = self.linear3(a2)
-        return z3
+        a3 = self.activate3(z3)
+        z4 = self.linear4(a3)
+        return z4
 
 
 def propagate(data_loader, model, loss_fn, optimizer=None):
