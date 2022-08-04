@@ -62,27 +62,59 @@ class SingleLayerFCNN(nn.Module):
             raise ValueError(f'Preprocessor "{preproc}" not recognised.')
 
         # Define layers
-        self.linear1 = nn.Linear(layout.num_inputs, layout.num_hidden_neurons_1)
-        self.linear2 = nn.Linear(layout.num_hidden_neurons_1, layout.num_hidden_neurons_2)
-        self.linear3 = nn.Linear(layout.num_hidden_neurons_2, layout.num_hidden_neurons_3)
-        self.linear4 = nn.Linear(layout.num_hidden_neurons_3, 1)
+        self.linear1 = nn.Linear(layout.num_inputs, layout.num_hidden_neurons)
+
+        self.linear2 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+        self.linear3 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+        self.linear4 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+        self.linear5 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+        self.linear6 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+        self.linear7 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+        self.linear8 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+        self.linear9 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+        self.linear10 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+        
+        self.linear11 = nn.Linear(layout.num_hidden_neurons, 1)
 
         # Define activation functions
 
-        self.activate1 = nn.Sigmoid()
-        self.activate2 = nn.Sigmoid()
-        self.activate3 = nn.Sigmoid()
+        self.activate = nn.Sigmoid() # suppose we don't change activation function for now
 
     def forward(self, x):
         p = self.preproc1(x)
+
         z1 = self.linear1(p)
-        a1 = self.activate1(z1)
+        a1 = self.activate(z1)
+        
         z2 = self.linear2(a1)
-        a2 = self.activate2(z2)
+        a2 = self.activate(z2)
+
         z3 = self.linear3(a2)
-        a3 = self.activate3(z3)
+        a3 = self.activate(z3)
+
         z4 = self.linear4(a3)
-        return z4
+        a4 = self.activate(z4)
+
+        z5 = self.linear5(a4)
+        a5 = self.activate(z5)
+
+        z6 = self.linear6(a5)
+        a6 = self.activate(z6)
+
+        z7 = self.linear7(a6)
+        a7 = self.activate(z7)
+
+        z8 = self.linear8(a7)
+        a8 = self.activate(z8)
+
+        z9 = self.linear9(a8)
+        a9 = self.activate(z9)
+
+        z10 = self.linear10(a9)
+        a10 = self.activate(z10)
+
+        z11 = self.linear11(a10)
+        return z11
 
 
 def propagate(data_loader, model, loss_fn, optimizer=None):

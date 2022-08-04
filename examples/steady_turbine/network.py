@@ -20,20 +20,11 @@ class NetLayout(NetLayoutBase):
           + [12 adjoint DoFs per element]
           = 32
 
-    Hidden layer 1:
+    Each Hidden layer :
     -------------
 
-        25 neurons
+        64 neurons
 
-    Hidden layer 2:
-    -------------
-
-        25 neurons
-
-    Hidden layer 3:
-    -------------
-
-        26 neurons
 
     Output layer:
     -------------
@@ -53,6 +44,4 @@ class NetLayout(NetLayoutBase):
         "forward_dofs",
         "adjoint_dofs",
     )
-    num_hidden_neurons_1 = 25
-    num_hidden_neurons_2 = 25
-    num_hidden_neurons_3 = 26
+    num_hidden_neurons = 64 # note it's now for each layer
