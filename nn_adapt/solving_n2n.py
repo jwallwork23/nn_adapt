@@ -9,13 +9,9 @@ from firedrake import *
 from firedrake.petsc import PETSc
 from firedrake.mg.embedded import TransferManager
 from firedrake_adjoint import *
-from firedrake.adjoint import get_solve_blocks
 from pyroteus.error_estimation import get_dwr_indicator
 import abc
 from time import perf_counter
-
-import matplotlib.pyplot as plt
-
 
 tm = TransferManager()
 

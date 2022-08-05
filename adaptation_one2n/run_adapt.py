@@ -6,9 +6,10 @@ This is the script where feature data is harvested to train
 the neural network on.
 """
 from nn_adapt.features import *
-from nn_adapt.metric import *
+from nn_adapt.metric_one2n import *
 from nn_adapt.parse import Parser
 from nn_adapt.solving import *
+from nn_adapt.solving_one2n import *
 from nn_adapt.utility import ConvergenceTracker
 from firedrake.meshadapt import adapt
 from firedrake.petsc import PETSc
@@ -16,6 +17,7 @@ from firedrake.petsc import PETSc
 import importlib
 import numpy as np
 from time import perf_counter
+import matplotlib.pyplot as plt
 
 
 set_log_level(ERROR)
@@ -63,10 +65,11 @@ kwargs = {
     "a_max": 1.0e5,
 }
 ct = ConvergenceTracker(mesh, parsed_args)
+tt_steps = setup.parameters.tt_steps
 if not no_outputs:
     output_dir = f"{model}/outputs/{test_case}/GO/{approach}"
-    fwd_file = File(f"{output_dir}/forward.pvd")
-    adj_file = File(f"{output_dir}/adjoint.pvd")
+    fwd_file = [File(f"{output_dir}/forward{step}.pvd") for step in range(tt_steps)]
+    adj_file = [File(f"{output_dir}/adjoint{step}.pvd") for step in range(tt_steps)]
     ee_file = File(f"{output_dir}/estimator.pvd")
     metric_file = File(f"{output_dir}/metric.pvd")
     mesh_file = File(f"{output_dir}/mesh.pvd")
@@ -84,10 +87,10 @@ for ct.fp_iteration in range(ct.maxiter + 1):
     )
 
     # Compute goal-oriented metric
-    out = go_metric(mesh, setup, convergence_checker=ct, **kwargs)
+    out = go_metric_one2n(mesh, setup, convergence_checker=ct, **kwargs)
     qoi, fwd_sol = out["qoi"], out["forward"]
     print(f"    Quantity of Interest = {qoi} {unit}")
-    dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
+    dof = sum(np.array([fwd_sol[0].function_space().dof_count]).flatten())
     print(f"    DoF count            = {dof}")
     if "adjoint" not in out:
         break
@@ -97,8 +100,9 @@ for ct.fp_iteration in range(ct.maxiter + 1):
         break
     adj_sol, dwr, metric = out["adjoint"], out["dwr"], out["metric"]
     if not no_outputs:
-        fwd_file.write(*fwd_sol.split())
-        adj_file.write(*adj_sol.split())
+        for step in range(tt_steps):
+            fwd_file[step].write(*fwd_sol[step].split())
+            adj_file[step].write(*adj_sol[step].split())
         ee_file.write(dwr)
         metric_file.write(metric.function)
 
@@ -109,9 +113,9 @@ for ct.fp_iteration in range(ct.maxiter + 1):
         """
         ic = Function(V)
         try:
-            ic.project(fwd_sol)
+            ic.project(fwd_sol[-1])
         except NotImplementedError:
-            for c_init, c in zip(ic.split(), fwd_sol.split()):
+            for c_init, c in zip(ic.split(), fwd_sol[-1].split()):
                 c_init.project(c)
         return ic
 
@@ -121,7 +125,9 @@ for ct.fp_iteration in range(ct.maxiter + 1):
 
     # Extract features
     if not optimise:
-        features = extract_features(setup, fwd_sol, adj_sol)
+        fwd_sol_integrate = time_integrate(fwd_sol)
+        adj_sol_integrate = time_integrate(adj_sol)
+        features = extract_features(setup, fwd_sol_integrate, adj_sol_integrate)
         target = dwr.dat.data.flatten()
         assert not np.isnan(target).any()
         for key, value in features.items():

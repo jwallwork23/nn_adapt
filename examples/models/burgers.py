@@ -23,6 +23,13 @@ class Parameters(nn_adapt.model.Parameters):
     # Physical parameters
     viscosity_coefficient = 0.0001
     initial_speed = 1.0
+    
+    # Turbine parameters
+    turbine_diameter = 18.0
+    turbine_width = None
+    turbine_coords = []
+    thrust_coefficient = 0.8
+    correct_thrust = True
 
     # Timestepping parameters
     timestep = 0.05
@@ -65,6 +72,7 @@ class Parameters(nn_adapt.model.Parameters):
         """
         x, y = SpatialCoordinate(mesh)
         expr = self.initial_speed * sin(pi * x)
+        expy = self.initial_speed * cos(pi * y) + self.initial_speed * exp(x * y)
         return as_vector([expr, 0])
 
 

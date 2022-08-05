@@ -1,31 +1,26 @@
 """
-Run a given ``test_case`` of a ``model`` using goal-oriented
+Run a given ``test_case`` of a ``model`` using data-driven
 mesh adaptation in a fixed point iteration loop.
-
-This is the script where feature data is harvested to train
-the neural network on.
 """
+from nn_adapt.ann import *
 from nn_adapt.features import *
-from nn_adapt.metric import *
 from nn_adapt.parse import Parser
+from nn_adapt.metric import *
 from nn_adapt.solving import *
 from nn_adapt.utility import ConvergenceTracker
-from firedrake.meshadapt import adapt
-from firedrake.petsc import PETSc
+from firedrake.meshadapt import *
 
 import importlib
-import numpy as np
 from time import perf_counter
 
 
-set_log_level(ERROR)
-
-# Parse for test case and number of refinements
-parser = Parser("run_adapt.py")
+# Parse user input
+parser = Parser("run_adapt_ml.py")
 parser.parse_approach()
 parser.parse_convergence_criteria()
+parser.parse_preproc()
 parser.parse_target_complexity()
-parser.add_argument("--no_outputs", help="Turn off file outputs", action="store_true")
+parser.parse_tag()
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 try:
@@ -36,9 +31,10 @@ except ValueError:
 approach = parsed_args.approach
 base_complexity = parsed_args.base_complexity
 target_complexity = parsed_args.target_complexity
+preproc = parsed_args.preproc
 optimise = parsed_args.optimise
-no_outputs = parsed_args.no_outputs or optimise
-if not no_outputs:
+tag = parsed_args.tag
+if not optimise:
     from pyroteus.utility import File
 
 # Setup
@@ -51,56 +47,45 @@ if hasattr(setup, "initial_mesh"):
 else:
     mesh = Mesh(f"{model}/meshes/{test_case}.msh")
 
+# Load the model
+layout = importlib.import_module(f"{model}.network").NetLayout()
+nn = SingleLayerFCNN(layout, preproc=preproc).to(device)
+nn.load_state_dict(torch.load(f"{model}/model_{tag}.pt"))
+nn.eval()
+
 # Run adaptation loop
-kwargs = {
-    "interpolant": "Clement",
-    "enrichment_method": "h",
-    "average": True,
-    "anisotropic": approach == "anisotropic",
-    "retall": True,
-    "h_min": setup.parameters.h_min,
-    "h_max": setup.parameters.h_max,
-    "a_max": 1.0e5,
-}
 ct = ConvergenceTracker(mesh, parsed_args)
-if not no_outputs:
-    output_dir = f"{model}/outputs/{test_case}/GO/{approach}"
+if not optimise:
+    output_dir = f"{model}/outputs/{test_case}/ML/{approach}/{tag}"
     fwd_file = File(f"{output_dir}/forward.pvd")
     adj_file = File(f"{output_dir}/adjoint.pvd")
     ee_file = File(f"{output_dir}/estimator.pvd")
     metric_file = File(f"{output_dir}/metric.pvd")
     mesh_file = File(f"{output_dir}/mesh.pvd")
     mesh_file.write(mesh.coordinates)
+kwargs = {}
 print(f"Test case {test_case}")
 print("  Mesh 0")
 print(f"    Element count        = {ct.elements_old}")
-data_dir = f"{model}/data"
 for ct.fp_iteration in range(ct.maxiter + 1):
-    suffix = f"{test_case}_GO{approach}_{ct.fp_iteration}"
 
     # Ramp up the target complexity
-    kwargs["target_complexity"] = ramp_complexity(
-        base_complexity, target_complexity, ct.fp_iteration
-    )
+    target_ramp = ramp_complexity(base_complexity, target_complexity, ct.fp_iteration)
 
-    # Compute goal-oriented metric
-    out = go_metric(mesh, setup, convergence_checker=ct, **kwargs)
+    # Solve forward and adjoint and compute Hessians
+    out = get_solutions(mesh, setup, convergence_checker=ct, **kwargs)
     qoi, fwd_sol = out["qoi"], out["forward"]
     print(f"    Quantity of Interest = {qoi} {unit}")
     dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
     print(f"    DoF count            = {dof}")
     if "adjoint" not in out:
         break
-    estimator = out["estimator"]
-    print(f"    Error estimator      = {estimator}")
-    if "metric" not in out:
-        break
-    adj_sol, dwr, metric = out["adjoint"], out["dwr"], out["metric"]
-    if not no_outputs:
+    adj_sol = out["adjoint"]
+    if not optimise:
         fwd_file.write(*fwd_sol.split())
         adj_file.write(*adj_sol.split())
-        ee_file.write(dwr)
-        metric_file.write(metric.function)
+    P0 = FunctionSpace(mesh, "DG", 0)
+    P1_ten = TensorFunctionSpace(mesh, "CG", 1)
 
     def proj(V):
         """
@@ -120,18 +105,57 @@ for ct.fp_iteration in range(ct.maxiter + 1):
         kwargs["init"] = proj
 
     # Extract features
+    with PETSc.Log.Event("Network"):
+        features = collect_features(extract_features(setup, fwd_sol, adj_sol), layout)
+
+        # Run model
+        with PETSc.Log.Event("Propagate"):
+            test_targets = np.array([])
+            with torch.no_grad():
+                for i in range(features.shape[0]):
+                    test_x = torch.Tensor(features[i]).to(device)
+                    test_prediction = nn(test_x)
+                    test_targets = np.concatenate(
+                        (test_targets, np.array(test_prediction.cpu()))
+                    )
+            dwr = Function(P0)
+            dwr.dat.data[:] = np.abs(test_targets)
+
+    # Check for error estimator convergence
+    with PETSc.Log.Event("Error estimation"):
+        estimator = dwr.vector().gather().sum()
+        print(f"    Error estimator      = {estimator}")
+        if ct.check_estimator(estimator):
+            break
     if not optimise:
-        features = extract_features(setup, fwd_sol, adj_sol)
-        target = dwr.dat.data.flatten()
-        assert not np.isnan(target).any()
-        for key, value in features.items():
-            np.save(f"{data_dir}/feature_{key}_{suffix}", value)
-        np.save(f"{data_dir}/target_{suffix}", target)
+        ee_file.write(dwr)
+
+    # Construct metric
+    with PETSc.Log.Event("Metric construction"):
+        if approach == "anisotropic":
+            hessian = combine_metrics(*get_hessians(fwd_sol), average=True)
+        else:
+            hessian = None
+        M = anisotropic_metric(
+            dwr,
+            hessian=hessian,
+            target_complexity=target_ramp,
+            target_space=P1_ten,
+            interpolant="Clement",
+        )
+        space_normalise(M, target_ramp, "inf")
+        enforce_element_constraints(
+            M, setup.parameters.h_min, setup.parameters.h_max, 1.0e05
+        )
+        metric = RiemannianMetric(mesh)
+        metric.assign(M)
+    if not optimise:
+        metric_file.write(M)
 
     # Adapt the mesh and check for element count convergence
     with PETSc.Log.Event("Mesh adaptation"):
         mesh = adapt(mesh, metric)
-    if not no_outputs:
+    if not optimise:
         mesh_file.write(mesh.coordinates)
     elements = mesh.num_cells()
     print(f"  Mesh {ct.fp_iteration+1}")

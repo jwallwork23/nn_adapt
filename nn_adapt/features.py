@@ -7,6 +7,7 @@ from firedrake.petsc import PETSc
 from firedrake import op2
 import numpy as np
 from pyroteus.metric import *
+from sympy import ProductSet
 import ufl
 from nn_adapt.solving import dwr_indicator
 from collections import Iterable
@@ -131,6 +132,14 @@ def get_values_at_centroids(f):
             )
     return values
 
+
+# def time_integrate(list_like):
+#     length = len(list_like)
+#     result = 0
+#     for step in range(length):
+#         result += list_like[step]
+#     return firedrake.product((result, 1/length))
+    
 
 def split_into_scalars(f):
     """

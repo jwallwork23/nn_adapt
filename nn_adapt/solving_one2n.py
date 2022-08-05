@@ -9,12 +9,9 @@ from firedrake import *
 from firedrake.petsc import PETSc
 from firedrake.mg.embedded import TransferManager
 from firedrake_adjoint import *
-from firedrake.adjoint import get_solve_blocks
 from pyroteus.error_estimation import get_dwr_indicator
 import abc
 from time import perf_counter
-
-import matplotlib.pyplot as plt
 
 
 tm = TransferManager()
@@ -67,6 +64,14 @@ class Solver(abc.ABC):
         pass
 
 
+def time_integrate(list_like):
+    length = len(list_like)
+    result = 0
+    for step in range(length):
+        result += list_like[step]
+    return product((result, 1/length))
+
+
 def get_solutions_one2n(
     mesh,
     config,
@@ -111,17 +116,17 @@ def get_solutions_one2n(
         solver_obj.iterate()
         q = solver_obj.solution
         # Calculate QoI
-        qoi = 0
+        qoi_list = []
         for step in range(tt_steps):
             J = config.get_qoi(V)(q[step])
-            qoi += assemble(J)
-        qoi = qoi / tt_steps
+            qoi_list.append(assemble(J))
+        qoi = time_integrate(qoi_list)
         
     out["times"]["forward"] += perf_counter()
     out["qoi"] = qoi
     out["forward"] = q
     if convergence_checker is not None:
-        if not convergence_checker.check_qoi(qoi):
+        if convergence_checker.check_qoi(qoi):
             return out
     if not solve_adjoint:
         return out
@@ -144,7 +149,6 @@ def get_solutions_one2n(
         solver_obj_plus = config.Solver_one2n(refined_mesh, q_plus, **kwargs)
         solver_obj_plus.iterate()
         q_plus = solver_obj_plus.solution
-        # J = config.get_qoi(refined_mesh[-1])(q_plus[-1])
         adj_solution_plus = []
         solver_obj_plus.adjoint_iteration()
         adj_solution_plus = solver_obj_plus.adj_solution
@@ -192,7 +196,6 @@ def indicate_errors_one2n(mesh, config, enrichment_method="h", retall=False, **k
     
     with PETSc.Log.Event("Enrichment"):
         adj_sol_plus = out["enriched_adjoint"]
-        dwr = 0
         dwr_list = []
         
         for step in range(tt_steps):
@@ -211,10 +214,9 @@ def indicate_errors_one2n(mesh, config, enrichment_method="h", retall=False, **k
                 err += adj_sols_plus[i] - adj_sols_plg[i]
 
             # Evaluate errors
-            dwr += dwr_indicator(config, mesh, fwd_sol_plg, adj_error)
             dwr_list.append(dwr_indicator(config, mesh, fwd_sol_plg, adj_error))
 
-        out["dwr"] = dwr_list
+        out["dwr"] = time_integrate(dwr_list)
         
     out["times"]["estimator"] += perf_counter()
 
