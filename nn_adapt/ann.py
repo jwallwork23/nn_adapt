@@ -69,12 +69,8 @@ class SingleLayerFCNN(nn.Module):
         self.linear4 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
         self.linear5 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
         self.linear6 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
-        self.linear7 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
-        self.linear8 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
-        self.linear9 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
-        self.linear10 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
         
-        self.linear11 = nn.Linear(layout.num_hidden_neurons, 1)
+        self.linear7 = nn.Linear(layout.num_hidden_neurons, 1)
 
         # Define activation functions
 
@@ -102,19 +98,7 @@ class SingleLayerFCNN(nn.Module):
         a6 = self.activate(z6)
 
         z7 = self.linear7(a6)
-        a7 = self.activate(z7)
-
-        z8 = self.linear8(a7)
-        a8 = self.activate(z8)
-
-        z9 = self.linear9(a8)
-        a9 = self.activate(z9)
-
-        z10 = self.linear10(a9)
-        a10 = self.activate(z10)
-
-        z11 = self.linear11(a10)
-        return z11
+        return z7
 
 
 def propagate(data_loader, model, loss_fn, optimizer=None):

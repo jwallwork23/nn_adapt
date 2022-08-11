@@ -7,7 +7,7 @@ MODEL				= steady_turbine
 NUM_TRAINING_CASES	= 100
 TESTING_CASES		= $(shell cat $(MODEL)/testing_cases.txt)
 PETSC_OPTIONS		= -dm_plex_metric_hausdorff_number 1
-TAG					= 10_F_64_100-4
+TAG					= 6_F_64_100-4
 
 # --- Parameters that should not need modifying
 
