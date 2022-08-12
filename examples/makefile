@@ -3,8 +3,8 @@ all: setup network test
 # --- Configurable parameters
 
 APPROACHES			= anisotropic
-MODEL				= burgers_one2n
-NUM_TRAINING_CASES	= 1
+MODEL				= steady_turbine
+NUM_TRAINING_CASES	= 100
 TESTING_CASES		= $(shell cat $(MODEL)/testing_cases.txt)
 PETSC_OPTIONS		= -dm_plex_metric_hausdorff_number 1
 TAG					= all
@@ -89,6 +89,8 @@ clean:
 # --- Construct the neural network
 
 network: features train plot_progress plot_importance
+train_one: train plot_progress plot_importance
+test_one: snapshot_ml ml
 
 # Generate feature data
 # =====================

@@ -53,6 +53,7 @@ times = {c: [] for c in components}
 times["all"] = []
 print(f"Test case {test_case}")
 for i in range(num_refinements + 1):
+    print(f"\t{i} / {num_refinements}")
     try:
         target_complexity = 100.0 * 2 ** (f * i)
         kwargs = {

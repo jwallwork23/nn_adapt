@@ -172,5 +172,5 @@ def get_qoi(mesh):
     return qoi
 
 
-# Initial mesh for all test cases
-initial_mesh = UnitSquareMesh(30, 30)
+# # Initial mesh for all test cases
+# initial_mesh = UnitSquareMesh(30, 30)

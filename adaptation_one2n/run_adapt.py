@@ -8,7 +8,6 @@ the neural network on.
 from nn_adapt.features import *
 from nn_adapt.metric_one2n import *
 from nn_adapt.parse import Parser
-from nn_adapt.solving import *
 from nn_adapt.solving_one2n import *
 from nn_adapt.utility import ConvergenceTracker
 from firedrake.meshadapt import adapt

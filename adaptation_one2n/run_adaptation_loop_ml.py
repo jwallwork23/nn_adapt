@@ -6,8 +6,8 @@ of increasing target metric complexities,
 from nn_adapt.ann import *
 from nn_adapt.features import *
 from nn_adapt.parse import Parser, positive_float
-from nn_adapt.metric import *
-from nn_adapt.solving import *
+from nn_adapt.metric_one2n import *
+from nn_adapt.solving_one2n import *
 from nn_adapt.utility import ConvergenceTracker
 from firedrake.meshadapt import *
 
@@ -85,7 +85,7 @@ for i in range(num_refinements + 1):
             )
 
             # Solve forward and adjoint and compute Hessians
-            out = get_solutions(mesh, setup, convergence_checker=ct, **kwargs)
+            out = get_solutions_one2n(mesh, setup, convergence_checker=ct, **kwargs)
             qoi = out["qoi"]
             times["forward"][-1] += out["times"]["forward"]
             print(f"      Quantity of Interest = {qoi} {unit}")
@@ -93,7 +93,7 @@ for i in range(num_refinements + 1):
                 break
             times["adjoint"][-1] += out["times"]["adjoint"]
             fwd_sol, adj_sol = out["forward"], out["adjoint"]
-            dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
+            dof = sum(np.array([fwd_sol[0].function_space().dof_count]).flatten())
             print(f"      DoF count            = {dof}")
 
             def proj(V):
@@ -115,8 +115,10 @@ for i in range(num_refinements + 1):
 
             # Extract features
             out["times"]["estimator"] = -perf_counter()
-            features = extract_features(setup, fwd_sol, adj_sol)
-            features = collect_features(features, layout)
+            fwd_sol_integrate = time_integrate(fwd_sol)
+            adj_sol_integrate = time_integrate(adj_sol)
+            features = extract_features(setup, fwd_sol_integrate, adj_sol_integrate)
+            features = collect_features_sample(features, layout)
 
             # Run model
             test_targets = np.array([])
@@ -142,7 +144,7 @@ for i in range(num_refinements + 1):
             # Construct metric
             out["times"]["metric"] = -perf_counter()
             if approach == "anisotropic":
-                hessian = combine_metrics(*get_hessians(fwd_sol), average=True)
+                hessian = combine_metrics(*get_hessians(fwd_sol_integrate), average=True)
             else:
                 hessian = None
             P1_ten = TensorFunctionSpace(mesh, "CG", 1)

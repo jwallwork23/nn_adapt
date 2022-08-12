@@ -5,8 +5,8 @@ of increasing target metric complexities,
 """
 from nn_adapt.features import *
 from nn_adapt.parse import Parser, positive_float
-from nn_adapt.metric import *
-from nn_adapt.solving import *
+from nn_adapt.metric_one2n import *
+from nn_adapt.solving_one2n import *
 from nn_adapt.utility import ConvergenceTracker
 from firedrake.meshadapt import adapt
 
@@ -53,6 +53,7 @@ times = {c: [] for c in components}
 times["all"] = []
 print(f"Test case {test_case}")
 for i in range(num_refinements + 1):
+    print(f"\t{i} / {num_refinements}")
     try:
         target_complexity = 100.0 * 2 ** (f * i)
         kwargs = {
@@ -83,7 +84,7 @@ for i in range(num_refinements + 1):
             )
 
             # Compute goal-oriented metric
-            out = go_metric(mesh, setup, convergence_checker=ct, **kwargs)
+            out = go_metric_one2n(mesh, setup, convergence_checker=ct, **kwargs)
             qoi = out["qoi"]
             times["forward"][-1] += out["times"]["forward"]
             print(f"      Quantity of Interest = {qoi} {unit}")
@@ -101,7 +102,7 @@ for i in range(num_refinements + 1):
                 out["adjoint"],
             )
             dwr, metric = out["dwr"], out["metric"]
-            dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
+            dof = sum(np.array([fwd_sol[0].function_space().dof_count]).flatten())
             print(f"      DoF count            = {dof}")
 
             def proj(V):
@@ -111,9 +112,9 @@ for i in range(num_refinements + 1):
                 """
                 ic = Function(V)
                 try:
-                    ic.project(fwd_sol)
+                    ic.project(fwd_sol[-1])
                 except NotImplementedError:
-                    for c_init, c in zip(ic.split(), fwd_sol.split()):
+                    for c_init, c in zip(ic.split(), fwd_sol[-1].split()):
                         c_init.project(c)
                 return ic
 
