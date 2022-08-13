@@ -92,6 +92,11 @@ def initialise(case, discrete=False):
         parameters.bathymetry = bathy
         parameters.inflow_speed = 10.0
         parameters.turbine_coords = [(456, 232), (744, 268)]
+    elif "gen-aligned" in case:
+        parameters.viscosity_coefficient = 0.5
+        parameters.depth = 40.0
+        parameters.inflow_speed = 5.0
+        parameters.turbine_coords = [(480, 500), (960, 500), (1440, 500), (1920, 500)]
     elif "headland" in case:
         parameters.viscosity_coefficient = 100.0
         parameters.depth = 40.0
