@@ -63,14 +63,12 @@ class SingleLayerFCNN(nn.Module):
 
         # Define layers
         self.linear1 = nn.Linear(layout.num_inputs, layout.num_hidden_neurons)
-
-        self.linear2 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
         
-        self.linear3 = nn.Linear(layout.num_hidden_neurons, 1)
+        self.linear2 = nn.Linear(layout.num_hidden_neurons, 1)
 
         # Define activation functions
 
-        self.activate = nn.Sigmoid() # suppose we don't change activation function for now
+        self.activate = nn.ReLU() # suppose we don't change activation function for now
 
     def forward(self, x):
         p = self.preproc1(x)
@@ -79,10 +77,7 @@ class SingleLayerFCNN(nn.Module):
         a1 = self.activate(z1)
         
         z2 = self.linear2(a1)
-        a2 = self.activate(z2)
-
-        z3 = self.linear3(a2)
-        return z3
+        return z2
 
 
 def propagate(data_loader, model, loss_fn, optimizer=None):
