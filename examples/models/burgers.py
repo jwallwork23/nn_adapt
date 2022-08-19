@@ -1,5 +1,7 @@
 from firedrake import *
 from firedrake.petsc import PETSc
+from pyroteus import *
+import pyroteus.go_mesh_seq
 import nn_adapt.model
 import nn_adapt.solving
 
@@ -69,97 +71,87 @@ PETSc.Sys.popErrorHandler()
 parameters = Parameters()
 
 
-def get_function_space(mesh):
+def get_function_spaces(mesh):
     r"""
-    Construct the :math:`\mathbb P2` finite element space
+    Construct the :math:`\mathbb P2` finite element spaces
     used for the prognostic solution.
     """
-    return VectorFunctionSpace(mesh, "CG", 2)
+    return {"u": VectorFunctionSpace(mesh, "CG", 2)}
 
 
-class Solver(nn_adapt.solving.Solver):
-    """
-    Solver object based on current mesh and state.
-    """
-
-    def __init__(self, mesh, ic, **kwargs):
-        """
-        :arg mesh: the mesh to define the solver on
-        :arg ic: the current state / initial condition
-        """
-        self.mesh = mesh
-
-        # Collect parameters
-        dt = Constant(parameters.timestep)
+def get_form(mesh_seq):
+    def form(i, solutions):
+        u, u_ = solutions["u"]
+        P = mesh_seq.time_partition
+        dt = Constant(P.timesteps[i])
+        mesh = mesh_seq[i]
         nu = parameters.viscosity(mesh)
 
-        # Define variational formulation
-        V = self.function_space
-        u = Function(V)
-        u_ = Function(V)
-        v = TestFunction(V)
-        self._form = (
+        # Setup variational problem
+        v = TestFunction(u.function_space())
+        F = (
             inner((u - u_) / dt, v) * dx
             + inner(dot(u, nabla_grad(u)), v) * dx
             + nu * inner(grad(u), grad(v)) * dx
         )
-        problem = NonlinearVariationalProblem(self._form, u)
+        return F
+
+    return form
+
+
+def get_solver(mesh_seq):
+    def solver(i, ic):
+        V = mesh_seq.function_spaces["u"][i]
+        u = Function(V)
 
         # Set initial condition
-        u_.project(parameters.ic(mesh))
+        u_ = Function(V, name="u_old")
+        u_.assign(ic["u"])
 
-        # Create solver
-        self._solver = NonlinearVariationalSolver(problem)
-        self._solution = u
+        # Define form
+        F = mesh_seq.form(i, {"u": (u, u_)})
 
-    @property
-    def function_space(self):
-        r"""
-        The :math:`\mathbb P2` finite element space.
-        """
-        return get_function_space(self.mesh)
+        # Solve
+        solve(F == 0, u, ad_block_tag="u")
+        return {"u": u}
 
-    @property
-    def form(self):
-        """
-        The weak form of Burgers equation
-        """
-        return self._form
-
-    @property
-    def solution(self):
-        return self._solution
-
-    def iterate(self, **kwargs):
-        """
-        Take a single timestep of Burgers equation
-        """
-        self._solver.solve()
+    return solver
 
 
-def get_initial_condition(function_space):
+def get_initial_condition(mesh_seq):
     """
     Compute an initial condition based on the initial
     speed parameter.
     """
+    function_space = mesh_seq.function_spaces["u"][0]
     u = Function(function_space)
-    u.interpolate(parameters.ic(function_space.mesh()))
-    return u
+    u.project(parameters.ic(function_space.mesh()))
+    return {"u": u}
 
 
-def get_qoi(mesh):
-    """
-    Extract the quantity of interest function from the :class:`Parameters`
-    object.
+def get_qoi(mesh_seq, solutions, i):
+    def end_time_qoi():
+        u = solutions["u"]
+        return inner(u, u) * ds(2)
 
-    It should have one argument - the prognostic solution.
-    """
-
-    def qoi(sol):
-        return inner(sol, sol) * ds(2)
-
-    return qoi
+    return end_time_qoi
 
 
 # Initial mesh for all test cases
 initial_mesh = UnitSquareMesh(30, 30)
+
+
+def GoalOrientedMeshSeq(mesh, **kwargs):
+    dt = parameters.timestep
+    time_partition = TimeInterval(dt, dt, ["u"])
+    mesh_seq = pyroteus.go_mesh_seq.GoalOrientedMeshSeq(
+        time_partition,
+        mesh,
+        get_function_spaces=get_function_spaces,
+        get_initial_condition=get_initial_condition,
+        get_form=get_form,
+        get_solver=get_solver,
+        get_qoi=get_qoi,
+        qoi_type="end_time",
+    )
+    return mesh_seq
