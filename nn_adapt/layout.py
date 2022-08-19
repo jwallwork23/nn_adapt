@@ -16,7 +16,7 @@ class NetLayoutBase(object):
     # TODO: Allow more general networks
 
     colours = {
-        "estimator": "b",
+        # "estimator": "b",
         "physics": "C0",
         "mesh": "deepskyblue",
         "forward": "mediumturquoise",

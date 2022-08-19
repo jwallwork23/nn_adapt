@@ -8,7 +8,7 @@ from firedrake import op2
 import numpy as np
 from pyroteus.metric import *
 import ufl
-from nn_adapt.solving import dwr_indicator
+# from nn_adapt.solving import dwr_indicator
 from collections import Iterable
 
 
@@ -215,9 +215,9 @@ def extract_features(config, fwd_sol, adj_sol):
     """
     mesh = fwd_sol.function_space().mesh()
 
-    # Coarse-grained DWR estimator
-    with PETSc.Log.Event("Extract estimator"):
-        dwr = dwr_indicator(config, mesh, fwd_sol, adj_sol)
+    # # Coarse-grained DWR estimator  # TODO: Reintroduce
+    # with PETSc.Log.Event("Extract estimator"):
+    #     dwr = dwr_indicator(config, mesh, fwd_sol, adj_sol)
 
     # Features describing the mesh element
     with PETSc.Log.Event("Analyse element"):
@@ -229,12 +229,12 @@ def extract_features(config, fwd_sol, adj_sol):
         d, h1, h2 = (extract_array(p) for p in extract_components(JTJ))
 
         # Is the element on the boundary?
-        p0test = firedrake.TestFunction(dwr.function_space())
+        p0test = firedrake.TestFunction(firedrake.FunctionSpace(mesh, "DG", 0))
         bnd = firedrake.assemble(p0test * ufl.ds).dat.data
 
     # Combine the features together
     features = {
-        "estimator_coarse": extract_array(dwr),
+        # "estimator_coarse": extract_array(dwr),  # TODO: Reintroduce
         "physics_drag": extract_array(config.parameters.drag(mesh)),
         "physics_viscosity": extract_array(config.parameters.viscosity(mesh), project=True),
         "physics_bathymetry": extract_array(config.parameters.bathymetry(mesh), project=True),
