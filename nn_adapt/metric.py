@@ -21,11 +21,11 @@ def get_hessians(f, **kwargs):
         component
     """
     kwargs.setdefault("method", "Clement")
-    return [
+    return tuple(
         space_normalise(hessian_metric(recover_hessian(fij, **kwargs)), 4000.0, "inf")
         for i, fi in split_into_scalars(f).items()
         for fij in fi
-    ]
+    )
 
 
 def go_metric(
@@ -80,18 +80,21 @@ def go_metric(
     )
     if retall and "adjoint" not in out:
         return out
-    out["estimator"] = out["dwr"].vector().gather().sum()
+    out["estimator"] = out["dwr"][0].vector().gather().sum()  # FIXME: Only uses 0th
     if convergence_checker is not None:
         if convergence_checker.check_estimator(out["estimator"]):
             return out
 
     with PETSc.Log.Event("Metric construction"):
         if anisotropic:
-            hessian = combine_metrics(*get_hessians(out["forward"]), average=average)
+            field = list(out["forward"].keys())[0]
+            fwd = out["forward"][field][0]  # FIXME: Only uses 0th
+            hessians = sum([get_hessians(sol) for sol in fwd], start=())
+            hessian = combine_metrics(*hessians, average=average)
         else:
             hessian = None
         metric = anisotropic_metric(
-            out["dwr"],
+            out["dwr"][0],  # FIXME: Only uses 0th
             hessian=hessian,
             target_complexity=target_complexity,
             target_space=TensorFunctionSpace(mesh, "CG", 1),
