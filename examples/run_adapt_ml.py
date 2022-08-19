@@ -76,20 +76,29 @@ for ct.fp_iteration in range(ct.maxiter + 1):
     out = get_solutions(mesh, setup, convergence_checker=ct, **kwargs)
     qoi, fwd_sol = out["qoi"], out["forward"]
     print(f"    Quantity of Interest = {qoi} {unit}")
-    dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
+    spaces = [sol[0][0].function_space() for sol in fwd_sol.values()]
+    dof = sum(np.array([fs.dof_count for fs in spaces]).flatten())
     print(f"    DoF count            = {dof}")
     if "adjoint" not in out:
         break
     adj_sol = out["adjoint"]
     if not optimise:
-        fwd_file.write(*fwd_sol.split())
-        adj_file.write(*adj_sol.split())
+        fields = ()
+        for sol in fwd_sol.values():
+            fields += sol[0][0].split()  # FIXME: Only uses 0th
+        fwd_file.write(*fields)
+        fields = ()
+        for sol in adj_sol.values():
+            fields += sol[0][0].split()  # FIXME: Only uses 0th
+        adj_file.write(*fields)
     P0 = FunctionSpace(mesh, "DG", 0)
     P1_ten = TensorFunctionSpace(mesh, "CG", 1)
 
     # Extract features
     with PETSc.Log.Event("Network"):
-        features = collect_features(extract_features(setup, fwd_sol, adj_sol), layout)
+        field = list(fwd_sol.keys())[0]  # FIXME: Only uses 0th field
+        features = extract_features(setup, fwd_sol[field][0][0], adj_sol[field][0][0])  # FIXME
+        features = collect_features(features, layout)
 
         # Run model
         with PETSc.Log.Event("Propagate"):
@@ -103,6 +112,7 @@ for ct.fp_iteration in range(ct.maxiter + 1):
                     )
             dwr = Function(P0)
             dwr.dat.data[:] = np.abs(test_targets)
+            # FIXME: Only produces one error indicator
 
     # Check for error estimator convergence
     with PETSc.Log.Event("Error estimation"):
@@ -116,7 +126,10 @@ for ct.fp_iteration in range(ct.maxiter + 1):
     # Construct metric
     with PETSc.Log.Event("Metric construction"):
         if approach == "anisotropic":
-            hessian = combine_metrics(*get_hessians(fwd_sol), average=True)
+            field = list(fwd_sol.keys())[0]
+            fwd = fwd_sol[field][0]  # FIXME: Only uses 0th
+            hessians = sum([get_hessians(sol) for sol in fwd], start=())
+            hessian = combine_metrics(*hessians, average=True)
         else:
             hessian = None
         M = anisotropic_metric(
