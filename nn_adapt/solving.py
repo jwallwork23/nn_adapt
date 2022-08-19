@@ -3,7 +3,6 @@ Functions for solving problems defined by configuration
 files and performing goal-oriented error estimation.
 """
 from firedrake import *
-from firedrake.petsc import PETSc
 from firedrake.mg.embedded import TransferManager
 from pyroteus.error_estimation import get_dwr_indicator
 import abc
@@ -90,13 +89,12 @@ def get_solutions(
     # Solve forward problem in base space
     V = config.get_function_space(mesh)
     out = {"times": {"forward": -perf_counter()}}
-    with PETSc.Log.Event("Forward solve"):
-        ic = config.get_initial_condition(V)
-        solver_obj = config.Solver(mesh, ic, **kwargs)
-        solver_obj.iterate()
-        q = solver_obj.solution
-        J = config.get_qoi(mesh)(q)
-        qoi = assemble(J)
+    ic = config.get_initial_condition(V)
+    solver_obj = config.Solver(mesh, ic, **kwargs)
+    solver_obj.iterate()
+    q = solver_obj.solution
+    J = config.get_qoi(mesh)(q)
+    qoi = assemble(J)
     out["times"]["forward"] += perf_counter()
     out["qoi"] = qoi
     out["forward"] = q
@@ -108,35 +106,33 @@ def get_solutions(
 
     # Solve adjoint problem in base space
     out["times"]["adjoint"] = -perf_counter()
-    with PETSc.Log.Event("Adjoint solve"):
-        sp = config.parameters.adjoint_solver_parameters
-        q_star = Function(V)
-        F = solver_obj.form
-        dFdq = derivative(F, q, TrialFunction(V))
-        dFdq_transpose = adjoint(dFdq)
-        dJdq = derivative(J, q, TestFunction(V))
-        solve(dFdq_transpose == dJdq, q_star, solver_parameters=sp)
-        out["adjoint"] = q_star
+    sp = config.parameters.adjoint_solver_parameters
+    q_star = Function(V)
+    F = solver_obj.form
+    dFdq = derivative(F, q, TrialFunction(V))
+    dFdq_transpose = adjoint(dFdq)
+    dJdq = derivative(J, q, TestFunction(V))
+    solve(dFdq_transpose == dJdq, q_star, solver_parameters=sp)
+    out["adjoint"] = q_star
     out["times"]["adjoint"] += perf_counter()
     if refined_mesh is None:
         return out
 
     # Solve adjoint problem in enriched space
     out["times"]["estimator"] = -perf_counter()
-    with PETSc.Log.Event("Enrichment"):
-        V = config.get_function_space(refined_mesh)
-        q_plus = Function(V)
-        solver_obj = config.Solver(refined_mesh, q_plus, **kwargs)
-        q_plus = solver_obj.solution
-        J = config.get_qoi(refined_mesh)(q_plus)
-        F = solver_obj.form
-        tm.prolong(q, q_plus)
-        q_star_plus = Function(V)
-        dFdq = derivative(F, q_plus, TrialFunction(V))
-        dFdq_transpose = adjoint(dFdq)
-        dJdq = derivative(J, q_plus, TestFunction(V))
-        solve(dFdq_transpose == dJdq, q_star_plus, solver_parameters=sp)
-        out["enriched_adjoint"] = q_star_plus
+    V = config.get_function_space(refined_mesh)
+    q_plus = Function(V)
+    solver_obj = config.Solver(refined_mesh, q_plus, **kwargs)
+    q_plus = solver_obj.solution
+    J = config.get_qoi(refined_mesh)(q_plus)
+    F = solver_obj.form
+    tm.prolong(q, q_plus)
+    q_star_plus = Function(V)
+    dFdq = derivative(F, q_plus, TrialFunction(V))
+    dFdq_transpose = adjoint(dFdq)
+    dJdq = derivative(J, q_plus, TestFunction(V))
+    solve(dFdq_transpose == dJdq, q_star_plus, solver_parameters=sp)
+    out["enriched_adjoint"] = q_star_plus
     out["times"]["estimator"] += perf_counter()
     return out
 
@@ -165,8 +161,7 @@ def indicate_errors(mesh, config, enrichment_method="h", retall=False, **kwargs)
     """
     if not enrichment_method == "h":
         raise NotImplementedError  # TODO
-    with PETSc.Log.Event("Enrichment"):
-        mesh, ref_mesh = MeshHierarchy(mesh, 1)
+    mesh, ref_mesh = MeshHierarchy(mesh, 1)
 
     # Solve the forward and adjoint problems
     out = get_solutions(mesh, config, refined_mesh=ref_mesh, **kwargs)
@@ -174,25 +169,24 @@ def indicate_errors(mesh, config, enrichment_method="h", retall=False, **kwargs)
         return out
 
     out["times"]["estimator"] -= perf_counter()
-    with PETSc.Log.Event("Enrichment"):
-        adj_sol_plus = out["enriched_adjoint"]
+    adj_sol_plus = out["enriched_adjoint"]
 
-        # Prolong
-        V_plus = adj_sol_plus.function_space()
-        fwd_sol_plg = Function(V_plus)
-        tm.prolong(out["forward"], fwd_sol_plg)
-        adj_sol_plg = Function(V_plus)
-        tm.prolong(out["adjoint"], adj_sol_plg)
+    # Prolong
+    V_plus = adj_sol_plus.function_space()
+    fwd_sol_plg = Function(V_plus)
+    tm.prolong(out["forward"], fwd_sol_plg)
+    adj_sol_plg = Function(V_plus)
+    tm.prolong(out["adjoint"], adj_sol_plg)
 
-        # Subtract prolonged adjoint solution from enriched version
-        adj_error = Function(V_plus)
-        adj_sols_plus = split_into_components(adj_sol_plus)
-        adj_sols_plg = split_into_components(adj_sol_plg)
-        for i, err in enumerate(split_into_components(adj_error)):
-            err += adj_sols_plus[i] - adj_sols_plg[i]
+    # Subtract prolonged adjoint solution from enriched version
+    adj_error = Function(V_plus)
+    adj_sols_plus = split_into_components(adj_sol_plus)
+    adj_sols_plg = split_into_components(adj_sol_plg)
+    for i, err in enumerate(split_into_components(adj_error)):
+        err += adj_sols_plus[i] - adj_sols_plg[i]
 
-        # Evaluate errors
-        out["dwr"] = dwr_indicator(config, mesh, fwd_sol_plg, adj_error)
+    # Evaluate errors
+    out["dwr"] = dwr_indicator(config, mesh, fwd_sol_plg, adj_error)
     out["times"]["estimator"] += perf_counter()
 
     return out if retall else out["dwr"]
