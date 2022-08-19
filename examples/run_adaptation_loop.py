@@ -91,7 +91,8 @@ for i in range(num_refinements + 1):
                 out["adjoint"],
             )
             dwr, metric = out["dwr"], out["metric"]
-            dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
+            spaces = [sol[0][0].function_space() for sol in fwd_sol.values()]
+            dof = sum(np.array([fs.dof_count for fs in spaces]).flatten())
             print(f"      DoF count            = {dof}")
 
             # Adapt the mesh
