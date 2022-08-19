@@ -8,20 +8,19 @@ class NetLayout(NetLayoutBase):
 
     Input layer:
     ------------
-        [coarse-grained DWR]
-          + [viscosity coefficient]
+          [viscosity coefficient]
           + [element size]
           + [element orientation]
           + [element shape]
           + [boundary element?]
           + [12 forward DoFs per element]
           + [12 adjoint DoFs per element]
-          = 30
+          = 29
 
     Hidden layer:
     -------------
 
-        60 neurons
+        58 neurons
 
     Output layer:
     -------------
@@ -30,7 +29,7 @@ class NetLayout(NetLayoutBase):
     """
 
     inputs = (
-        "estimator_coarse",
+        # "estimator_coarse",
         "physics_viscosity",
         "mesh_d",
         "mesh_h1",
@@ -39,5 +38,5 @@ class NetLayout(NetLayoutBase):
         "forward_dofs",
         "adjoint_dofs",
     )
-    num_hidden_neurons = 60
+    num_hidden_neurons = 58
     dofs_per_element = 12
