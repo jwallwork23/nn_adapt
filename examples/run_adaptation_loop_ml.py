@@ -13,7 +13,6 @@ from firedrake.meshadapt import *
 
 import importlib
 import numpy as np
-from time import perf_counter
 
 
 set_log_level(ERROR)
@@ -60,8 +59,6 @@ nn.eval()
 # Run adaptation loop
 qois, dofs, elements, estimators, niter = [], [], [], [], []
 components = ("forward", "adjoint", "estimator", "metric", "adapt")
-times = {c: [] for c in components}
-times["all"] = []
 print(f"Test case {test_case}")
 for i in range(num_refinements + 1):
     try:
@@ -74,9 +71,6 @@ for i in range(num_refinements + 1):
         kwargs = {}
         print(f"  Target {target_complexity}\n    Mesh 0")
         print(f"      Element count        = {ct.elements_old}")
-        times["all"].append(-perf_counter())
-        for c in components:
-            times[c].append(0.0)
         for ct.fp_iteration in range(ct.maxiter + 1):
 
             # Ramp up the target complexity
@@ -87,17 +81,14 @@ for i in range(num_refinements + 1):
             # Solve forward and adjoint and compute Hessians
             out = get_solutions(mesh, setup, convergence_checker=ct, **kwargs)
             qoi = out["qoi"]
-            times["forward"][-1] += out["times"]["forward"]
             print(f"      Quantity of Interest = {qoi} {unit}")
             if "adjoint" not in out:
                 break
-            times["adjoint"][-1] += out["times"]["adjoint"]
             fwd_sol, adj_sol = out["forward"], out["adjoint"]
             dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
             print(f"      DoF count            = {dof}")
 
             # Extract features
-            out["times"]["estimator"] = -perf_counter()
             features = extract_features(setup, fwd_sol, adj_sol)
             features = collect_features(features, layout)
 
@@ -116,14 +107,11 @@ for i in range(num_refinements + 1):
 
             # Check for error estimator convergence
             estimator = dwr.vector().gather().sum()
-            out["times"]["estimator"] += perf_counter()
-            times["estimator"][-1] += out["times"]["estimator"]
             print(f"      Error estimator      = {estimator}")
             if ct.check_estimator(estimator):
                 break
 
             # Construct metric
-            out["times"]["metric"] = -perf_counter()
             if approach == "anisotropic":
                 hessian = combine_metrics(*get_hessians(fwd_sol), average=True)
             else:
@@ -142,14 +130,9 @@ for i in range(num_refinements + 1):
             )
             metric = RiemannianMetric(mesh)
             metric.assign(M)
-            out["times"]["metric"] += perf_counter()
-            times["metric"][-1] += out["times"]["metric"]
 
             # Adapt the mesh and check for element count convergence
-            out["times"]["adapt"] = -perf_counter()
             mesh = adapt(mesh, metric)
-            out["times"]["adapt"] += perf_counter()
-            times["adapt"][-1] += out["times"]["adapt"]
             print(f"    Mesh {ct.fp_iteration+1}")
             cells = mesh.num_cells()
             print(f"      Element count        = {cells}")
@@ -159,7 +142,6 @@ for i in range(num_refinements + 1):
         print(
             f"    Terminated after {ct.fp_iteration+1} iterations due to {ct.converged_reason}"
         )
-        times["all"][-1] += perf_counter()
         qois.append(qoi)
         dofs.append(dof)
         elements.append(cells)
@@ -170,9 +152,6 @@ for i in range(num_refinements + 1):
         np.save(f"{model}/data/elements_ML{approach}_{test_case}_{tag}", elements)
         np.save(f"{model}/data/estimators_ML{approach}_{test_case}_{tag}", estimators)
         np.save(f"{model}/data/niter_ML{approach}_{test_case}_{tag}", niter)
-        np.save(f"{model}/data/times_all_ML{approach}_{test_case}_{tag}", times["all"])
-        for c in components:
-            np.save(f"{model}/data/times_{c}_ML{approach}_{test_case}_{tag}", times[c])
     except ConvergenceError:
         print("Skipping due to convergence error")
         continue
