@@ -85,11 +85,13 @@ for i in range(num_refinements + 1):
             if "adjoint" not in out:
                 break
             fwd_sol, adj_sol = out["forward"], out["adjoint"]
-            dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
+            spaces = [sol[0][0].function_space() for sol in fwd_sol.values()]
+            dof = sum(np.array([fs.dof_count for fs in spaces]).flatten())
             print(f"      DoF count            = {dof}")
 
             # Extract features
-            features = extract_features(setup, fwd_sol, adj_sol)
+            field = list(fwd_sol.keys())[0]  # FIXME: Only uses 0th field
+            features = extract_features(setup, fwd_sol[field][0][0], adj_sol[field][0][0])  # FIXME
             features = collect_features(features, layout)
 
             # Run model
@@ -104,6 +106,7 @@ for i in range(num_refinements + 1):
             P0 = FunctionSpace(mesh, "DG", 0)
             dwr = Function(P0)
             dwr.dat.data[:] = np.abs(test_targets)
+            # FIXME: Only produces one error indicator
 
             # Check for error estimator convergence
             estimator = dwr.vector().gather().sum()
@@ -113,7 +116,10 @@ for i in range(num_refinements + 1):
 
             # Construct metric
             if approach == "anisotropic":
-                hessian = combine_metrics(*get_hessians(fwd_sol), average=True)
+                field = list(fwd_sol.keys())[0]
+                fwd = fwd_sol[field][0]  # FIXME: Only uses 0th
+                hessians = sum([get_hessians(sol) for sol in fwd], start=())
+                hessian = combine_metrics(*hessians, average=True)
             else:
                 hessian = None
             P1_ten = TensorFunctionSpace(mesh, "CG", 1)
