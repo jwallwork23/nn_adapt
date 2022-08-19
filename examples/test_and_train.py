@@ -197,7 +197,7 @@ for step in range(parsed_args.adaptation_steps):
                 key: np.load(f"{data_dir}/feature_{key}_{suffix}.npy")
                 for key in layout.inputs
             }
-            features = concat(features, collect_features(feature))
+            features = concat(features, collect_features(feature, layout))
             target = np.load(f"{data_dir}/target_{suffix}.npy")
             targets = concat(targets, target)
 print(f"Total number of features: {len(features.flatten())}")
