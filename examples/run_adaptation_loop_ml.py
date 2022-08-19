@@ -96,23 +96,6 @@ for i in range(num_refinements + 1):
             dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
             print(f"      DoF count            = {dof}")
 
-            def proj(V):
-                """
-                After the first iteration, project the previous
-                solution as the initial guess.
-                """
-                ic = Function(V)
-                try:
-                    ic.project(fwd_sol)
-                except NotImplementedError:
-                    for c_init, c in zip(ic.split(), fwd_sol.split()):
-                        c_init.project(c)
-                return ic
-
-            # Use previous solution for initial guess
-            if parsed_args.transfer:
-                kwargs["init"] = proj
-
             # Extract features
             out["times"]["estimator"] = -perf_counter()
             features = extract_features(setup, fwd_sol, adj_sol)

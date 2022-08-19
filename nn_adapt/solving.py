@@ -65,7 +65,6 @@ def get_solutions(
     config,
     solve_adjoint=True,
     refined_mesh=None,
-    init=None,
     convergence_checker=None,
     **kwargs,
 ):
@@ -82,7 +81,6 @@ def get_solutions(
         adjoint problem?
     :kwarg refined_mesh: refined mesh to compute
         enriched adjoint solution on
-    :kwarg init: custom initial condition function
     :kwarg convergence_checker: :class:`ConvergenceTracer`
         instance
     :return: forward solution, adjoint solution
@@ -93,10 +91,7 @@ def get_solutions(
     V = config.get_function_space(mesh)
     out = {"times": {"forward": -perf_counter()}}
     with PETSc.Log.Event("Forward solve"):
-        if init is None:
-            ic = config.get_initial_condition(V)
-        else:
-            ic = init(V)
+        ic = config.get_initial_condition(V)
         solver_obj = config.Solver(mesh, ic, **kwargs)
         solver_obj.iterate()
         q = solver_obj.solution

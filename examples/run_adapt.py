@@ -102,23 +102,6 @@ for ct.fp_iteration in range(ct.maxiter + 1):
         ee_file.write(dwr)
         metric_file.write(metric.function)
 
-    def proj(V):
-        """
-        After the first iteration, project the previous
-        solution as the initial guess.
-        """
-        ic = Function(V)
-        try:
-            ic.project(fwd_sol)
-        except NotImplementedError:
-            for c_init, c in zip(ic.split(), fwd_sol.split()):
-                c_init.project(c)
-        return ic
-
-    # Use previous solution for initial guess
-    if parsed_args.transfer:
-        kwargs["init"] = proj
-
     # Extract features
     if not optimise:
         features = extract_features(setup, fwd_sol, adj_sol)
