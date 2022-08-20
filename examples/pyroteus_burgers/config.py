@@ -1,4 +1,4 @@
-from models.burgers import *
+from models.pyroteus_burgers import *
 from nn_adapt.ann import sample_uniform
 import numpy as np
 

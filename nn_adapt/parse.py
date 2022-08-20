@@ -105,11 +105,6 @@ class Parser(argparse.ArgumentParser):
             choices=["isotropic", "anisotropic"],
             default="anisotropic",
         )
-        self.add_argument(
-            "--transfer",
-            help="Transfer the solution from the previous mesh as initial guess",
-            action="store_true",
-        )
 
     def parse_target_complexity(self):
         self.add_argument(

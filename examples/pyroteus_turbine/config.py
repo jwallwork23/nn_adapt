@@ -1,4 +1,4 @@
-from models.steady_turbine import *
+from models.pyroteus_turbine import *
 from nn_adapt.ann import sample_uniform
 
 

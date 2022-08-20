@@ -82,15 +82,13 @@ for ct.fp_iteration in range(ct.maxiter + 1):
     kwargs["target_complexity"] = ramp_complexity(
         base_complexity, target_complexity, ct.fp_iteration
     )
-    
-    # out = get_solutions(mesh, setup, convergence_checker=ct, **kwargs)
-    # print(out)
 
     # Compute goal-oriented metric
     out = go_metric(mesh, setup, convergence_checker=ct, **kwargs)
     qoi, fwd_sol = out["qoi"], out["forward"]
     print(f"    Quantity of Interest = {qoi} {unit}")
-    dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
+    spaces = [sol[0][0].function_space() for sol in fwd_sol.values()]
+    dof = sum(np.array([fs.dof_count for fs in spaces]).flatten())
     print(f"    DoF count            = {dof}")
     if "adjoint" not in out:
         break
@@ -100,32 +98,22 @@ for ct.fp_iteration in range(ct.maxiter + 1):
         break
     adj_sol, dwr, metric = out["adjoint"], out["dwr"], out["metric"]
     if not no_outputs:
-        fwd_file.write(*fwd_sol.split())
-        adj_file.write(*adj_sol.split())
-        ee_file.write(dwr)
+        fields = ()
+        for sol in fwd_sol.values():
+            fields += sol[0][0].split()  # FIXME: Only uses 0th
+        fwd_file.write(*fields)
+        fields = ()
+        for sol in adj_sol.values():
+            fields += sol[0][0].split()  # FIXME: Only uses 0th
+        adj_file.write(*fields)
+        ee_file.write(dwr[0])  # FIXME: Only uses 0th
         metric_file.write(metric.function)
-
-    def proj(V):
-        """
-        After the first iteration, project the previous
-        solution as the initial guess.
-        """
-        ic = Function(V)
-        try:
-            ic.project(fwd_sol)
-        except NotImplementedError:
-            for c_init, c in zip(ic.split(), fwd_sol.split()):
-                c_init.project(c)
-        return ic
-
-    # Use previous solution for initial guess
-    if parsed_args.transfer:
-        kwargs["init"] = proj
 
     # Extract features
     if not optimise:
-        features = extract_features(setup, fwd_sol, adj_sol)
-        target = dwr.dat.data.flatten()
+        field = list(fwd_sol.keys())[0]  # FIXME: Only uses 0th field
+        features = extract_features(setup, fwd_sol[field][0][0], adj_sol[field][0][0])  # FIXME
+        target = dwr[0].dat.data.flatten()  # FIXME: Only uses 0th
         assert not np.isnan(target).any()
         for key, value in features.items():
             np.save(f"{data_dir}/feature_{key}_{suffix}", value)

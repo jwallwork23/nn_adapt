@@ -7,9 +7,8 @@ from firedrake.petsc import PETSc
 from firedrake import op2
 import numpy as np
 from pyroteus.metric import *
-from sympy import ProductSet
 import ufl
-from nn_adapt.solving import dwr_indicator
+# from nn_adapt.solving import dwr_indicator
 from collections import Iterable
 
 
@@ -133,14 +132,6 @@ def get_values_at_centroids(f):
     return values
 
 
-# def time_integrate(list_like):
-#     length = len(list_like)
-#     result = 0
-#     for step in range(length):
-#         result += list_like[step]
-#     return firedrake.product((result, 1/length))
-    
-
 def split_into_scalars(f):
     """
     Given a :class:`Function`, split it into
@@ -224,9 +215,9 @@ def extract_features(config, fwd_sol, adj_sol):
     """
     mesh = fwd_sol.function_space().mesh()
 
-    # Coarse-grained DWR estimator
-    with PETSc.Log.Event("Extract estimator"):
-        dwr = dwr_indicator(config, mesh, fwd_sol, adj_sol)
+    # # Coarse-grained DWR estimator  # TODO: Reintroduce
+    # with PETSc.Log.Event("Extract estimator"):
+    #     dwr = dwr_indicator(config, mesh, fwd_sol, adj_sol)
 
     # Features describing the mesh element
     with PETSc.Log.Event("Analyse element"):
@@ -238,12 +229,12 @@ def extract_features(config, fwd_sol, adj_sol):
         d, h1, h2 = (extract_array(p) for p in extract_components(JTJ))
 
         # Is the element on the boundary?
-        p0test = firedrake.TestFunction(dwr.function_space())
+        p0test = firedrake.TestFunction(firedrake.FunctionSpace(mesh, "DG", 0))
         bnd = firedrake.assemble(p0test * ufl.ds).dat.data
 
     # Combine the features together
     features = {
-        "estimator_coarse": extract_array(dwr),
+        # "estimator_coarse": extract_array(dwr),  # TODO: Reintroduce
         "physics_drag": extract_array(config.parameters.drag(mesh)),
         "physics_viscosity": extract_array(config.parameters.viscosity(mesh), project=True),
         "physics_bathymetry": extract_array(config.parameters.bathymetry(mesh), project=True),

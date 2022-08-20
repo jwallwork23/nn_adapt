@@ -6,7 +6,7 @@ from pyroteus import *
 from nn_adapt.features import split_into_scalars
 from nn_adapt.solving import *
 from firedrake.meshadapt import RiemannianMetric
-from time import perf_counter
+import numpy as np
 
 
 def get_hessians(f, **kwargs):
@@ -22,11 +22,11 @@ def get_hessians(f, **kwargs):
         component
     """
     kwargs.setdefault("method", "Clement")
-    return [
+    return tuple(
         space_normalise(hessian_metric(recover_hessian(fij, **kwargs)), 4000.0, "inf")
         for i, fi in split_into_scalars(f).items()
         for fij in fi
-    ]
+    )
 
 
 def go_metric(
@@ -68,6 +68,11 @@ def go_metric(
     :kwarg convergence_checker: :class:`ConvergenceTracer`
         instance
     """
+    try:
+        num_subintervals = len(mesh)
+    except:
+        num_subintervals = 1
+        mesh = [mesh]
     h_min = kwargs.pop("h_min", 1.0e-30)
     h_max = kwargs.pop("h_max", 1.0e+30)
     a_max = kwargs.pop("a_max", 1.0e+30)
@@ -81,27 +86,67 @@ def go_metric(
     )
     if retall and "adjoint" not in out:
         return out
-    out["estimator"] = out["dwr"].vector().gather().sum()
-    if convergence_checker is not None:
-        if convergence_checker.check_estimator(out["estimator"]):
-            return out
+    
+    # single mesh for whole time interval
+    if num_subintervals == 1:
+        out["estimator"] = out["dwr"][0].vector().gather().sum()  # FIXME: Only uses 0th
+        if convergence_checker is not None:
+            if convergence_checker.check_estimator(out["estimator"]):
+                return out
+            
+    # multiple meshes for whole time interval
+    else:
+        out["estimator"] = [0 for _ in range(num_subintervals)]
+        for id in range(num_subintervals):
+            out["estimator"][id] = out["dwr"][id].vector().gather().sum()  # FIXME: Only uses 0th
+        if convergence_checker is not None:
+            max_estimator = np.array(out["estimator"]).mean()
+            if convergence_checker.check_estimator(max_estimator):
+                return out
 
-    out["times"]["metric"] = -perf_counter()
     with PETSc.Log.Event("Metric construction"):
-        if anisotropic:
-            hessian = combine_metrics(*get_hessians(out["forward"]), average=average)
-        else:
-            hessian = None
-        metric = anisotropic_metric(
-            out["dwr"],
-            hessian=hessian,
-            target_complexity=target_complexity,
-            target_space=TensorFunctionSpace(mesh, "CG", 1),
-            interpolant=interpolant,
-        )
-        space_normalise(metric, target_complexity, "inf")
-        enforce_element_constraints(metric, h_min, h_max, a_max)
-        out["metric"] = RiemannianMetric(mesh)
-        out["metric"].assign(metric)
-    out["times"]["metric"] += perf_counter()
+        # single mesh for whole time interval
+        if num_subintervals == 1:
+            if anisotropic:
+                field = list(out["forward"].keys())[0]
+                fwd = out["forward"][field][0]  # FIXME: Only uses 0th
+                hessians = sum([get_hessians(sol) for sol in fwd], start=())
+                hessian = combine_metrics(*hessians, average=average)
+            else:
+                hessian = None
+            metric = anisotropic_metric(
+                out["dwr"][0],  # FIXME: Only uses 0th
+                hessian=hessian,
+                target_complexity=target_complexity,
+                target_space=TensorFunctionSpace(mesh[0], "CG", 1),
+                interpolant=interpolant,
+            )
+            space_normalise(metric, target_complexity, "inf")
+            enforce_element_constraints(metric, h_min, h_max, a_max)
+            out["metric"] = RiemannianMetric(mesh[0])
+            out["metric"].assign(metric)
+        
+        # multiple meshes for whole time interval
+        else: 
+            out["metric"] = []
+            for id in range(num_subintervals):
+                if anisotropic:
+                    field = list(out["forward"].keys())[0]
+                    fwd = out["forward"][field][id]
+                    hessians = sum([get_hessians(sol) for sol in fwd], start=())
+                    hessian = combine_metrics(*hessians, average=average)
+                else:
+                    hessian = None
+                metric = anisotropic_metric(
+                    out["dwr"][0],  # FIXME: Only uses 0th
+                    hessian=hessian,
+                    target_complexity=target_complexity,
+                    target_space=TensorFunctionSpace(mesh[id], "CG", 1),
+                    interpolant=interpolant,
+                )
+                space_normalise(metric, target_complexity, "inf")
+                enforce_element_constraints(metric, h_min, h_max, a_max)
+                out["metric"].append(RiemannianMetric(mesh[id]))
+                out["metric"][-1].assign(metric)
+                
     return out if retall else out["metric"]

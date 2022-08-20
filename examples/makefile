@@ -3,7 +3,7 @@ all: setup network test
 # --- Configurable parameters
 
 APPROACHES			= anisotropic
-MODEL				= steady_turbine
+MODEL				= pyroteus_turbine
 NUM_TRAINING_CASES	= 1
 TESTING_CASES		= $(shell cat $(MODEL)/testing_cases.txt)
 PETSC_OPTIONS		= -dm_plex_metric_hausdorff_number 1
@@ -89,8 +89,6 @@ clean:
 # --- Construct the neural network
 
 network: features train plot_progress plot_importance
-train_one: train plot_progress plot_importance
-test_one: snapshot_ml ml
 
 # Generate feature data
 # =====================
@@ -168,14 +166,6 @@ snapshot_go:
 	git log -n 1 --oneline >> timing.log && \
 	echo "Goal-oriented snapshots generated in $$(($$(date +%s)-d)) seconds" >> timing.log
 	echo "" >> timing.log
-
-tessst:
-	for case in $(TESTING_CASES); do \
-		for approach in $(APPROACHES); do \
-			python3 a_tessst.py $(MODEL) $$case -a $$approach $(PETSC_OPTIONS); \
-		done; \
-	done && \
-
 
 # Apply data-driven adaptation to the test cases
 # ==============================================

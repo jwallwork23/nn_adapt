@@ -1,5 +1,6 @@
 from firedrake import *
-from pyroteus_adjoint import *
+from pyroteus import *
+import pyroteus.go_mesh_seq
 from firedrake.petsc import PETSc
 import nn_adapt.model
 
@@ -110,7 +111,6 @@ def get_solver(mesh_seq):
         step = 0
         while t < t_end - 1.0e-05:
             step += 1
-            print(step)
             solve(F == 0, u, ad_block_tag="u")
             u_.assign(u)
             t += dt
@@ -143,88 +143,40 @@ def get_qoi(mesh_seq, solutions, index):
 PETSc.Sys.popErrorHandler()
 parameters = Parameters()
 
-class pyroteus_burgers():
+def GoalOrientedMeshSeq(mesh, **kwargs):
+    fields = ["u"]
     
-    def __init__(self, meshes, ic, **kwargs):
-        
-        self.meshes = meshes
-        self.kwargs = kwargs
-        try:
-            self.nu = [parameters.viscosity(mesh) for mesh in meshes]
-            self.num_subintervals = len(meshes)
-        except:
-            self.nu = parameters.viscosity(meshes)
-            self.num_subintervals = 1
-    
-    def setups(self):
-        
-        fields = ["u"]
-        
-        dt = 0.1
-        steps_subintervals = 3
-        end_time = self.num_subintervals * steps_subintervals * dt
-        
-        timesteps_per_export = 1
-        
-        time_partition = TimePartition(
-            end_time,
-            self.num_subintervals,
-            dt,
-            fields,
-            timesteps_per_export=timesteps_per_export,
-        )
-        
-        self._mesh_seq = GoalOrientedMeshSeq(
-            time_partition,
-            self.meshes,
-            get_function_spaces=get_function_spaces,
-            get_initial_condition=get_initial_condition,
-            get_form=get_form,
-            get_solver=get_solver,
-            get_qoi=get_qoi,
-            qoi_type="end_time",
-        )
-        
-       
-    def iterate(self):
-        self.setups()
-        self._solutions, self._indicators = self._mesh_seq.indicate_errors(
-            enrichment_kwargs={"enrichment_method": "h"}
-        )
-    
-    
-    def integrate(self, item):
-        result = [0 for _ in range(self._mesh_seq.num_subintervals)]
-        steps = self._mesh_seq.time_partition.timesteps_per_subinterval
-        
-        for id, list in  enumerate(item):
-            for element in list:
-                result[id] += element
-            result[id] = product((result[id], 1/steps[id]))
-            
-        return result
-        
-    @property
-    def fwd_sol(self):
-        return self.integrate(self._solutions["u"]["forward"])
-    
-    @property
-    def adj_sol(self):
-        return self.integrate(self._solutions["u"]["adjoint"])
-    
-    @property
-    def qoi(self):
-        return self._mesh_seq.J
-    
-    @property
-    def indicators(self):
-        return self.integrate(self._indicators)
-    
-    
-mesh = [UnitSquareMesh(15, 15), UnitSquareMesh(12, 17)]
-ic = 0
-demo = Solver_n4one(mesh, ic)
+    try:
+        num_subintervals = len(mesh)
+    except:
+        num_subintervals = 1
 
-demo.iterate()
-
+    # setup time steps and export steps
+    dt = 0.1
+    steps_subintervals = 10
+    end_time = num_subintervals * steps_subintervals * dt
+    timesteps_per_export = 1
+    
+    # setup pyroteus time_partition
+    time_partition = TimePartition(
+        end_time,
+        num_subintervals,
+        dt,
+        fields,
+        timesteps_per_export=timesteps_per_export,
+        )
+    
+    mesh_seq = pyroteus.go_mesh_seq.GoalOrientedMeshSeq(
+        time_partition,
+        mesh,
+        get_function_spaces=get_function_spaces,
+        get_initial_condition=get_initial_condition,
+        get_form=get_form,
+        get_solver=get_solver,
+        get_qoi=get_qoi,
+        qoi_type="end_time",
+    )
+    return mesh_seq
+    
+initial_mesh = UnitSquareMesh(30, 30)
         

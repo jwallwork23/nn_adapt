@@ -1,6 +1,6 @@
 from thetis import *
 from pyroteus import *
-from pyroteus_adjoint import *
+import pyroteus.go_mesh_seq
 import nn_adapt.model
 
 class Parameters(nn_adapt.model.Parameters):
@@ -210,176 +210,138 @@ class Parameters(nn_adapt.model.Parameters):
 PETSc.Sys.popErrorHandler()
 parameters = Parameters()
 kwargs = {}
-
-
-class Solver_one4n():
     
-    def __init__(self, mesh, **kwargs):
-        
-        fields = ["q"]
-        self.time_partition = TimeInterval(parameters.end_time, 
-                                           parameters.time_steps, 
-                                           fields, timesteps_per_export=1)
-        self.mesh = mesh
-        self.kwargs = kwargs
+def GoalOrientedMeshSeq(mesh, **kwargs):
     
-    
-    def setup(self):
-        def get_solver(mesh_seq):
-
-            def solver(index, ic):
-                V = mesh_seq.function_spaces["q"][index]
-                q = ic["q"]
-                mesh_seq.form(index, {"q": (q, q)})
-                u_init, eta_init = q.split()
-                mesh_seq._thetis_solver.assign_initial_conditions(uv=u_init, elev=eta_init)
-                mesh_seq._thetis_solver.iterate(**self.kwargs)
-                
-                return {"q": mesh_seq._thetis_solver.fields.solution_2d}
-
-            return solver
+    fields = ["q"]
+    time_partition = TimeInterval(parameters.end_time, 
+                                        parameters.time_steps, 
+                                        fields, timesteps_per_export=1)
 
 
-        def get_form(mesh_seq):
-            def form(index, ic):
-                P = mesh_seq.time_partition
-                
-                bathymetry = parameters.bathymetry(mesh_seq[index])
-                Cd = parameters.drag_coefficient
-                sp = self.kwargs.pop("solver_parameters", None)
+    def get_solver(mesh_seq):
 
-                # Create solver object
-                mesh_seq._thetis_solver = solver2d.FlowSolver2d(mesh_seq[index], bathymetry)
-                options = mesh_seq._thetis_solver.options
-                options.element_family = "dg-cg"
-                options.timestep = P.timestep
-                options.simulation_export_time = P.timestep * P.timesteps_per_export[index]
-                options.simulation_end_time = P.end_time
-                options.swe_timestepper_type = "SteadyState"
-                options.swe_timestepper_options.solver_parameters = (
-                    sp or parameters.solver_parameters
-                )
-                options.use_grad_div_viscosity_term = False
-                options.horizontal_viscosity = parameters.viscosity(mesh_seq[index])
-                options.quadratic_drag_coefficient = Cd
-                options.use_lax_friedrichs_velocity = True
-                options.lax_friedrichs_velocity_scaling_factor = Constant(1.0)
-                options.use_grad_depth_viscosity_term = False
-                options.no_exports = True
-                options.update(self.kwargs)
-
-                # Apply boundary conditions
-                mesh_seq._thetis_solver.create_function_spaces()
-                P1v_2d = mesh_seq._thetis_solver.function_spaces.P1v_2d
-                u_inflow = interpolate(parameters.u_inflow(mesh_seq[index]), P1v_2d)
-                mesh_seq._thetis_solver.bnd_functions["shallow_water"] = {
-                    1: {"uv": u_inflow},  # inflow
-                    2: {"elev": Constant(0.0)},  # outflow
-                    3: {"un": Constant(0.0)},  # free-slip
-                    4: {"uv": Constant(as_vector([0.0, 0.0]))},  # no-slip
-                    5: {"elev": Constant(0.0), "un": Constant(0.0)}  # weakly reflective
-                }
-
-                # # Create tidal farm
-                options.tidal_turbine_farms = parameters.farm(mesh_seq[index])
-                mesh_seq._thetis_solver.create_timestepper()
-
-                # # Apply initial guess
-                # u_init, eta_init = ic["q"].split()
-                # thetis_solver.assign_initial_conditions(uv=u_init, elev=eta_init)
-                
-                return mesh_seq._thetis_solver.timestepper.F
-
-            return form
-
-
-        def get_function_space(mesh):
-            """
-            Construct the (mixed) finite element space used for the
-            prognostic solution.
-            """
-            P1v_2d = get_functionspace(mesh, "DG", 1, vector=True)
-            P2_2d = get_functionspace(mesh, "CG", 2)
-            return {"q": P1v_2d * P2_2d}
-
-
-        def get_initial_condition(mesh_seq):
-            """
-            Compute an initial condition based on the inflow velocity
-            and zero free surface elevation.
-            """
-            V = mesh_seq.function_spaces["q"][0]
-            q = Function(V)
-            u, eta = q.split()
-            u.interpolate(parameters.ic(mesh_seq))
-            return {"q": q}
-
-
-        def get_qoi(mesh_seq, solutions, index):
-            """
-            Extract the quantity of interest function from the :class:`Parameters`
-            object.
-
-            It should have one argument - the prognostic solution.
-            """
-            dt = Constant(mesh_seq.time_partition[index].timestep)
-            rho = parameters.density
-            Ct = parameters.corrected_thrust_coefficient
-            At = parameters.swept_area
-            Cd = 0.5 * Ct * At * parameters.turbine_density(mesh_seq[index])
-            tags = parameters.turbine_ids
-            sol = solutions["q"]
-
-            def qoi():
-                u, eta = split(sol)
-                return sum([rho * Cd * pow(dot(u, u), 1.5) * dx(tag) for tag in tags])
-
-            return qoi
-        
-        
-        self._mesh_seq = GoalOrientedMeshSeq(
-            self.time_partition,
-            self.mesh,
-            get_function_spaces=get_function_space,
-            get_initial_condition=get_initial_condition,
-            get_form=get_form,
-            get_solver=get_solver,
-            get_qoi=get_qoi,
-            qoi_type="end_time")
-        
-    
-    def iterate(self):
-        self.setup()
-        self._solutions, self._indicators = self._mesh_seq.indicate_errors(
-            enrichment_kwargs={"enrichment_method": "h"})
-    
-    
-    def integrate(self, item):
-        result = [0 for _ in range(self._mesh_seq.num_subintervals)]
-        steps = self._mesh_seq.time_partition.timesteps_per_subinterval
-        
-        for id, list in  enumerate(item):
-            for element in list:
-                result[id] += element
-            result[id] = product((result[id], 1/steps[id]))
+        def solver(index, ic):
+            V = mesh_seq.function_spaces["q"][index]
+            q = ic["q"]
+            mesh_seq.form(index, {"q": (q, q)})
+            u_init, eta_init = q.split()
+            mesh_seq._thetis_solver.assign_initial_conditions(uv=u_init, elev=eta_init)
+            mesh_seq._thetis_solver.iterate(**kwargs)
             
-        return result
+            return {"q": mesh_seq._thetis_solver.fields.solution_2d}
+
+        return solver
+
+
+    def get_form(mesh_seq):
+        def form(index, ic):
+            P = mesh_seq.time_partition
+            
+            bathymetry = parameters.bathymetry(mesh_seq[index])
+            Cd = parameters.drag_coefficient
+            sp = kwargs.pop("solver_parameters", None)
+
+            # Create solver object
+            mesh_seq._thetis_solver = solver2d.FlowSolver2d(mesh_seq[index], bathymetry)
+            options = mesh_seq._thetis_solver.options
+            options.element_family = "dg-cg"
+            options.timestep = P.timestep
+            options.simulation_export_time = P.timestep * P.timesteps_per_export[index]
+            options.simulation_end_time = P.end_time
+            options.swe_timestepper_type = "SteadyState"
+            options.swe_timestepper_options.solver_parameters = (
+                sp or parameters.solver_parameters
+            )
+            options.use_grad_div_viscosity_term = False
+            options.horizontal_viscosity = parameters.viscosity(mesh_seq[index])
+            options.quadratic_drag_coefficient = Cd
+            options.use_lax_friedrichs_velocity = True
+            options.lax_friedrichs_velocity_scaling_factor = Constant(1.0)
+            options.use_grad_depth_viscosity_term = False
+            options.no_exports = True
+            options.update(kwargs)
+
+            # Apply boundary conditions
+            mesh_seq._thetis_solver.create_function_spaces()
+            P1v_2d = mesh_seq._thetis_solver.function_spaces.P1v_2d
+            u_inflow = interpolate(parameters.u_inflow(mesh_seq[index]), P1v_2d)
+            mesh_seq._thetis_solver.bnd_functions["shallow_water"] = {
+                1: {"uv": u_inflow},  # inflow
+                2: {"elev": Constant(0.0)},  # outflow
+                3: {"un": Constant(0.0)},  # free-slip
+                4: {"uv": Constant(as_vector([0.0, 0.0]))},  # no-slip
+                5: {"elev": Constant(0.0), "un": Constant(0.0)}  # weakly reflective
+            }
+
+            # # Create tidal farm
+            options.tidal_turbine_farms = parameters.farm(mesh_seq[index])
+            mesh_seq._thetis_solver.create_timestepper()
+
+            # # Apply initial guess
+            # u_init, eta_init = ic["q"].split()
+            # thetis_solver.assign_initial_conditions(uv=u_init, elev=eta_init)
+            
+            return mesh_seq._thetis_solver.timestepper.F
+
+        return form
+
+
+    def get_function_space(mesh):
+        """
+        Construct the (mixed) finite element space used for the
+        prognostic solution.
+        """
+        P1v_2d = get_functionspace(mesh, "DG", 1, vector=True)
+        P2_2d = get_functionspace(mesh, "CG", 2)
+        return {"q": P1v_2d * P2_2d}
+
+
+    def get_initial_condition(mesh_seq):
+        """
+        Compute an initial condition based on the inflow velocity
+        and zero free surface elevation.
+        """
+        V = mesh_seq.function_spaces["q"][0]
+        q = Function(V)
+        u, eta = q.split()
+        u.interpolate(parameters.ic(mesh_seq))
+        return {"q": q}
+
+
+    def get_qoi(mesh_seq, solutions, index):
+        """
+        Extract the quantity of interest function from the :class:`Parameters`
+        object.
+
+        It should have one argument - the prognostic solution.
+        """
+        dt = Constant(mesh_seq.time_partition[index].timestep)
+        rho = parameters.density
+        Ct = parameters.corrected_thrust_coefficient
+        At = parameters.swept_area
+        Cd = 0.5 * Ct * At * parameters.turbine_density(mesh_seq[index])
+        tags = parameters.turbine_ids
+        sol = solutions["q"]
+
+        def qoi():
+            u, eta = split(sol)
+            return sum([rho * Cd * pow(dot(u, u), 1.5) * dx(tag) for tag in tags])
+
+        return qoi
     
-    @property
-    def fwd_sol(self):
-        return self.integrate(self._solutions["u"]["forward"])
     
-    @property
-    def adj_sol(self):
-        return self.integrate(self._solutions["u"]["adjoint"])
+    mesh_seq = pyroteus.go_mesh_seq.GoalOrientedMeshSeq(
+        time_partition,
+        mesh,
+        get_function_spaces=get_function_space,
+        get_initial_condition=get_initial_condition,
+        get_form=get_form,
+        get_solver=get_solver,
+        get_qoi=get_qoi,
+        qoi_type="end_time")
     
-    @property
-    def qoi(self):
-        return self._mesh_seq.J
-    
-    @property
-    def indicators(self):
-        return self.integrate(self._indicators)
+    return mesh_seq
     
         
         
