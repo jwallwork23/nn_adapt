@@ -178,14 +178,14 @@ for i in range(num_refinements + 1):
         elements.append(cells)
         estimators.append(estimator)
         niter.append(ct.fp_iteration + 1)
-        np.save(f"{model}/data/qois_ML{approach}_{test_case}_{tag}", qois)
-        np.save(f"{model}/data/dofs_ML{approach}_{test_case}_{tag}", dofs)
-        np.save(f"{model}/data/elements_ML{approach}_{test_case}_{tag}", elements)
-        np.save(f"{model}/data/estimators_ML{approach}_{test_case}_{tag}", estimators)
-        np.save(f"{model}/data/niter_ML{approach}_{test_case}_{tag}", niter)
-        np.save(f"{model}/data/times_all_ML{approach}_{test_case}_{tag}", times["all"])
+        np.save(f"{model}/data/qois_ML{approach}_{test_case}_{tag}_run2", qois)
+        np.save(f"{model}/data/dofs_ML{approach}_{test_case}_{tag}_run2", dofs)
+        np.save(f"{model}/data/elements_ML{approach}_{test_case}_{tag}_run2", elements)
+        np.save(f"{model}/data/estimators_ML{approach}_{test_case}_{tag}_run2", estimators)
+        np.save(f"{model}/data/niter_ML{approach}_{test_case}_{tag}_run2", niter)
+        np.save(f"{model}/data/times_all_ML{approach}_{test_case}_{tag}_run2", times["all"])
         for c in components:
-            np.save(f"{model}/data/times_{c}_ML{approach}_{test_case}_{tag}", times[c])
+            np.save(f"{model}/data/times_{c}_ML{approach}_{test_case}_{tag}_run2", times[c])
     except ConvergenceError:
         print("Skipping due to convergence error")
         continue
