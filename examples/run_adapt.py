@@ -38,6 +38,7 @@ base_complexity = parsed_args.base_complexity
 target_complexity = parsed_args.target_complexity
 optimise = parsed_args.optimise
 no_outputs = parsed_args.no_outputs or optimise
+no_outputs = 1
 if not no_outputs:
     from pyroteus.utility import File
 
@@ -50,6 +51,11 @@ if hasattr(setup, "initial_mesh"):
     mesh = setup.initial_mesh
 else:
     mesh = Mesh(f"{model}/meshes/{test_case}.msh")
+    
+try:
+    num_subinterval = len(mesh)
+except:
+    num_subinterval = 1
 
 # Run adaptation loop
 kwargs = {
@@ -62,7 +68,7 @@ kwargs = {
     "h_max": setup.parameters.h_max,
     "a_max": 1.0e5,
 }
-ct = ConvergenceTracker(mesh, parsed_args)
+ct = ConvergenceTracker(mesh[0], parsed_args)
 if not no_outputs:
     output_dir = f"{model}/outputs/{test_case}/GO/{approach}"
     fwd_file = File(f"{output_dir}/forward.pvd")
@@ -70,7 +76,7 @@ if not no_outputs:
     ee_file = File(f"{output_dir}/estimator.pvd")
     metric_file = File(f"{output_dir}/metric.pvd")
     mesh_file = File(f"{output_dir}/mesh.pvd")
-    mesh_file.write(mesh.coordinates)
+    # mesh_file.write(mesh.coordinates)
 print(f"Test case {test_case}")
 print("  Mesh 0")
 print(f"    Element count        = {ct.elements_old}")
@@ -121,12 +127,23 @@ for ct.fp_iteration in range(ct.maxiter + 1):
 
     # Adapt the mesh and check for element count convergence
     with PETSc.Log.Event("Mesh adaptation"):
-        mesh = adapt(mesh, metric)
+        if num_subinterval == 1:
+            mesh = adapt(mesh, metric)
+        else:
+            for id in range(num_subinterval):
+                mesh[id] = adapt(mesh[id], metric[id])
     if not no_outputs:
         mesh_file.write(mesh.coordinates)
-    elements = mesh.num_cells()
-    print(f"  Mesh {ct.fp_iteration+1}")
-    print(f"    Element count        = {elements}")
+        
+    if num_subinterval == 1:
+        elements = mesh.num_cells()
+        print(f"  Mesh {ct.fp_iteration+1}")
+        print(f"    Element count        = {elements}")
+    else:
+        elements_list = np.array([mesh_i.num_cells() for mesh_i in mesh])
+        elements = elements_list.mean()
+        print(f"  Mesh {ct.fp_iteration+1}")
+        print(f"    Element list        = {elements_list}")
     if ct.check_elements(elements):
         break
     ct.check_maxiter()

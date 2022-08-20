@@ -153,7 +153,7 @@ def GoalOrientedMeshSeq(mesh, **kwargs):
 
     # setup time steps and export steps
     dt = 0.1
-    steps_subintervals = 10
+    steps_subintervals = 3
     end_time = num_subintervals * steps_subintervals * dt
     timesteps_per_export = 1
     
@@ -178,5 +178,5 @@ def GoalOrientedMeshSeq(mesh, **kwargs):
     )
     return mesh_seq
     
-initial_mesh = UnitSquareMesh(30, 30)
+initial_mesh = [UnitSquareMesh(30, 30) for _ in range(2)]
         

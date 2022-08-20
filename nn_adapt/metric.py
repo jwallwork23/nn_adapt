@@ -6,7 +6,6 @@ from pyroteus import *
 from nn_adapt.features import split_into_scalars
 from nn_adapt.solving import *
 from firedrake.meshadapt import RiemannianMetric
-import numpy as np
 
 
 def get_hessians(f, **kwargs):
@@ -89,7 +88,7 @@ def go_metric(
     
     # single mesh for whole time interval
     if num_subintervals == 1:
-        out["estimator"] = out["dwr"][0].vector().gather().sum()  # FIXME: Only uses 0th
+        out["estimator"] = out["dwr"][0].vector().gather().sum()
         if convergence_checker is not None:
             if convergence_checker.check_estimator(out["estimator"]):
                 return out
@@ -98,7 +97,7 @@ def go_metric(
     else:
         out["estimator"] = [0 for _ in range(num_subintervals)]
         for id in range(num_subintervals):
-            out["estimator"][id] = out["dwr"][id].vector().gather().sum()  # FIXME: Only uses 0th
+            out["estimator"][id] = out["dwr"][id].vector().gather().sum()
         if convergence_checker is not None:
             max_estimator = np.array(out["estimator"]).mean()
             if convergence_checker.check_estimator(max_estimator):
@@ -109,13 +108,13 @@ def go_metric(
         if num_subintervals == 1:
             if anisotropic:
                 field = list(out["forward"].keys())[0]
-                fwd = out["forward"][field][0]  # FIXME: Only uses 0th
+                fwd = out["forward"][field][0]
                 hessians = sum([get_hessians(sol) for sol in fwd], start=())
                 hessian = combine_metrics(*hessians, average=average)
             else:
                 hessian = None
             metric = anisotropic_metric(
-                out["dwr"][0],  # FIXME: Only uses 0th
+                out["dwr"][0],
                 hessian=hessian,
                 target_complexity=target_complexity,
                 target_space=TensorFunctionSpace(mesh[0], "CG", 1),
@@ -138,7 +137,7 @@ def go_metric(
                 else:
                     hessian = None
                 metric = anisotropic_metric(
-                    out["dwr"][0],  # FIXME: Only uses 0th
+                    out["dwr"][id],
                     hessian=hessian,
                     target_complexity=target_complexity,
                     target_space=TensorFunctionSpace(mesh[id], "CG", 1),
