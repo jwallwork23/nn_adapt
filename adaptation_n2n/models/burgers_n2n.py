@@ -29,7 +29,7 @@ class Parameters(nn_adapt.model.Parameters):
 
     # Timestepping parameters
     timestep = 0.05
-    tt_steps = 10
+    tt_steps = 20
 
     solver_parameters = {}
     adjoint_solver_parameters = {}

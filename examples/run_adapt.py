@@ -82,6 +82,9 @@ for ct.fp_iteration in range(ct.maxiter + 1):
     kwargs["target_complexity"] = ramp_complexity(
         base_complexity, target_complexity, ct.fp_iteration
     )
+    
+    # out = get_solutions(mesh, setup, convergence_checker=ct, **kwargs)
+    # print(out)
 
     # Compute goal-oriented metric
     out = go_metric(mesh, setup, convergence_checker=ct, **kwargs)

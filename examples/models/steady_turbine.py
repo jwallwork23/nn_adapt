@@ -18,6 +18,8 @@ class Parameters(nn_adapt.model.Parameters):
     # Adaptation parameters
     h_min = 1.0e-08
     h_max = 500.0
+    
+    tt_steps = 10
 
     # Physical parameters
     viscosity_coefficient = 0.5
@@ -229,6 +231,8 @@ class Solver(nn_adapt.solving.Solver):
         :arg mesh: the mesh to define the solver on
         :arg ic: the initial condition
         """
+        self.mesh = mesh
+        
         bathymetry = parameters.bathymetry(mesh)
         Cd = parameters.drag_coefficient
         sp = kwargs.pop("solver_parameters", None)
@@ -237,9 +241,10 @@ class Solver(nn_adapt.solving.Solver):
         self._thetis_solver = solver2d.FlowSolver2d(mesh, bathymetry)
         options = self._thetis_solver.options
         options.element_family = "dg-cg"
-        options.timestep = 20.0
-        options.simulation_export_time = 20.0
-        options.simulation_end_time = 18.0
+        options.timestep = 100.0
+        options.simulation_export_time = 100.0
+        options.simulation_end_time = options.timestep * parameters.tt_steps
+        options.simulation_end_time = 80.0
         options.swe_timestepper_type = "SteadyState"
         options.swe_timestepper_options.solver_parameters = (
             sp or parameters.solver_parameters
@@ -285,6 +290,14 @@ class Solver(nn_adapt.solving.Solver):
         The weak form of the shallow water equations.
         """
         return self._thetis_solver.timestepper.F
+    
+    def save2file(self, items, file):
+        ee_file = File(file)
+        try:
+            for i in range(len(items)):
+                ee_file.write(*items[i].split())
+        except:
+            ee_file.write(*items.split())
 
     def iterate(self, **kwargs):
         """

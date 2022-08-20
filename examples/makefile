@@ -4,7 +4,7 @@ all: setup network test
 
 APPROACHES			= anisotropic
 MODEL				= steady_turbine
-NUM_TRAINING_CASES	= 100
+NUM_TRAINING_CASES	= 1
 TESTING_CASES		= $(shell cat $(MODEL)/testing_cases.txt)
 PETSC_OPTIONS		= -dm_plex_metric_hausdorff_number 1
 TAG					= all
@@ -168,6 +168,14 @@ snapshot_go:
 	git log -n 1 --oneline >> timing.log && \
 	echo "Goal-oriented snapshots generated in $$(($$(date +%s)-d)) seconds" >> timing.log
 	echo "" >> timing.log
+
+tessst:
+	for case in $(TESTING_CASES); do \
+		for approach in $(APPROACHES); do \
+			python3 a_tessst.py $(MODEL) $$case -a $$approach $(PETSC_OPTIONS); \
+		done; \
+	done && \
+
 
 # Apply data-driven adaptation to the test cases
 # ==============================================
