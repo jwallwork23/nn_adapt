@@ -55,4 +55,7 @@ plt.legend()
 
 saving_dir = "steady_turbine/plots_diffnets"
 
+if not os.path.exists(saving_dir):
+    os.makedirs(saving_dir)
+
 plt.savefig(f"{saving_dir}/dofs_vs_n_refinements_{test_case}{run_tag}")
