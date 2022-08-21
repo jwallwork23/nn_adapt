@@ -143,7 +143,7 @@ plt.title(f"Time Splits of Different Networks, {test_case}, {run_tag}")
 
 plt.legend()
 
-saving_dir = "steady_turbine/diffnets_plots_timesplits"
+saving_dir = "steady_turbine/diffnets_timesplits"
 if not os.path.exists(saving_dir):
     os.makedirs(saving_dir)
 

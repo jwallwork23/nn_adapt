@@ -53,7 +53,7 @@ plt.title(f"Total Number of Iterations vs Number of refinements, {test_case}, {r
 
 plt.legend()
 
-saving_dir = "steady_turbine/diffnets_plots_niters"
+saving_dir = "steady_turbine/diffnets_niters-nrefs"
 if not os.path.exists(saving_dir):
     os.makedirs(saving_dir)
 
