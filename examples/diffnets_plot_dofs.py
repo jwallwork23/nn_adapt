@@ -53,8 +53,7 @@ plt.title(f"DoF Count vs Number of Refinements, {test_case}, {run_tag}")
 
 plt.legend()
 
-saving_dir = "steady_turbine/plots_diffnets"
-
+saving_dir = "steady_turbine/diffnets_plots_dofs"
 if not os.path.exists(saving_dir):
     os.makedirs(saving_dir)
 
