@@ -13,16 +13,26 @@ parser.add_argument("--run_tag",
                     help="Nothing, _run1, _run_2, etc.",
                     type=str,
                     default="")
+parser.add_argument("--slice_a", 
+                    help="lower bound (incl.) a in Python indexing [a, b)",
+                    type=int,
+                    default="19")
+parser.add_argument("--slice_b", 
+                    help="upper bound (excl.) b in Python indexing [a, b)",
+                    type=int,
+                    default="25")
 args = parser.parse_args()
 test_case = args.test_case
 run_tag = args.run_tag
+slice_a = args.slice_a
+slice_b = args.slice_b
 
 # parts
 parts = ["forward", "adjoint", "estimator", "metric", "adapt"]
 keys = ["all"] + parts
 
 # times_all and times_part on 20 ~ 25th refinements
-times_GO = {}
+#times_GO = {}
 times_ML1 = {}
 times_ML2 = {}
 times_ML3 = {}
@@ -34,33 +44,33 @@ times_ML8 = {}
 times_ML9 = {}
 times_ML10 = {}
 
-times_GO["all"] = np.load("steady_turbine/data/times_all_GOanisotropic_" + test_case + run_tag + ".npy")[19:]
-times_ML1["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_1_F_64_100-4" + run_tag + ".npy")[19:]
-times_ML2["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_2_F_64_100-4" + run_tag + ".npy")[19:]
-times_ML3["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_3_F_64_100-4" + run_tag + ".npy")[19:]
-times_ML4["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_4_F_64_100-4" + run_tag + ".npy")[19:]
-times_ML5["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_5_F_64_100-4" + run_tag + ".npy")[19:]
-times_ML6["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_6_F_64_100-4" + run_tag + ".npy")[19:]
-times_ML7["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_7_F_64_100-4" + run_tag + ".npy")[19:]
-times_ML8["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_8_F_64_100-4" + run_tag + ".npy")[19:]
-times_ML9["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_9_F_64_100-4" + run_tag + ".npy")[19:]
-times_ML10["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_10_F_64_100-4" + run_tag + ".npy")[19:]
+#times_GO["all"] = np.load("steady_turbine/data/times_all_GOanisotropic_" + test_case + run_tag + ".npy")[slice_a : slice_b]
+times_ML1["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_1_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+times_ML2["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_2_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+times_ML3["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_3_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+times_ML4["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_4_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+times_ML5["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_5_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+times_ML6["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_6_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+times_ML7["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_7_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+times_ML8["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_8_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+times_ML9["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_9_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+times_ML10["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_10_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
 
 for part in parts:
-    times_GO[part] = np.load("steady_turbine/data/times_" + part + "_GOanisotropic_" + test_case + run_tag + ".npy")[19:]
-    times_ML1[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_1_F_64_100-4" + run_tag + ".npy")[19:]
-    times_ML2[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_2_F_64_100-4" + run_tag + ".npy")[19:]
-    times_ML3[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_3_F_64_100-4" + run_tag + ".npy")[19:]
-    times_ML4[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_4_F_64_100-4" + run_tag + ".npy")[19:]
-    times_ML5[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_5_F_64_100-4" + run_tag + ".npy")[19:]
-    times_ML6[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_6_F_64_100-4" + run_tag + ".npy")[19:]
-    times_ML7[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_7_F_64_100-4" + run_tag + ".npy")[19:]
-    times_ML8[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_8_F_64_100-4" + run_tag + ".npy")[19:]
-    times_ML9[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_9_F_64_100-4" + run_tag + ".npy")[19:]
-    times_ML10[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_10_F_64_100-4" + run_tag + ".npy")[19:]
+    #times_GO[part] = np.load("steady_turbine/data/times_" + part + "_GOanisotropic_" + test_case + run_tag + ".npy")[slice_a : slice_b]
+    times_ML1[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_1_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+    times_ML2[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_2_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+    times_ML3[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_3_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+    times_ML4[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_4_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+    times_ML5[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_5_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+    times_ML6[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_6_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+    times_ML7[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_7_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+    times_ML8[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_8_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+    times_ML9[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_9_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+    times_ML10[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_10_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
 
 # times_all_avg and times_part_avg (averaged over 20 ~ 25th refinements)
-times_GO_avg = {}
+#times_GO_avg = {}
 times_ML1_avg = {}
 times_ML2_avg = {}
 times_ML3_avg = {}
@@ -73,7 +83,7 @@ times_ML9_avg = {}
 times_ML10_avg = {}
 
 for key in keys:
-    times_GO_avg[key] = np.mean(times_GO[key])
+    #times_GO_avg[key] = np.mean(times_GO[key])
     times_ML1_avg[key] = np.mean(times_ML1[key])
     times_ML2_avg[key] = np.mean(times_ML2[key])
     times_ML3_avg[key] = np.mean(times_ML3[key])
@@ -86,20 +96,20 @@ for key in keys:
     times_ML10_avg[key] = np.mean(times_ML10[key])
 
 # stacked bars of time splits (avraged over 20~25th refinements)
-methods = ["GO", "ML1", "ML2", "ML3", "ML4", "ML5", "ML6", "ML7", "ML8", "ML9", "ML10"]
+methods = ['''"GO",''' "ML1", "ML2", "ML3", "ML4", "ML5", "ML6", "ML7", "ML8", "ML9", "ML10"]
 
-mat = np.stack((list(times_GO_avg.values()),
-                          list(times_ML1_avg.values()),
-                          list(times_ML2_avg.values()),
-                          list(times_ML3_avg.values()),
-                          list(times_ML4_avg.values()),
-                          list(times_ML5_avg.values()),
-                          list(times_ML6_avg.values()),
-                          list(times_ML7_avg.values()),
-                          list(times_ML8_avg.values()),
-                          list(times_ML9_avg.values()),
-                          list(times_ML10_avg.values()),
-                        ))
+mat = np.stack((#list(times_GO_avg.values()),
+                list(times_ML1_avg.values()),
+                list(times_ML2_avg.values()),
+                list(times_ML3_avg.values()),
+                list(times_ML4_avg.values()),
+                list(times_ML5_avg.values()),
+                list(times_ML6_avg.values()),
+                list(times_ML7_avg.values()),
+                list(times_ML8_avg.values()),
+                list(times_ML9_avg.values()),
+                list(times_ML10_avg.values()),
+                ))
 
 all = mat[:,0]
 forward = mat[:,1]
@@ -139,7 +149,7 @@ plt.xlabel("Different Networks")
 
 plt.ylabel("Time splits")
 
-plt.title(f"Time Splits of Different Networks, {test_case}, {run_tag}")
+plt.title(f"Time Splits of Different Networks, {test_case}, {slice_a}-{slice_b}, {run_tag}")
 
 plt.legend()
 
@@ -147,4 +157,4 @@ saving_dir = "steady_turbine/diffnets_timesplits"
 if not os.path.exists(saving_dir):
     os.makedirs(saving_dir)
 
-plt.savefig(f"{saving_dir}/time_splits_of_diffnets_{test_case}{run_tag}")
+plt.savefig(f"{saving_dir}/time_splits_of_diffnets_{test_case}_{slice_a}-{slice_b}{run_tag}")

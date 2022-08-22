@@ -32,6 +32,13 @@ parser.add_argument(
     type=positive_float,
     default=0.25,
 )
+parser.add_argument(
+    "--nRun",
+    help="Nothing, _run1, _run2, etc.",
+    type=str,
+    default="",
+)
+
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
 try:
@@ -45,6 +52,7 @@ preproc = parsed_args.preproc
 tag = parsed_args.tag
 base_complexity = parsed_args.base_complexity
 f = parsed_args.factor
+nRun = parsed_args.nRun
 
 # Setup
 setup = importlib.import_module(f"{model}.config")
@@ -63,9 +71,9 @@ components = ("forward", "adjoint", "estimator", "metric", "adapt")
 times = {c: [] for c in components}
 times["all"] = []
 print(f"Test case {test_case}")
-for i in range(num_refinements + 1):
+for i in range(15, num_refinements + 1):
     try:
-        target_complexity = 100.0 * 2 ** (f * i)
+        target_complexity = 500.0 * 2 ** (f * i)
         mesh = Mesh(f"{model}/meshes/{test_case}.msh")
         ct = ConvergenceTracker(mesh, parsed_args)
         kwargs = {}
@@ -178,14 +186,14 @@ for i in range(num_refinements + 1):
         elements.append(cells)
         estimators.append(estimator)
         niter.append(ct.fp_iteration + 1)
-        np.save(f"{model}/data/qois_ML{approach}_{test_case}_{tag}_run2", qois)
-        np.save(f"{model}/data/dofs_ML{approach}_{test_case}_{tag}_run2", dofs)
-        np.save(f"{model}/data/elements_ML{approach}_{test_case}_{tag}_run2", elements)
-        np.save(f"{model}/data/estimators_ML{approach}_{test_case}_{tag}_run2", estimators)
-        np.save(f"{model}/data/niter_ML{approach}_{test_case}_{tag}_run2", niter)
-        np.save(f"{model}/data/times_all_ML{approach}_{test_case}_{tag}_run2", times["all"])
+        np.save(f"{model}/data/qois_ML{approach}_{test_case}_{tag}{nRun}", qois)
+        np.save(f"{model}/data/dofs_ML{approach}_{test_case}_{tag}{nRun}", dofs)
+        np.save(f"{model}/data/elements_ML{approach}_{test_case}_{tag}{nRun}", elements)
+        np.save(f"{model}/data/estimators_ML{approach}_{test_case}_{tag}{nRun}", estimators)
+        np.save(f"{model}/data/niter_ML{approach}_{test_case}_{tag}{nRun}", niter)
+        np.save(f"{model}/data/times_all_ML{approach}_{test_case}_{tag}{nRun}", times["all"])
         for c in components:
-            np.save(f"{model}/data/times_{c}_ML{approach}_{test_case}_{tag}_run2", times[c])
+            np.save(f"{model}/data/times_{c}_ML{approach}_{test_case}_{tag}{nRun}", times[c])
     except ConvergenceError:
         print("Skipping due to convergence error")
         continue
