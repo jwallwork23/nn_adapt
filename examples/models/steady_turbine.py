@@ -216,8 +216,8 @@ def get_function_spaces(mesh):
     Construct the (mixed) finite element space used for the
     prognostic solution.
     """
-    P1v_2d = get_functionspace(mesh, "DG", 1, vector=True)
-    P2_2d = get_functionspace(mesh, "CG", 2)
+    P1v_2d = get_functionspace(mesh, "DG", 1, vector=True, name="U_2d")
+    P2_2d = get_functionspace(mesh, "CG", 2, name="H_2d")
     return {"q": P1v_2d * P2_2d}
 
 
