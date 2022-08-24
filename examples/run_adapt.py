@@ -38,7 +38,6 @@ base_complexity = parsed_args.base_complexity
 target_complexity = parsed_args.target_complexity
 optimise = parsed_args.optimise
 no_outputs = parsed_args.no_outputs or optimise
-no_outputs = 1
 if not no_outputs:
     from pyroteus.utility import File
 
@@ -68,7 +67,10 @@ kwargs = {
     "h_max": setup.parameters.h_max,
     "a_max": 1.0e5,
 }
-ct = ConvergenceTracker(mesh[0], parsed_args)
+if num_subinterval == 1:
+    ct = ConvergenceTracker(mesh, parsed_args)
+else:
+    ct = ConvergenceTracker(mesh[0], parsed_args)
 if not no_outputs:
     output_dir = f"{model}/outputs/{test_case}/GO/{approach}"
     fwd_file = File(f"{output_dir}/forward.pvd")
@@ -76,7 +78,7 @@ if not no_outputs:
     ee_file = File(f"{output_dir}/estimator.pvd")
     metric_file = File(f"{output_dir}/metric.pvd")
     mesh_file = File(f"{output_dir}/mesh.pvd")
-    # mesh_file.write(mesh.coordinates)
+    mesh_file.write(mesh.coordinates)
 print(f"Test case {test_case}")
 print("  Mesh 0")
 print(f"    Element count        = {ct.elements_old}")

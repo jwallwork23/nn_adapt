@@ -4,7 +4,7 @@ all: setup network test
 
 APPROACHES			= anisotropic
 MODEL				= pyroteus_burgers
-NUM_TRAINING_CASES	= 1
+NUM_TRAINING_CASES	= 100
 TESTING_CASES		= $(shell cat $(MODEL)/testing_cases.txt)
 PETSC_OPTIONS		= -dm_plex_metric_hausdorff_number 1
 TAG					= all

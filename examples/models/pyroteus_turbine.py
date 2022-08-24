@@ -209,9 +209,8 @@ class Parameters(nn_adapt.model.Parameters):
 
 PETSc.Sys.popErrorHandler()
 parameters = Parameters()
-kwargs = {}
     
-def GoalOrientedMeshSeq(mesh, **kwargs):
+def GoalOrientedMeshSeq(mesh):
     
     fields = ["q"]
     time_partition = TimeInterval(parameters.end_time, 
@@ -227,7 +226,7 @@ def GoalOrientedMeshSeq(mesh, **kwargs):
             mesh_seq.form(index, {"q": (q, q)})
             u_init, eta_init = q.split()
             mesh_seq._thetis_solver.assign_initial_conditions(uv=u_init, elev=eta_init)
-            mesh_seq._thetis_solver.iterate(**kwargs)
+            mesh_seq._thetis_solver.iterate()
             
             return {"q": mesh_seq._thetis_solver.fields.solution_2d}
 
@@ -240,7 +239,6 @@ def GoalOrientedMeshSeq(mesh, **kwargs):
             
             bathymetry = parameters.bathymetry(mesh_seq[index])
             Cd = parameters.drag_coefficient
-            sp = kwargs.pop("solver_parameters", None)
 
             # Create solver object
             mesh_seq._thetis_solver = solver2d.FlowSolver2d(mesh_seq[index], bathymetry)
@@ -250,9 +248,7 @@ def GoalOrientedMeshSeq(mesh, **kwargs):
             options.simulation_export_time = P.timestep * P.timesteps_per_export[index]
             options.simulation_end_time = P.end_time
             options.swe_timestepper_type = "SteadyState"
-            options.swe_timestepper_options.solver_parameters = (
-                sp or parameters.solver_parameters
-            )
+            options.swe_timestepper_options.solver_parameters = parameters.solver_parameters
             options.use_grad_div_viscosity_term = False
             options.horizontal_viscosity = parameters.viscosity(mesh_seq[index])
             options.quadratic_drag_coefficient = Cd
@@ -260,7 +256,7 @@ def GoalOrientedMeshSeq(mesh, **kwargs):
             options.lax_friedrichs_velocity_scaling_factor = Constant(1.0)
             options.use_grad_depth_viscosity_term = False
             options.no_exports = True
-            options.update(kwargs)
+            options.update()
 
             # Apply boundary conditions
             mesh_seq._thetis_solver.create_function_spaces()
@@ -277,10 +273,6 @@ def GoalOrientedMeshSeq(mesh, **kwargs):
             # # Create tidal farm
             options.tidal_turbine_farms = parameters.farm(mesh_seq[index])
             mesh_seq._thetis_solver.create_timestepper()
-
-            # # Apply initial guess
-            # u_init, eta_init = ic["q"].split()
-            # thetis_solver.assign_initial_conditions(uv=u_init, elev=eta_init)
             
             return mesh_seq._thetis_solver.timestepper.F
 

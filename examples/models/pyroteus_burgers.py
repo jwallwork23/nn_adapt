@@ -23,6 +23,10 @@ class Parameters(nn_adapt.model.Parameters):
     # Physical parameters
     viscosity_coefficient = 0.0001
     initial_speed = 1.0
+    
+    # Offset for creating more initial conditions
+    x_offset = 0
+    y_offset = 0
 
     # Timestepping parameters
     timestep = 0.05
@@ -62,8 +66,11 @@ class Parameters(nn_adapt.model.Parameters):
         Initial condition
         """
         x, y = SpatialCoordinate(mesh)
-        expr = self.initial_speed * sin(pi * x)
-        return as_vector([expr, 0])
+        # x_expr = self.initial_speed * sin(pi * x + self.x_offset)
+        # y_expr = self.initial_speed * cos(pi * y + self.y_offset)
+        x_expr = self.initial_speed * sin(pi * x)
+        y_expr = 0
+        return as_vector([x_expr, y_expr])
     
     
 def get_function_spaces(mesh):
@@ -77,7 +84,7 @@ def get_form(mesh_seq):
         dt = Constant(P.timesteps[index])
 
         # Specify viscosity coefficient
-        nu = Constant(0.0001)
+        nu = parameters.viscosity_coefficient
 
         # Setup variational problem
         v = TestFunction(u.function_space())
@@ -121,8 +128,7 @@ def get_solver(mesh_seq):
 
 def get_initial_condition(mesh_seq):
     fs = mesh_seq.function_spaces["u"][0]
-    x, y = SpatialCoordinate(mesh_seq[0])
-    return {"u": interpolate(as_vector([sin(pi * x), 0]), fs)}
+    return {"u": interpolate(parameters.ic(fs), fs)}
 
 def get_qoi(mesh_seq, solutions, index):
     def end_time_qoi():
@@ -153,7 +159,7 @@ def GoalOrientedMeshSeq(mesh, **kwargs):
 
     # setup time steps and export steps
     dt = 0.1
-    steps_subintervals = 3
+    steps_subintervals = 10
     end_time = num_subintervals * steps_subintervals * dt
     timesteps_per_export = 1
     
@@ -178,5 +184,6 @@ def GoalOrientedMeshSeq(mesh, **kwargs):
     )
     return mesh_seq
     
-initial_mesh = [UnitSquareMesh(30, 30) for _ in range(2)]
+
+initial_mesh = UnitSquareMesh(30, 30)
         

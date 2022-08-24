@@ -18,7 +18,7 @@ parser.add_argument(
     "model",
     help="The model",
     type=str,
-    choices=["steady_turbine", "burgers"],
+    choices=["steady_turbine", "pyroteus_burgers"],
 )
 parser.add_argument(
     "--tag",

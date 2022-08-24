@@ -13,6 +13,8 @@ class NetLayoutBase(object):
     for each of these parameters.
     """
 
+    inputs = None
+    num_hidden_neurons = None
     # TODO: Allow more general networks
 
     colours = {
