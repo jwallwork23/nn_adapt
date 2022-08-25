@@ -63,7 +63,7 @@ for i in range(num_refinements + 1):
             "a_max": 1.0e5,
         }
         if hasattr(setup, "initial_mesh"):
-            mesh = setup.initial_mesh
+            mesh = setup.initial_mesh()
         else:
             mesh = Mesh(f"{model}/meshes/{test_case}.msh")
         ct = ConvergenceTracker(mesh, parsed_args)

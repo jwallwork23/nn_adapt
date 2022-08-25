@@ -64,7 +64,7 @@ for i in range(num_refinements + 1):
     try:
         target_complexity = 100.0 * 2 ** (f * i)
         if hasattr(setup, "initial_mesh"):
-            mesh = setup.initial_mesh
+            mesh = setup.initial_mesh()
         else:
             mesh = Mesh(f"{model}/meshes/{test_case}.msh")
         ct = ConvergenceTracker(mesh, parsed_args)

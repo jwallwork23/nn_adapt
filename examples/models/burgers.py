@@ -138,7 +138,7 @@ def get_qoi(mesh_seq, solutions, i):
 
 
 # Initial mesh for all test cases
-initial_mesh = UnitSquareMesh(30, 30)
+initial_mesh = lambda: UnitSquareMesh(30, 30)
 
 
 def GoalOrientedMeshSeq(mesh, **kwargs):
