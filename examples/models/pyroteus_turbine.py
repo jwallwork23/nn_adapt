@@ -256,7 +256,6 @@ def GoalOrientedMeshSeq(mesh):
             options.lax_friedrichs_velocity_scaling_factor = Constant(1.0)
             options.use_grad_depth_viscosity_term = False
             options.no_exports = True
-            options.update()
 
             # Apply boundary conditions
             mesh_seq._thetis_solver.create_function_spaces()

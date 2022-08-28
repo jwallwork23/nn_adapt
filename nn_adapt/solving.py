@@ -36,7 +36,7 @@ def get_solutions(
     # NOTE: None of the timings will work!
 
     # Solve forward problem in base space
-    mesh_seq = config.GoalOrientedMeshSeq(mesh, **kwargs)
+    mesh_seq = config.GoalOrientedMeshSeq(mesh)
     solutions = mesh_seq.solve_adjoint()
     fields = mesh_seq.fields
     qoi = mesh_seq.J
@@ -80,7 +80,7 @@ def indicate_errors(mesh, config, enrichment_method="h", retall=False, **kwargs)
     out = {}
     if not enrichment_method == "h":
         raise NotImplementedError  # TODO
-    mesh_seq = config.GoalOrientedMeshSeq(mesh, **kwargs)
+    mesh_seq = config.GoalOrientedMeshSeq(mesh)
     fields = mesh_seq.fields
     kw = {"enrichment_method": enrichment_method}
     solutions, indicators = mesh_seq.indicate_errors(enrichment_kwargs=kw)

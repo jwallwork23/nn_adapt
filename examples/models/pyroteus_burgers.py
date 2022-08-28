@@ -185,5 +185,5 @@ def GoalOrientedMeshSeq(mesh, **kwargs):
     return mesh_seq
     
 
-initial_mesh = UnitSquareMesh(30, 30)
+initial_mesh = lambda: UnitSquareMesh(30, 30)
         

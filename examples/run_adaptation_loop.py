@@ -12,6 +12,7 @@ from firedrake.meshadapt import adapt
 
 import importlib
 import numpy as np
+from time import perf_counter
 
 
 set_log_level(ERROR)
@@ -48,6 +49,7 @@ unit = setup.parameters.qoi_unit
 # Run adaptation loop
 qois, dofs, elements, estimators, niter = [], [], [], [], []
 components = ("forward", "adjoint", "estimator", "metric", "adapt")
+times = []
 print(f"Test case {test_case}")
 for i in range(num_refinements + 1):
     try:
@@ -63,12 +65,13 @@ for i in range(num_refinements + 1):
             "a_max": 1.0e5,
         }
         if hasattr(setup, "initial_mesh"):
-            mesh = setup.initial_mesh
+            mesh = setup.initial_mesh()
         else:
             mesh = Mesh(f"{model}/meshes/{test_case}.msh")
         ct = ConvergenceTracker(mesh, parsed_args)
         print(f"  Target {target_complexity}\n    Mesh 0")
         print(f"      Element count        = {ct.elements_old}")
+        times.append(-perf_counter())
         for ct.fp_iteration in range(ct.maxiter + 1):
 
             # Ramp up the target complexity
@@ -106,6 +109,7 @@ for i in range(num_refinements + 1):
         print(
             f"    Terminated after {ct.fp_iteration+1} iterations due to {ct.converged_reason}"
         )
+        times[-1] += perf_counter()
         qois.append(qoi)
         dofs.append(dof)
         elements.append(cells)
@@ -116,6 +120,7 @@ for i in range(num_refinements + 1):
         np.save(f"{model}/data/elements_GO{approach}_{test_case}", elements)
         np.save(f"{model}/data/estimators_GO{approach}_{test_case}", estimators)
         np.save(f"{model}/data/niter_GO{approach}_{test_case}", niter)
+        np.save(f"{model}/data/times_all_GO{approach}_{test_case}", times)
     except ConvergenceError:
         print("Skipping due to convergence error")
         continue
