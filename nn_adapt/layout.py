@@ -15,6 +15,7 @@ class NetLayoutBase(object):
 
     inputs = None
     num_hidden_neurons = None
+    num_hidden_layers = None
     # TODO: Allow more general networks
 
     colours = {
@@ -39,6 +40,8 @@ class NetLayoutBase(object):
                 raise ValueError("Input names must begin with one of {colours}")
         if self.num_hidden_neurons is None:
             raise ValueError("Need to set number of hidden layer neurons in each neuron ")
+        if self.num_hidden_layers is None:
+            raise ValueError("Need to set number of hidden layers of the FCNN")
 
     def count_inputs(self, prefix):
         """

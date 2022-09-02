@@ -111,7 +111,7 @@ for ct.fp_iteration in range(ct.maxiter + 1):
             with torch.no_grad():
                 for i in range(features.shape[0]):
                     test_x = torch.Tensor(features[i]).to(device)
-                    test_prediction = nn(test_x)
+                    test_prediction = nn(test_x, layout)
                     test_targets = np.concatenate(
                         (test_targets, np.array(test_prediction.cpu()))
                     )
