@@ -31,8 +31,8 @@ def initialise(case, discrete=False):
         parameters.viscosity_coefficient = sample_uniform(0.01, 1.0) * 10 ** np.random.randint(-1, 1)
         
         # Random offset for initial conditions
-        parameters.x_offset = sample_uniform(0, 2*pi)
-        parameters.y_offset = sample_uniform(0, 2*pi)
+        parameters.x_offset = sample_uniform(0, 1/2*pi)
+        parameters.y_offset = sample_uniform(0, 1/2*pi)
         return
     elif "demo" in case:
         parameters.viscosity_coefficient = 0.001

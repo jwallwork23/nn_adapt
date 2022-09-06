@@ -29,7 +29,7 @@ class Parameters(nn_adapt.model.Parameters):
     y_offset = 0
 
     # Timestepping parameters
-    timestep = 0.05
+    timestep = 5
 
     solver_parameters = {}
     adjoint_solver_parameters = {}
@@ -67,7 +67,7 @@ class Parameters(nn_adapt.model.Parameters):
         """
         x, y = SpatialCoordinate(mesh)
         # x_expr = self.initial_speed * sin(pi * x + self.x_offset)
-        # y_expr = self.initial_speed * cos(pi * y + self.y_offset)
+        # y_expr = self.initial_speed * sin(pi * y + self.y_offset)
         x_expr = self.initial_speed * sin(pi * x)
         y_expr = 0
         return as_vector([x_expr, y_expr])
@@ -116,9 +116,10 @@ def get_solver(mesh_seq):
         dt = P.timesteps[index]
         t = t_start
         step = 0
+        sp = {'snes_max_it': 100}
         while t < t_end - 1.0e-05:
             step += 1
-            solve(F == 0, u, ad_block_tag="u")
+            solve(F == 0, u, ad_block_tag="u", solver_parameters=sp)
             u_.assign(u)
             t += dt
         return {"u": u}
@@ -133,12 +134,18 @@ def get_initial_condition(mesh_seq):
 def get_qoi(mesh_seq, solutions, index):
     def end_time_qoi():
         u = solutions["u"]
-        return inner(u, u) * ds(2)
+        fs = mesh_seq.function_spaces["u"][0]
+        x, y = SpatialCoordinate(fs)
+        partial = conditional(And(And(x > 0.1, x < 0.9), And(y > 0.45, y < 0.55)), 1, 0)
+        return inner(u, u) * dx
 
     def time_integrated_qoi(t):
+        fs = mesh_seq.function_spaces["u"][0]
+        x, y = SpatialCoordinate(fs)
+        partial = conditional(And(And(x > 0.7, x < 0.8), And(y > 0.45, y < 0.55)), 1, 0)
         dt = Constant(mesh_seq.time_partition[index].timestep)
         u = solutions["u"]
-        return dt * inner(u, u) * ds(2)
+        return dt * partial * inner(u, u) * dx
     
     if mesh_seq.qoi_type == "end_time":
         return end_time_qoi
@@ -158,7 +165,7 @@ def GoalOrientedMeshSeq(mesh, **kwargs):
         num_subintervals = 1
 
     # setup time steps and export steps
-    dt = 0.1
+    dt = 1
     steps_subintervals = 10
     end_time = num_subintervals * steps_subintervals * dt
     timesteps_per_export = 1

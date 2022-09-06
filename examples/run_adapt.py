@@ -47,7 +47,7 @@ setup = importlib.import_module(f"{model}.config")
 setup.initialise(test_case)
 unit = setup.parameters.qoi_unit
 if hasattr(setup, "initial_mesh"):
-    mesh = setup.initial_mesh
+    mesh = setup.initial_mesh()
 else:
     mesh = Mesh(f"{model}/meshes/{test_case}.msh")
     
@@ -114,14 +114,14 @@ for ct.fp_iteration in range(ct.maxiter + 1):
         for sol in adj_sol.values():
             fields += sol[0][0].split()  # FIXME: Only uses 0th
         adj_file.write(*fields)
-        ee_file.write(dwr[0])  # FIXME: Only uses 0th
+        ee_file.write(dwr[-1])  # FIXME: Only uses 0th
         metric_file.write(metric.function)
 
     # Extract features
     if not optimise:
         field = list(fwd_sol.keys())[0]  # FIXME: Only uses 0th field
-        features = extract_features(setup, fwd_sol[field][0][0], adj_sol[field][0][0])  # FIXME
-        target = dwr[0].dat.data.flatten()  # FIXME: Only uses 0th
+        features = extract_features(setup, fwd_sol[field][0][-1], adj_sol[field][0][-1])  # FIXME
+        target = dwr[-1].dat.data.flatten()  # FIXME: Only uses 0th
         assert not np.isnan(target).any()
         for key, value in features.items():
             np.save(f"{data_dir}/feature_{key}_{suffix}", value)

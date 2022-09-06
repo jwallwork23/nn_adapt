@@ -36,7 +36,7 @@ def get_solutions(
     # NOTE: None of the timings will work!
 
     # Solve forward problem in base space
-    mesh_seq = config.GoalOrientedMeshSeq(mesh)
+    mesh_seq = config.GoalOrientedMeshSeq(mesh, **kwargs)
     solutions = mesh_seq.solve_adjoint()
     fields = mesh_seq.fields
     qoi = mesh_seq.J
@@ -63,7 +63,7 @@ def split_into_components(f):
     return [f] if f.function_space().value_size == 1 else f.split()
 
 
-def indicate_errors(mesh, config, enrichment_method="h", retall=False, **kwargs):
+def indicate_errors(mesh, config, enrichment_method="h", retall=False, convergence_checker = None, **kwargs):
     """
     Indicate errors according to the ``GoalOrientedMeshSeq``
     given in the configuration file.
@@ -80,7 +80,7 @@ def indicate_errors(mesh, config, enrichment_method="h", retall=False, **kwargs)
     out = {}
     if not enrichment_method == "h":
         raise NotImplementedError  # TODO
-    mesh_seq = config.GoalOrientedMeshSeq(mesh)
+    mesh_seq = config.GoalOrientedMeshSeq(mesh, **kwargs)
     fields = mesh_seq.fields
     kw = {"enrichment_method": enrichment_method}
     solutions, indicators = mesh_seq.indicate_errors(enrichment_kwargs=kw)
@@ -96,4 +96,9 @@ def indicate_errors(mesh, config, enrichment_method="h", retall=False, **kwargs)
     out["forward"] = {f: solutions[f]["forward"] for f in fields}
     out["adjoint"] = {f: solutions[f]["adjoint"] for f in fields}
     out["dwr"] = integrated
+    if convergence_checker is not None:
+        if convergence_checker.check_qoi(qoi):
+            return out
+    else:
+        print("No convergence checker")
     return out if retall else out["dwr"]

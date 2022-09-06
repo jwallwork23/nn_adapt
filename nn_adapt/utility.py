@@ -37,6 +37,15 @@ class ConvergenceTracker:
                 self.converged_reason = reason
                 converged = True
         return converged
+    
+    def qoi_abs_chk(self, val, old, reason):
+        print("checking")
+        converged = False
+        if old is not None and self.fp_iteration >= self.miniter:
+            if abs(val - old) < 1e-8:
+                self.converged_reason = reason+"absolute error"
+                converged = True
+        return converged
 
     def check_qoi(self, val):
         """
@@ -44,6 +53,7 @@ class ConvergenceTracker:
         """
         r = "QoI convergence"
         converged = self._chk(val, self.qoi_old, self.qoi_rtol, r)
+        # converged = self.qoi_abs_chk(val, self.qoi_old, r)
         self.qoi_old = val
         return converged
 
