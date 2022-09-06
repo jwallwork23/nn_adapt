@@ -85,7 +85,7 @@ if spec_task in ["NHLs_qoiErrors-refs", "avgQoIErrors-NHLs"]:
         plt.title(f"{yl} vs {xl}, {test_case}{run_tag}")
         plt.legend()
         plt.savefig(f"{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}")
-        print(f"Figure {saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end} saved successfully.")
+        print(f"Figure [{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}] saved successfully.")
         plt.close()
 
 #---------------------------------------- avgQoIError-NHLs ---------------------------------------------
@@ -103,7 +103,7 @@ if spec_task in ["NHLs_qoiErrors-refs", "avgQoIErrors-NHLs"]:
         plt.ylabel(yl)
         plt.title(f"{yl} vs {xl}, {test_case}{run_tag}")
         plt.savefig(f"{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}")
-        print(f"Figure {saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end} saved successfully.")
+        print(f"Figure [{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}] saved successfully.")
         plt.close()
 
 
@@ -126,7 +126,7 @@ if spec_task == "NHLs_nIters-refs":
     plt.title(f"{yl} vs {xl}, {test_case}{run_tag}")
     plt.legend()
     plt.savefig(f"{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}")
-    print(f"Figure {saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end} saved successfully.")
+    print(f"Figure [{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}] saved successfully.")
     plt.close()
 
 
@@ -220,7 +220,7 @@ if spec_task in ["NHLs_timesAll-refs", "timeSplits-NHLs"] :
         plt.title(f"{yl} vs {xl}, {test_case}{run_tag}")
         plt.legend()
         plt.savefig(f"{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}")
-        print(f"Figure {saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end} saved successfully.")
+        print(f"Figure [{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}] saved successfully.")
         plt.close()
 
 #---------------------------------------- timeSplits-NHLs ---------------------------------------------
@@ -278,7 +278,7 @@ if spec_task in ["NHLs_timesAll-refs", "timeSplits-NHLs"] :
         plt.title(f"{yl} vs {xl}, {test_case}{run_tag}")
         plt.legend()
         plt.savefig(f"{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}")
-        print(f"Figure {saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end} saved successfully.")
+        print(f"Figure [{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}] saved successfully.")
         plt.close()
 
 
@@ -312,7 +312,7 @@ if spec_task in ["acts_qoiErrors-refs", "avgQoIErrors-acts"]:
         plt.title(f"{yl} vs {xl}, {test_case}{run_tag}")
         plt.legend()
         plt.savefig(f"{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}")
-        print(f"Figure {saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end} saved successfully.")
+        print(f"Figure [{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}] saved successfully.")
         plt.close()
         
 #---------------------------------------- avgQoIErrors-acts ---------------------------------------------
@@ -324,15 +324,24 @@ if spec_task in ["acts_qoiErrors-refs", "avgQoIErrors-acts"]:
             errors_avg[actii] = np.mean(errors[actii])
 
         # plot
-        plt.bar(errors_avg.keys(), errors_avg.values())
+        stk1 = plt.bar(errors_avg.keys(), errors_avg.values())
+        for s1 in stk1:
+            h1 = s1.get_height()
+            plt.text(s1.get_x() + s1.get_width() / 2., h1 / 2., "%.5f" % h1, ha="center")
         xl = "Activations"
         yl = "Average QoI Errors"
         plt.xlabel(xl)
         plt.ylabel(yl)
         plt.title(f"{yl} vs {xl}, {test_case}{run_tag}")
         plt.savefig(f"{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}")
-        print(f"Figure {saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end} saved successfully.")
+        print(f"Figure [{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}] saved successfully.")
         plt.close()
+
+        '''stk5 = plt.bar(actss, adapt, 0.5, label="adapt", bottom=forward+adjoint+estimator+metric)
+
+    for s1, s2, s3, s4, s5 in zip(stk1, stk2, stk3, stk4, stk5):
+        h1 = s1.get_height()
+        plt.text(s1.get_x() + s1.get_width() / 2., h1 / 2., "%.2f" % h1, ha="center")'''
 
 
 #======================================== acts_nIters-refs =============================================
@@ -349,8 +358,8 @@ if spec_task == "acts_nIters-refs":
         # load raw data
         niter_GO = np.load("steady_turbine/data/niter_GOanisotropic_" + test_case + run_tag + ".npy")[nRefs_start : nRefs_end] # SLICED 
         niter_sigm = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_1_F_64_100-4" + run_tag + ".npy")[nRefs_start : nRefs_end] # SLICED
-        niter_tanh = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_1_F_64_100-4_ReLU" + run_tag + ".npy")[nRefs_start : nRefs_end] # SLICED
-        niter_relu = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_1_F_64_100-4_Tanh" + run_tag + ".npy")[nRefs_start : nRefs_end]# SLICED
+        niter_tanh = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_1_F_64_100-4_Tanh" + run_tag + ".npy")[nRefs_start : nRefs_end] # SLICED
+        niter_relu = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_1_F_64_100-4_ReLU" + run_tag + ".npy")[nRefs_start : nRefs_end]# SLICED
 
         # plot
         plt.plot(refs_GO, niter_GO, label="GO") # NOTE X AND Y HERE ALREADY SLICED
@@ -364,14 +373,14 @@ if spec_task == "acts_nIters-refs":
         plt.title(f"{yl} vs {xl}, {test_case}{run_tag}")
         plt.legend()
         plt.savefig(f"{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}")
-        print(f"Figure {saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end} saved successfully.")
+        print(f"Figure [{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}] saved successfully.")
         plt.close()
 
     else:
         niter_GO = np.load("steady_turbine/data/niter_GOanisotropic_" + test_case + run_tag + ".npy")[nRefs_start : nRefs_end] # SLICED 
         niter_sigm = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_1_F_64_100-4" + run_tag + ".npy")[nRefs_start : nRefs_end] # SLICED
-        niter_tanh = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_1_F_64_100-4_ReLU" + run_tag + ".npy")[nRefs_start : nRefs_end] # SLICED
-        niter_relu = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_1_F_64_100-4_Tanh" + run_tag + ".npy")[nRefs_start : nRefs_end]# SLICED
+        niter_tanh = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_1_F_64_100-4_Tanh" + run_tag + ".npy")[nRefs_start : nRefs_end] # SLICED
+        niter_relu = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_1_F_64_100-4_ReLU" + run_tag + ".npy")[nRefs_start : nRefs_end]# SLICED
 
         # plot
         plt.plot(refs, niter_GO, label="GO") # NOTE X AND Y HERE ALREADY SLICED
@@ -385,7 +394,7 @@ if spec_task == "acts_nIters-refs":
         plt.title(f"{yl} vs {xl}, {test_case}{run_tag}")
         plt.legend()
         plt.savefig(f"{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}")
-        print(f"Figure {saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end} saved successfully.")
+        print(f"Figure [{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}] saved successfully.")
         plt.close()
 
 
@@ -420,7 +429,7 @@ if spec_task == "acts_timesAll-refs":
         plt.title(f"{yl} vs {xl}, {test_case}{run_tag}")
         plt.legend()
         plt.savefig(f"{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}")
-        print(f"Figure {saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end} saved successfully.")
+        print(f"Figure [{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}] saved successfully.")
         plt.close()
 
     else:
@@ -445,7 +454,7 @@ if spec_task == "acts_timesAll-refs":
         plt.title(f"{yl} vs {xl}, {test_case}{run_tag}")
         plt.legend()
         plt.savefig(f"{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}")
-        print(f"Figure {saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end} saved successfully.")
+        print(f"Figure [{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}] saved successfully.")
         plt.close()
 
 
@@ -460,32 +469,32 @@ if spec_task == "timeSplits-acts":
 
     times_GO["all"] = np.load("steady_turbine/data/times_all_GOanisotropic_" + test_case + run_tag + ".npy")[nRefs_start : nRefs_end]
     times_sigm["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_1_F_64_100-4" + run_tag + ".npy")[nRefs_start : nRefs_end]
-    times_relu["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_1_F_64_100-4_ReLU" + run_tag + ".npy")[nRefs_start : nRefs_end]
     times_tanh["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_1_F_64_100-4_Tanh" + run_tag + ".npy")[nRefs_start : nRefs_end]
-
+    times_relu["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_1_F_64_100-4_ReLU" + run_tag + ".npy")[nRefs_start : nRefs_end]
+    
     for part in parts:
         times_GO[part] = np.load("steady_turbine/data/times_" + part + "_GOanisotropic_" + test_case + run_tag + ".npy")[nRefs_start : nRefs_end]
         times_sigm[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_1_F_64_100-4" + run_tag + ".npy")[nRefs_start : nRefs_end]
-        times_relu[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_1_F_64_100-4_ReLU" + run_tag + ".npy")[nRefs_start : nRefs_end]
         times_tanh[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_1_F_64_100-4_Tanh" + run_tag + ".npy")[nRefs_start : nRefs_end]
-
+        times_relu[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_1_F_64_100-4_ReLU" + run_tag + ".npy")[nRefs_start : nRefs_end]
+        
     # agg new data
     times_GO_avg = {}
     times_sigm_avg = {}
-    times_relu_avg = {}
     times_tanh_avg = {}
+    times_relu_avg = {}
 
     for partii in partss:
         times_GO_avg[partii] = np.mean(times_GO[partii])
         times_sigm_avg[partii] = np.mean(times_sigm[partii])
-        times_relu_avg[partii] = np.mean(times_relu[partii])
         times_tanh_avg[partii] = np.mean(times_tanh[partii])
+        times_relu_avg[partii] = np.mean(times_relu[partii])
 
     # stacked bars of time splits (avraged over 20~25th refinements)
     mat = np.stack((list(times_GO_avg.values()),
                     list(times_sigm_avg.values()),
-                    list(times_relu_avg.values()),
                     list(times_tanh_avg.values()),
+                    list(times_relu_avg.values()),
                     ))
 
     all = mat[:,0]
@@ -527,5 +536,5 @@ if spec_task == "timeSplits-acts":
     plt.title(f"{yl} vs {xl}, {test_case}{run_tag}")
     plt.legend()
     plt.savefig(f"{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}")
-    print(f"Figure {saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end} saved successfully.")
+    print(f"Figure [{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}] saved successfully.")
     plt.close()

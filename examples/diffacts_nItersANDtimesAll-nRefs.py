@@ -54,8 +54,8 @@ if spec_task == "diffActs_nIters-nRefs":
 
         niter_GO = np.load("steady_turbine/data/niter_GOanisotropic_" + test_case + run_tag + ".npy")[nrefs_start : nrefs_end] # SLICED 
         niter_sigm = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_1_F_64_100-4" + run_tag + ".npy")[nrefs_start : nrefs_end] # SLICED
-        niter_tanh = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_2_F_64_100-4" + run_tag + ".npy")[nrefs_start : nrefs_end] # SLICED
-        niter_relu = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_3_F_64_100-4" + run_tag + ".npy")[nrefs_start : nrefs_end]# SLICED
+        niter_tanh = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_1_F_64_100-4_Tanh" + run_tag + ".npy")[nrefs_start : nrefs_end] # SLICED
+        niter_relu = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_1_F_64_100-4_ReLU" + run_tag + ".npy")[nrefs_start : nrefs_end]# SLICED
 
         refs_GO = np.arange(1, nRefs_GO + 1)[nrefs_start : nrefs_end] # SLICED
         refs_ML = np.arange(1, nRefs_ML + 1)[nrefs_start : nrefs_end] # SLICED
@@ -75,8 +75,8 @@ if spec_task == "diffActs_nIters-nRefs":
     else:
         niter_GO = np.load("steady_turbine/data/niter_GOanisotropic_" + test_case + run_tag + ".npy")[nrefs_start : nrefs_end] # SLICED 
         niter_sigm = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_1_F_64_100-4" + run_tag + ".npy")[nrefs_start : nrefs_end] # SLICED
-        niter_tanh = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_2_F_64_100-4" + run_tag + ".npy")[nrefs_start : nrefs_end] # SLICED
-        niter_relu = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_3_F_64_100-4" + run_tag + ".npy")[nrefs_start : nrefs_end]# SLICED
+        niter_tanh = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_1_F_64_100-4_Tanh" + run_tag + ".npy")[nrefs_start : nrefs_end] # SLICED
+        niter_relu = np.load("steady_turbine/data/niter_MLanisotropic_" + test_case + "_1_F_64_100-4_ReLU" + run_tag + ".npy")[nrefs_start : nrefs_end]# SLICED
 
         # plot
         plt.plot(refs, niter_GO, label="GO") # NOTE X AND Y HERE ALREADY SLICED

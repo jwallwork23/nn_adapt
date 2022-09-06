@@ -42,34 +42,35 @@ times_tanh = {}
 
 #times_GO["all"] = np.load("steady_turbine/data/times_all_GOanisotropic_" + test_case + run_tag + ".npy")[slice_a : slice_b]
 times_sigm["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_1_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
-times_relu["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_1_F_64_100-4_ReLU" + run_tag + ".npy")[slice_a : slice_b]
 times_tanh["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_1_F_64_100-4_Tanh" + run_tag + ".npy")[slice_a : slice_b]
+times_relu["all"] = np.load("steady_turbine/data/times_all_MLanisotropic_" + test_case + "_1_F_64_100-4_ReLU" + run_tag + ".npy")[slice_a : slice_b]
 
 for part in parts:
     #times_GO[part] = np.load("steady_turbine/data/times_" + part + "_GOanisotropic_" + test_case + run_tag + ".npy")[slice_a : slice_b]
     times_sigm[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_1_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
-    times_relu[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_2_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
-    times_tanh[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_3_F_64_100-4" + run_tag + ".npy")[slice_a : slice_b]
+    times_tanh[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_1_F_64_100-4_Tanh" + run_tag + ".npy")[slice_a : slice_b]
+    times_relu[part] = np.load("steady_turbine/data/times_" + part + "_MLanisotropic_" + test_case + "_1_F_64_100-4_ReLU" + run_tag + ".npy")[slice_a : slice_b]
+    
 
 # times_all_avg and times_part_avg (averaged over 20 ~ 25th refinements)
 #times_GO_avg = {}
 times_sigm_avg = {}
-times_relu_avg = {}
 times_tanh_avg = {}
+times_relu_avg = {}
 
 for key in keys:
     #times_GO_avg[key] = np.mean(times_GO[key])
     times_sigm_avg[key] = np.mean(times_sigm[key])
-    times_relu_avg[key] = np.mean(times_relu[key])
     times_tanh_avg[key] = np.mean(times_tanh[key])
+    times_relu_avg[key] = np.mean(times_relu[key])
 
 # stacked bars of time splits (avraged over 20~25th refinements)
 methods = ["Sigmoid", "ReLU", "Tanh"]
 
 mat = np.stack((#list(times_GO_avg.values()),
                 list(times_sigm_avg.values()),
-                list(times_relu_avg.values()),
                 list(times_tanh_avg.values()),
+                list(times_relu_avg.values()),
                 ))
 
 all = mat[:,0]
