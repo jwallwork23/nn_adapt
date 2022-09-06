@@ -45,3 +45,4 @@ class NetLayout(NetLayoutBase):
         "adjoint_dofs",
     )
     num_hidden_neurons = 64 # note it's now for each layer
+    num_hidden_layers = 2

@@ -63,58 +63,103 @@ class SingleLayerFCNN(nn.Module):
 
         # Define layers
         self.linear1 = nn.Linear(layout.num_inputs, layout.num_hidden_neurons)
-
-        self.linear2 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
-        self.linear3 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
-        self.linear4 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
-        self.linear5 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
-        self.linear6 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
-        self.linear7 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
-        self.linear8 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
-        self.linear9 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
-        self.linear10 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
-
-        self.linear11 = nn.Linear(layout.num_hidden_neurons, 1)
+        if layout.num_hidden_layers == 1:
+            self.linear2 = nn.Linear(layout.num_hidden_neurons, 1)
+        else:
+            self.linear2 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+            if layout.num_hidden_layers == 2:
+                self.linear3 = nn.Linear(layout.num_hidden_neurons, 1)
+            else:
+                self.linear3 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+                if layout.num_hidden_layers == 3:
+                    self.linear4 = nn.Linear(layout.num_hidden_neurons, 1)
+                else:
+                    self.linear4 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+                    if layout.num_hidden_layers == 4:
+                        self.linear5 = nn.Linear(layout.num_hidden_neurons, 1)
+                    else:
+                        self.linear5 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+                        if layout.num_hidden_layers == 5:
+                            self.linear6 = nn.Linear(layout.num_hidden_neurons, 1)
+                        else:
+                            self.linear6 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+                            if layout.num_hidden_layers == 6:
+                                self.linear7 = nn.Linear(layout.num_hidden_neurons, 1)
+                            else:
+                                self.linear7 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+                                if layout.num_hidden_layers == 7:
+                                    self.linear8 = nn.Linear(layout.num_hidden_neurons, 1)
+                                else:
+                                    self.linear8 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+                                    if layout.num_hidden_layers == 8:
+                                        self.linear9 = nn.Linear(layout.num_hidden_neurons, 1)
+                                    else:
+                                        self.linear9 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+                                        if layout.num_hidden_layers == 9:
+                                            self.linear10 = nn.Linear(layout.num_hidden_neurons, 1)
+                                        else:
+                                            self.linear10 = nn.Linear(layout.num_hidden_neurons, layout.num_hidden_neurons)
+                                            if layout.num_hidden_layers == 10:
+                                                self.linear11 = nn.Linear(layout.num_hidden_neurons, 1)
 
         # Define activation functions
+        self.activate = nn.Sigmoid() # suppose we don't change activation function for now
 
-        self.activate = nn.Sigmoid() # DON'T CHANGE FOR RERUN
-
-    def forward(self, x):
+    def forward(self, x, layout):
         p = self.preproc1(x)
 
         z1 = self.linear1(p)
         a1 = self.activate(z1)
 
         z2 = self.linear2(a1)
+        if layout.num_hidden_layers == 1:
+            return z2
         a2 = self.activate(z2)
 
         z3 = self.linear3(a2)
+        if layout.num_hidden_layers == 2:
+            return z3
         a3 = self.activate(z3)
 
-        z4 = self.linear4(a3)
+        z4 = self.linear4(a3)        
+        if layout.num_hidden_layers == 3:
+            return z4
         a4 = self.activate(z4)
 
         z5 = self.linear5(a4)
+        if layout.num_hidden_layers == 4:
+            return z5
         a5 = self.activate(z5)
 
         z6 = self.linear6(a5)
+        if layout.num_hidden_layers == 5:
+            return z6
         a6 = self.activate(z6)
 
         z7 = self.linear7(a6)
+        if layout.num_hidden_layers == 6:
+            return z7
         a7 = self.activate(z7)
 
         z8 = self.linear8(a7)
+        if layout.num_hidden_layers == 7:
+            return z8
         a8 = self.activate(z8)
 
         z9 = self.linear9(a8)
+        if layout.num_hidden_layers == 8:
+            return z9
         a9 = self.activate(z9)
 
         z10 = self.linear10(a9)
+        if layout.num_hidden_layers == 9:
+            return z10
         a10 = self.activate(z10)
 
         z11 = self.linear11(a10)
-        return z11
+        if layout.num_hidden_layers == 10:
+            return z11
+
 
 
 def propagate(data_loader, model, loss_fn, optimizer=None):

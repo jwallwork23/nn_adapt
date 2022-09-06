@@ -62,4 +62,4 @@ for i, case in enumerate(cases):
     mesh = Mesh(f"{model}/meshes/{case}.msh")
     p.plot_config(setup, mesh, ax)
 plt.tight_layout()
-plt.savefig(f"{model}/plots/{mode}_config.pdf")
+plt.savefig(f"{model}/plots/{mode}_config_Gen.pdf")
