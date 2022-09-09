@@ -88,15 +88,17 @@ if spec_task in ["NHLs_qoiErrors-refs", "avgQoIErrors-NHLs"]:
         print(f"Figure [{saving_dir}/{spec_task}_{test_case}{run_tag}_{nRefs_start + 1}-{nRefs_end}] saved successfully.")
         plt.close()
 
-#---------------------------------------- avgQoIError-NHLs ---------------------------------------------
+#---------------------------------------- avgQoIErrors-NHLs ---------------------------------------------
     if spec_task == "avgQoIErrors-NHLs":
     
         errors_avg = {}
         for NHLii in NHLss:
             errors_avg[NHLii] = np.mean(errors[NHLii])
-
         # plot 
-        plt.bar(errors_avg.keys(), errors_avg.values())
+        stk1 = plt.bar(errors_avg.keys(), errors_avg.values())
+        for s1 in stk1:
+            h1 = s1.get_height()
+            plt.text(s1.get_x() + s1.get_width() / 2., h1 / 2., "%.5f" % h1, ha="center", fontsize=6)
         xl = "Number of Hidden Layers"
         yl = "Average QoI Errors"
         plt.xlabel(xl)

@@ -97,6 +97,21 @@ def initialise(case, discrete=False):
         parameters.depth = 40.0
         parameters.inflow_speed = 5.0
         parameters.turbine_coords = [(480, 500), (960, 500), (1440, 500), (1920, 500)]
+    elif "4-turbines" in case:
+        parameters.viscosity_coefficient = 0.5
+        parameters.depth = 40.0
+        parameters.inflow_speed = 5.0
+        parameters.turbine_coords = [(456, 190), (744, 190), (456, 310), (744, 310)]
+    elif "4-ofst" in case:
+        parameters.viscosity_coefficient = 0.5
+        parameters.depth = 40.0
+        parameters.inflow_speed = 5.0
+        parameters.turbine_coords = [(356, 132), (644, 168), (556, 332), (844, 368)]
+    elif "16-turbines" in case:
+        parameters.viscosity_coefficient = 0.5
+        parameters.depth = 40.0
+        parameters.inflow_speed = 5.0
+        parameters.turbine_coords = [(240, 100), (480, 100), (720, 100), (960, 100), (240, 200), (480, 200), (720, 200), (960, 200), (240, 300), (480, 300), (720, 300), (960, 300), (240, 400), (480, 400), (720, 400), (960, 400)]
     elif "headland" in case:
         parameters.viscosity_coefficient = 100.0
         parameters.depth = 40.0

@@ -25,9 +25,9 @@ def plot_config(config, mesh, axes):
 
     # Bounding box
     xmin = 0
-    xmax = 2400
+    xmax = 1200
     ymin = 0
-    ymax = 1000
+    ymax = 500
     eps = 5
 
     # Adjust axes

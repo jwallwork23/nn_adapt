@@ -38,6 +38,12 @@ parser.add_argument(
     type=str,
     default="",
 )
+parser.add_argument(
+    "--complexity_multiplier",
+    help="100, 300, 500, 1000, etc.",
+    type=int,
+    default=100,
+)
 
 parsed_args, unknown_args = parser.parse_known_args()
 model = parsed_args.model
@@ -53,6 +59,7 @@ tag = parsed_args.tag
 base_complexity = parsed_args.base_complexity
 f = parsed_args.factor
 nRun = parsed_args.nRun
+complexity_multiplier = parsed_args.complexity_multiplier
 
 # Setup
 setup = importlib.import_module(f"{model}.config")
@@ -71,9 +78,9 @@ components = ("forward", "adjoint", "estimator", "metric", "adapt")
 times = {c: [] for c in components}
 times["all"] = []
 print(f"Test case {test_case}")
-for i in range(15, num_refinements + 1):
+for i in range(num_refinements + 1):
     try:
-        target_complexity = 500.0 * 2 ** (f * i)
+        target_complexity = complexity_multiplier * 2 ** (f * i)
         mesh = Mesh(f"{model}/meshes/{test_case}.msh")
         ct = ConvergenceTracker(mesh, parsed_args)
         kwargs = {}
@@ -123,7 +130,7 @@ for i in range(15, num_refinements + 1):
             with torch.no_grad():
                 for i in range(features.shape[0]):
                     test_x = torch.Tensor(features[i]).to(device)
-                    test_prediction = nn(test_x)
+                    test_prediction = nn(test_x, layout)
                     test_targets = np.concatenate(
                         (test_targets, np.array(test_prediction.cpu()))
                     )
