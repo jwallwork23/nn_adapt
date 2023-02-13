@@ -71,6 +71,7 @@ for approach in approaches.copy():
 if len(approaches.keys()) == 0:
     print("Nothing to plot.")
     sys.exit(0)
+print(qois)
 
 # Drop first iteration because timings include compilation   # FIXME: Why?
 dofs["uniform"] = dofs["uniform"][1:]

@@ -49,8 +49,7 @@ unit = setup.parameters.qoi_unit
 # Run adaptation loop
 qois, dofs, elements, estimators, niter = [], [], [], [], []
 components = ("forward", "adjoint", "estimator", "metric", "adapt")
-times = {c: [] for c in components}
-times["all"] = []
+times = []
 print(f"Test case {test_case}")
 for i in range(num_refinements + 1):
     try:
@@ -66,15 +65,13 @@ for i in range(num_refinements + 1):
             "a_max": 1.0e5,
         }
         if hasattr(setup, "initial_mesh"):
-            mesh = setup.initial_mesh
+            mesh = setup.initial_mesh()
         else:
             mesh = Mesh(f"{model}/meshes/{test_case}.msh")
         ct = ConvergenceTracker(mesh, parsed_args)
         print(f"  Target {target_complexity}\n    Mesh 0")
         print(f"      Element count        = {ct.elements_old}")
-        times["all"].append(-perf_counter())
-        for c in components:
-            times[c].append(0.0)
+        times.append(-perf_counter())
         for ct.fp_iteration in range(ct.maxiter + 1):
 
             # Ramp up the target complexity
@@ -85,47 +82,24 @@ for i in range(num_refinements + 1):
             # Compute goal-oriented metric
             out = go_metric(mesh, setup, convergence_checker=ct, **kwargs)
             qoi = out["qoi"]
-            times["forward"][-1] += out["times"]["forward"]
             print(f"      Quantity of Interest = {qoi} {unit}")
             if "adjoint" not in out:
                 break
             estimator = out["estimator"]
-            times["adjoint"][-1] += out["times"]["adjoint"]
-            times["estimator"][-1] += out["times"]["estimator"]
             print(f"      Error estimator      = {estimator}")
             if "metric" not in out:
                 break
-            times["metric"][-1] += out["times"]["metric"]
             fwd_sol, adj_sol = (
                 out["forward"],
                 out["adjoint"],
             )
             dwr, metric = out["dwr"], out["metric"]
-            dof = sum(np.array([fwd_sol.function_space().dof_count]).flatten())
+            spaces = [sol[0][0].function_space() for sol in fwd_sol.values()]
+            dof = sum(np.array([fs.dof_count for fs in spaces]).flatten())
             print(f"      DoF count            = {dof}")
 
-            def proj(V):
-                """
-                After the first iteration, project the previous
-                solution as the initial guess.
-                """
-                ic = Function(V)
-                try:
-                    ic.project(fwd_sol)
-                except NotImplementedError:
-                    for c_init, c in zip(ic.split(), fwd_sol.split()):
-                        c_init.project(c)
-                return ic
-
-            # Use previous solution for initial guess
-            if parsed_args.transfer:
-                kwargs["init"] = proj
-
             # Adapt the mesh
-            out["times"]["adapt"] = -perf_counter()
             mesh = adapt(mesh, metric)
-            out["times"]["adapt"] += perf_counter()
-            times["adapt"][-1] += out["times"]["adapt"]
             print(f"    Mesh {ct.fp_iteration+1}")
             cells = mesh.num_cells()
             print(f"      Element count        = {cells}")
@@ -135,7 +109,7 @@ for i in range(num_refinements + 1):
         print(
             f"    Terminated after {ct.fp_iteration+1} iterations due to {ct.converged_reason}"
         )
-        times["all"][-1] += perf_counter()
+        times[-1] += perf_counter()
         qois.append(qoi)
         dofs.append(dof)
         elements.append(cells)
@@ -146,9 +120,7 @@ for i in range(num_refinements + 1):
         np.save(f"{model}/data/elements_GO{approach}_{test_case}", elements)
         np.save(f"{model}/data/estimators_GO{approach}_{test_case}", estimators)
         np.save(f"{model}/data/niter_GO{approach}_{test_case}", niter)
-        np.save(f"{model}/data/times_all_GO{approach}_{test_case}", times["all"])
-        for c in components:
-            np.save(f"{model}/data/times_{c}_GO{approach}_{test_case}", times[c])
+        np.save(f"{model}/data/times_all_GO{approach}_{test_case}", times)
     except ConvergenceError:
         print("Skipping due to convergence error")
         continue

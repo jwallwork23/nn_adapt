@@ -31,7 +31,10 @@ num_refinements = parsed_args.num_refinements
 setup = importlib.import_module(f"{model}.config")
 setup.initialise(test_case)
 unit = setup.parameters.qoi_unit
-mesh = Mesh(f"{model}/meshes/{test_case}.msh")
+if hasattr(setup, "initial_mesh"):
+    mesh = setup.initial_mesh()
+else:
+    mesh = Mesh(f"{model}/meshes/{test_case}.msh")
 mh = [mesh] + list(MeshHierarchy(mesh, num_refinements))
 tm = TransferManager()
 kwargs = {}
@@ -59,12 +62,13 @@ for i, mesh in enumerate(mh):
 
     if parsed_args.prolong:
         kwargs["init"] = prolong
-    fs = fwd_sol.function_space()
+    spaces = [sol[0][0].function_space() for sol in fwd_sol.values()]
     time = perf_counter() - start_time
     print_output(f"    Quantity of Interest = {qoi} {unit}")
     print_output(f"    Runtime: {time:.2f} seconds")
     qois.append(qoi)
-    dofs.append(sum(fs.dof_count))
+    dof = sum(np.array([fs.dof_count for fs in spaces]).flatten())
+    dofs.append(dof)
     times.append(time)
     elements.append(mesh.num_cells())
     niter.append(1)

@@ -16,7 +16,7 @@ class NetLayout(NetLayoutBase):
           + [boundary element?]
           + [12 forward DoFs per element]
           + [12 adjoint DoFs per element]
-          = 30
+          = 29
 
     Hidden layer:
     -------------
@@ -30,7 +30,7 @@ class NetLayout(NetLayoutBase):
     """
 
     inputs = (
-        "estimator_coarse",
+        # "estimator_coarse",
         "physics_viscosity",
         "mesh_d",
         "mesh_h1",

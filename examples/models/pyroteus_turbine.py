@@ -1,8 +1,7 @@
 from thetis import *
+from pyroteus import *
+import pyroteus.go_mesh_seq
 import nn_adapt.model
-import nn_adapt.solving
-import numpy as np
-
 
 class Parameters(nn_adapt.model.Parameters):
     """
@@ -18,6 +17,10 @@ class Parameters(nn_adapt.model.Parameters):
     # Adaptation parameters
     h_min = 1.0e-08
     h_max = 500.0
+    
+    # time dependent parameters
+    end_time = 100.
+    time_steps = 10.
 
     # Physical parameters
     viscosity_coefficient = 0.5
@@ -206,123 +209,145 @@ class Parameters(nn_adapt.model.Parameters):
 
 PETSc.Sys.popErrorHandler()
 parameters = Parameters()
+    
+def GoalOrientedMeshSeq(mesh):
+    
+    fields = ["q"]
+    time_partition = TimeInterval(parameters.end_time, 
+                                        parameters.time_steps, 
+                                        fields, timesteps_per_export=1)
 
 
-def get_function_space(mesh):
-    """
-    Construct the (mixed) finite element space used for the
-    prognostic solution.
-    """
-    P1v_2d = get_functionspace(mesh, "DG", 1, vector=True)
-    P2_2d = get_functionspace(mesh, "CG", 2)
-    return P1v_2d * P2_2d
+    def get_solver(mesh_seq):
+
+        def solver(index, ic):
+            V = mesh_seq.function_spaces["q"][index]
+            q = ic["q"]
+            mesh_seq.form(index, {"q": (q, q)})
+            u_init, eta_init = q.split()
+            mesh_seq._thetis_solver.assign_initial_conditions(uv=u_init, elev=eta_init)
+            mesh_seq._thetis_solver.iterate()
+            
+            return {"q": mesh_seq._thetis_solver.fields.solution_2d}
+
+        return solver
 
 
-class Solver(nn_adapt.solving.Solver):
-    """
-    Set up a Thetis :class:`FlowSolver2d` object, based on
-    the current mesh and initial condition.
-    """
+    def get_form(mesh_seq):
+        def form(index, ic):
+            P = mesh_seq.time_partition
+            
+            bathymetry = parameters.bathymetry(mesh_seq[index])
+            Cd = parameters.drag_coefficient
 
-    def __init__(self, mesh, ic, **kwargs):
+            # Create solver object
+            mesh_seq._thetis_solver = solver2d.FlowSolver2d(mesh_seq[index], bathymetry)
+            options = mesh_seq._thetis_solver.options
+            options.element_family = "dg-cg"
+            options.timestep = P.timestep
+            options.simulation_export_time = P.timestep * P.timesteps_per_export[index]
+            options.simulation_end_time = P.end_time
+            options.swe_timestepper_type = "SteadyState"
+            options.swe_timestepper_options.solver_parameters = parameters.solver_parameters
+            options.use_grad_div_viscosity_term = False
+            options.horizontal_viscosity = parameters.viscosity(mesh_seq[index])
+            options.quadratic_drag_coefficient = Cd
+            options.use_lax_friedrichs_velocity = True
+            options.lax_friedrichs_velocity_scaling_factor = Constant(1.0)
+            options.use_grad_depth_viscosity_term = False
+            options.no_exports = True
+
+            # Apply boundary conditions
+            mesh_seq._thetis_solver.create_function_spaces()
+            P1v_2d = mesh_seq._thetis_solver.function_spaces.P1v_2d
+            u_inflow = interpolate(parameters.u_inflow(mesh_seq[index]), P1v_2d)
+            mesh_seq._thetis_solver.bnd_functions["shallow_water"] = {
+                1: {"uv": u_inflow},  # inflow
+                2: {"elev": Constant(0.0)},  # outflow
+                3: {"un": Constant(0.0)},  # free-slip
+                4: {"uv": Constant(as_vector([0.0, 0.0]))},  # no-slip
+                5: {"elev": Constant(0.0), "un": Constant(0.0)}  # weakly reflective
+            }
+
+            # # Create tidal farm
+            options.tidal_turbine_farms = parameters.farm(mesh_seq[index])
+            mesh_seq._thetis_solver.create_timestepper()
+            
+            return mesh_seq._thetis_solver.timestepper.F
+
+        return form
+
+
+    def get_function_space(mesh):
         """
-        :arg mesh: the mesh to define the solver on
-        :arg ic: the initial condition
+        Construct the (mixed) finite element space used for the
+        prognostic solution.
         """
-        bathymetry = parameters.bathymetry(mesh)
-        Cd = parameters.drag_coefficient
-        sp = kwargs.pop("solver_parameters", None)
+        P1v_2d = get_functionspace(mesh, "DG", 1, vector=True)
+        P2_2d = get_functionspace(mesh, "CG", 2)
+        return {"q": P1v_2d * P2_2d}
 
-        # Create solver object
-        self._thetis_solver = solver2d.FlowSolver2d(mesh, bathymetry)
-        options = self._thetis_solver.options
-        options.element_family = "dg-cg"
-        options.timestep = 20.0
-        options.simulation_export_time = 20.0
-        options.simulation_end_time = 18.0
-        options.swe_timestepper_type = "SteadyState"
-        options.swe_timestepper_options.solver_parameters = (
-            sp or parameters.solver_parameters
-        )
-        options.use_grad_div_viscosity_term = False
-        options.horizontal_viscosity = parameters.viscosity(mesh)
-        options.quadratic_drag_coefficient = Cd
-        options.use_lax_friedrichs_velocity = True
-        options.lax_friedrichs_velocity_scaling_factor = Constant(1.0)
-        options.use_grad_depth_viscosity_term = False
-        options.no_exports = True
-        options.update(kwargs)
-        self._thetis_solver.create_equations()
 
-        # Apply boundary conditions
-        P1v_2d = self._thetis_solver.function_spaces.P1v_2d
-        u_inflow = interpolate(parameters.u_inflow(mesh), P1v_2d)
-        self._thetis_solver.bnd_functions["shallow_water"] = {
-            1: {"uv": u_inflow},  # inflow
-            2: {"elev": Constant(0.0)},  # outflow
-            3: {"un": Constant(0.0)},  # free-slip
-            4: {"uv": Constant(as_vector([0.0, 0.0]))},  # no-slip
-            5: {"elev": Constant(0.0), "un": Constant(0.0)}  # weakly reflective
-        }
-
-        # Create tidal farm
-        options.tidal_turbine_farms = parameters.farm(mesh)
-
-        # Apply initial guess
-        u_init, eta_init = ic.split()
-        self._thetis_solver.assign_initial_conditions(uv=u_init, elev=eta_init)
-
-    @property
-    def function_space(self):
-        r"""
-        The :math:`\mathbb P1_{DG}-\mathbb P2` function space.
+    def get_initial_condition(mesh_seq):
         """
-        return self._thetis_solver.function_spaces.V_2d
-
-    @property
-    def form(self):
+        Compute an initial condition based on the inflow velocity
+        and zero free surface elevation.
         """
-        The weak form of the shallow water equations.
+        V = mesh_seq.function_spaces["q"][0]
+        q = Function(V)
+        u, eta = q.split()
+        u.interpolate(parameters.ic(mesh_seq))
+        return {"q": q}
+
+
+    def get_qoi(mesh_seq, solutions, index):
         """
-        return self._thetis_solver.timestepper.F
+        Extract the quantity of interest function from the :class:`Parameters`
+        object.
 
-    def iterate(self, **kwargs):
+        It should have one argument - the prognostic solution.
         """
-        Solve the nonlinear shallow water equations.
-        """
-        self._thetis_solver.iterate(**kwargs)
+        dt = Constant(mesh_seq.time_partition[index].timestep)
+        rho = parameters.density
+        Ct = parameters.corrected_thrust_coefficient
+        At = parameters.swept_area
+        Cd = 0.5 * Ct * At * parameters.turbine_density(mesh_seq[index])
+        tags = parameters.turbine_ids
+        sol = solutions["q"]
 
-    @property
-    def solution(self):
-        return self._thetis_solver.fields.solution_2d
+        def qoi():
+            u, eta = split(sol)
+            return sum([rho * Cd * pow(dot(u, u), 1.5) * dx(tag) for tag in tags])
 
+        return qoi
+    
+    
+    mesh_seq = pyroteus.go_mesh_seq.GoalOrientedMeshSeq(
+        time_partition,
+        mesh,
+        get_function_spaces=get_function_space,
+        get_initial_condition=get_initial_condition,
+        get_form=get_form,
+        get_solver=get_solver,
+        get_qoi=get_qoi,
+        qoi_type="end_time")
+    
+    return mesh_seq
+    
+        
+        
 
-def get_initial_condition(function_space):
-    """
-    Compute an initial condition based on the inflow velocity
-    and zero free surface elevation.
-    """
-    q = Function(function_space)
-    u, eta = q.split()
-    u.interpolate(parameters.ic(function_space.mesh()))
-    return q
+# print(solutions["q"].keys())
 
+# fwd_file = File("./out/forward.pvd")
+# for i in range(len(solutions["u"]["forward"][0])):
+#     fwd_file.write(*solutions["q"]["forward"][0][i].split())
+    
+# adj_file = File("./out/adjoint.pvd")
+# for i in range(len(solutions["u"]["adjoint"][0])):
+#     adj_file.write(*solutions["q"]["adjoint"][0][i].split())
 
-def get_qoi(mesh):
-    """
-    Extract the quantity of interest function from the :class:`Parameters`
-    object.
+# adj_next_file = File("./out/adjoint_next.pvd")
+# for i in range(len(solutions["u"]["adjoint_next"][0])):
+#     adj_next_file.write(*solutions["q"]["adjoint_next"][0][i].split())
 
-    It should have one argument - the prognostic solution.
-    """
-    rho = parameters.density
-    Ct = parameters.corrected_thrust_coefficient
-    At = parameters.swept_area
-    Cd = 0.5 * Ct * At * parameters.turbine_density(mesh)
-    tags = parameters.turbine_ids
-
-    def qoi(sol):
-        u, eta = split(sol)
-        return sum([rho * Cd * pow(dot(u, u), 1.5) * dx(tag) for tag in tags])
-
-    return qoi
